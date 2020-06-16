@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use warp::Filter;
 
 mod server;
+use server::filters::*;
 
 fn parse_args(args: Args) -> Result<(SocketAddr, PathBuf), Box<dyn Error>> {
     let addr = match args.skip(1).next() {

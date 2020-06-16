@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <script src='static/knockout-3.5.1.js'></script>
+        <script src='static/jquery-3.5.1.min.js'></script>
+    </head>
+    <body>
+        <table>
+            <thead>
+                <tr><th>Member</th><th>Value</th></tr>
+            </thead>
+            <tbody data-bind="foreach: members">
+                <tr>
+                    <td data-bind="text: member"></td>
+                    <td data-bind="text: value"></td>
+                </tr>
+            </tbody>
+        </table>
+         
+        
+        <script>
+            ko.applyBindings({
+                members: [
+                    { member: 'name', value : 'LOL' }
+                ]
+            });
+        </script>
+
+    </body>
+</html>
