@@ -7,6 +7,11 @@ use warp::Filter;
 mod server;
 use server::filters::*;
 
+const ID_MS: &str = include_str!("clientid.microsoft");
+const SECRET_MS: &str = include_str!("secret.microsoft");
+const ID_GGL: &str = include_str!("clientid.google");
+const SECRET_GGL: &str = include_str!("secret.google");
+
 fn parse_args(args: Args) -> Result<(SocketAddr, PathBuf), Box<dyn Error>> {
     let addr = match args.skip(1).next() {
         Some(arg) => arg.parse::<SocketAddr>()?,

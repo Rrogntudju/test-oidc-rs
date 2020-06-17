@@ -2,3 +2,5 @@
 Cargo.lock
 knockout*
 jquery*
+clientid*
+secret*
