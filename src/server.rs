@@ -97,8 +97,8 @@ mod tests {
     async fn static_file_ok() {
         let resp = request()
             .method("GET")
-            .path("static/userinfos.htm")
-            .reply(&filters::static_file("../../static".parse::<PathBuf>().unwrap()))
+            .path("/static/userinfos.htm")
+            .reply(&filters::static_file(PathBuf::from("./static")))
             .await;
         assert_eq!(resp.status(), StatusCode::OK);
     }
