@@ -7,7 +7,7 @@ pub mod filters {
     pub fn static_file(path: PathBuf) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("static").and(warp::fs::dir(path))
     }
-
+/*
     pub fn put_mds() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("mds")
             .and(warp::path::end())
@@ -33,8 +33,9 @@ pub mod filters {
     fn clone_mmds() -> impl Filter<Extract = (Arc<Mutex<Mmds>>,), Error = Infallible> + Clone {
         warp::any().map(move || MMDS.clone())
     }
+*/
 }
-
+/*
 pub mod handlers {
     use super::*;
     use std::convert::Infallible;
@@ -84,7 +85,7 @@ pub mod handlers {
         Ok(response)
     }
 }
-
+*/
 #[cfg(test)]
 mod tests {
     use super::*;

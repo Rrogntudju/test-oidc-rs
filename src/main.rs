@@ -12,7 +12,7 @@ const SECRET_MS: &str = include_str!("secret.microsoft");
 const ID_GGL: &str = include_str!("clientid.google");
 const SECRET_GGL: &str = include_str!("secret.google");
 
-fn parse_args(args: Args) -> Result<(SocketAddr, PathBuf), Box<dyn Error>> {
+fn parse_args(args: &mut Args) -> Result<(SocketAddr, PathBuf), Box<dyn Error>> {
     let addr = match args.skip(1).next() {
         Some(arg) => arg.parse::<SocketAddr>()?,
         None => return Err("IP:Port est manquant".into()),
@@ -32,7 +32,7 @@ fn parse_args(args: Args) -> Result<(SocketAddr, PathBuf), Box<dyn Error>> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let (addr, path) = parse_args(args())?;
+    let (addr, path) = parse_args(&mut args())?;
     let routes = static_file(path);
 
     warp::serve(routes).run(addr).await;
