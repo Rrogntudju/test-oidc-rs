@@ -1,28 +1,53 @@
 <html>
     <head>
-        <script src='static/knockout-3.5.1.js'></script>
-        <script src='static/jquery-3.5.1.min.js'></script>
+        <meta charset="utf-8"/>
+        <script src='knockout-3.5.1.js'></script>
+        <script src='jquery-3.5.1.min.js'></script>
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <link rel="icon" type="image/gif" href=http://wiki.openid.net/f/openid-16x16.gif/>
     </head>
-    <body>
-        <table>
-            <thead>
-                <tr><th>Member</th><th>Value</th></tr>
-            </thead>
-            <tbody data-bind="foreach: members">
-                <tr>
-                    <td data-bind="text: member"></td>
-                    <td data-bind="text: value"></td>
-                </tr>
-            </tbody>
-        </table>
-         
+
+    <body class="w3-display-middle">
+        <img src="https://openid.net/images/logo/openid-icon-100x100.png">
+        <div class="w3-container w3-orange">
+            <h1><b>OpenID Connect</b></h1>
+        </div>
+
+        <div class="w3-input w3-text-orange">
+            <h5><b>Fournisseur:</b></h5>
+            <div><input type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur" /> <b>Microsoft</b></div>
+            <div><input type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur" /> <b>Google</b></div>
+        </div>
+        <button class="w3-button w3-orange w3-hover-amber" data-bind="click: getUserInfos"><b>UserInfos</b></button>
+
+        <div data-bind="visible: showUserInfos">
+            <hr>
+            <h3><b>UserInfos</b></h3>
+
+            <table class="w3-table-all">
+                <thead>
+                    <tr class="w3-text-orange"><th>Propriété</th><th>Valeur</th></tr>
+                </thead>
+                <tbody data-bind="foreach: propriétés">
+                    <tr>
+                        <td data-bind="text: propriété"></td>
+                        <td data-bind="text: valeur"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         
         <script>
-            ko.applyBindings({
-                members: [
-                    { member: 'name', value : 'LOL' }
-                ]
-            });
+            userInfosViewModel = {
+                propriétés: [
+                        { propriété: 'name', valeur : 'LOL' },
+                        { propriété: 'name', valeur : 'LOL' }
+                ],
+                fournisseur: ko.observable("Microsoft"),
+                showUserInfos: ko.observable(true),
+                getUserInfos: function() {}
+            }
+            ko.applyBindings(userInfosViewModel);
         </script>
 
     </body>
