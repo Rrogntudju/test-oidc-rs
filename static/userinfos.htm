@@ -41,6 +41,7 @@
                 if (document.readyState === 'interactive') {
                     userInfosViewModel.fournisseur = ko.observable(window.sessionStorage.getItem("fournisseur"));
                     userInfosViewModel[window.sessionStorage.getItem("actionAfterAuth")]();
+                    window.sessionStorage.clear();
                 }
             }
 
