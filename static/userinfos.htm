@@ -17,7 +17,7 @@
             <div><input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur" /> <b>Microsoft</b></div>
             <div><input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur" /> <b>Google</b></div>
         </div>
-        <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos"><b>UserInfos</b></button>
+        <button id="getUserInfos" class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos"><b>UserInfos</b></button>
 
         <div data-bind="visible: showUserInfos">
             <hr>
@@ -37,6 +37,13 @@
         </div>
         
         <script>
+            document.onreadystatechange = function () {
+                if (document.readyState === 'interactive') {
+                    userInfosViewModel.fournisseur = ko.observable(window.sessionStorage.getItem("fournisseur"));
+                    userInfosViewModel[window.sessionStorage.getItem("actionAfterAuth")]();
+                }
+            }
+
             var userInfosViewModel = {
                 propriétés: ko.observableArray( [
                     { propriété: 'name', valeur : 'LOL' },
@@ -64,9 +71,20 @@
 
                     fetch(request)
                     .then(response => {response.json()})
-                    .then(data => {this.propriétés = ko.observableArray(data)});
+                    .then(data => {
+                        if (data.hasOwnProperty("redirectOpenID")) {
+                            window.sessionStorage.setItem("actionAfterAuth", "getUserInfos");
+                            window.sessionStorage.setItem("fournisseur", this.fournisseur)
+                            window.location.replace(data.redirectOpenID);
+                        } else {
+                            this.propriétés = ko.observableArray(data);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Erreur:', error);
+                    });
                 }
-            };
+            }
 
             ko.applyBindings(userInfosViewModel);
         </script>
