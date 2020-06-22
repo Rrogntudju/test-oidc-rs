@@ -9,3 +9,8 @@ warp = "0.2"
 tokio = {version = "0.2", features = ["macros"]}
 csrf = "0.3"
 oidc = "0.3"
+
+[profile.release]
+lto = "fat" 
+codegen-units = 1
+panic = "abort"

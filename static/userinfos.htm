@@ -2,7 +2,6 @@
     <head>
         <meta charset="utf-8"/>
         <script src='knockout-3.5.1.js'></script>
-        <script src='jquery-3.5.1.min.js'></script>
         <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
         <link rel="icon" type="image/gif" href=http://wiki.openid.net/f/openid-16x16.gif/>
     </head>
@@ -38,15 +37,37 @@
         </div>
         
         <script>
-            userInfosViewModel = {
-                propriétés: [
-                        { propriété: 'name', valeur : 'LOL' },
-                        { propriété: 'name', valeur : 'LOL' }
-                ],
+            var userInfosViewModel = {
+                propriétés: ko.observableArray( [
+                    { propriété: 'name', valeur : 'LOL' },
+                    { propriété: 'name', valeur : 'LOL' }
+                ]),
+
                 fournisseur: ko.observable("Microsoft"),
-                showUserInfos: ko.observable(true),
-                getUserInfos: function() {}
-            }
+            
+                showUserInfos: function() {
+                    ko.pureComputed(() => {
+                        return this.propriétés().length > 0
+                    })
+                },
+
+                getUserInfos: function() {
+                    const headers = new Headers({
+                        'Content-Type': 'application/json'
+                    });
+                    const request = new Request('/userinfos', {
+                        method: 'GET',
+                        headers: headers,
+                        credentials: 'same-origin',
+                        cache: 'no-cache',
+                    });
+
+                    fetch(request)
+                    .then(response => {response.json()})
+                    .then(data => {this.propriétés = ko.observableArray(data)});
+                }
+            };
+
             ko.applyBindings(userInfosViewModel);
         </script>
 
