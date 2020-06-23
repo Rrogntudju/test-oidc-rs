@@ -63,15 +63,14 @@
                     const headers = new Headers({
                         'Content-Type': 'application/json',
                     });
-                    
-                    const token =
+
+                    const csrfHeader =
                         document.cookie
                         .split(';')
-                        .find((item) => item.trim().startsWith('Csrf-Token='))
-                        .split('=')[1];
+                        .find((item) => item.trim().startsWith('Csrf-Token='));
                     
-                    if (token) {
-                        headers.set('X-Csrf-Token', token)
+                    if (csrfHeader) {
+                        headers.set('X-Csrf-Token', csrfHeader.split('=')[1])
                     }
 
                     const request = new Request('/userinfos', {
