@@ -37,11 +37,13 @@
         </div>
         
         <script>
-            document.onreadystatechange = function () {
-                if (document.readyState === 'interactive') {
-                    userInfosViewModel.fournisseur = ko.observable(window.sessionStorage.getItem("fournisseur"));
-                    userInfosViewModel[window.sessionStorage.getItem("actionAfterAuth")]();
-                    window.sessionStorage.clear();
+            if (sessionStorage.length > 0) {
+                document.onreadystatechange = function () {
+                    if (document.readyState === 'interactive') {
+                        userInfosViewModel.fournisseur = ko.observable(sessionStorage.getItem("fournisseur"));
+                        userInfosViewModel[sessionStorage.getItem("actionAfterAuth")]();
+                        sessionStorage.clear();
+                    }
                 }
             }
 
@@ -54,28 +56,37 @@
                 fournisseur: ko.observable("Microsoft"),
             
                 showUserInfos: function() {
-                    ko.pureComputed(() => {
-                        return this.propriétés().length > 0
-                    })
+                    ko.pureComputed(() => this.propriétés().length > 0)
                 },
 
                 getUserInfos: function() {
                     const headers = new Headers({
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     });
+                    
+                    const token =
+                        document.cookie
+                        .split(';')
+                        .find((item) => item.trim().startsWith('Csrf-Token='))
+                        .split('=')[1];
+                    
+                    if (token) {
+                        headers.set('X-Csrf-Token', token)
+                    }
+
                     const request = new Request('/userinfos', {
                         method: 'GET',
                         headers: headers,
-                        credentials: 'same-origin',
                         cache: 'no-cache',
+                        redirect: 'error'
                     });
 
                     fetch(request)
-                    .then(response => {response.json()})
+                    .then(response => response.json())
                     .then(data => {
                         if (data.hasOwnProperty("redirectOpenID")) {
-                            window.sessionStorage.setItem("actionAfterAuth", "getUserInfos");
-                            window.sessionStorage.setItem("fournisseur", this.fournisseur)
+                            sessionStorage.setItem("actionAfterAuth", "getUserInfos");
+                            sessionStorage.setItem("fournisseur", this.fournisseur)
                             window.location.replace(data.redirectOpenID);
                         } else {
                             this.propriétés = ko.observableArray(data);
