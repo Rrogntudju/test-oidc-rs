@@ -1,3 +1,6 @@
+mod session;
+use session::*;
+
 pub mod filters {
     use super::*;
     use std::path::PathBuf;
@@ -42,7 +45,6 @@ mod handlers {
     use super::*;
     use std::convert::Infallible;
     use warp::http::{Response, StatusCode};
-    use session::*;
 
     pub async fn userinfos(fpath: FullPath, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
         let path = fpath.as_str().strip_prefix("/mds").unwrap();
@@ -88,18 +90,6 @@ mod handlers {
     }
 }
 */
-
-mod session {
-    use rand::Rng; 
-    use rand::distributions::Alphanumeric;
-    
-    pub fn random_token(len: usize) -> String {
-        rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(len)
-        .collect::<String>()
-    }    
-}
 
 #[cfg(test)]
 mod tests {
