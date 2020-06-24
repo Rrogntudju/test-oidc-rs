@@ -1,17 +1,32 @@
 mod session;
-use session::*;
+use session::{SessionId, Session, random_token};
+use lazy_static::lazy_static;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+lazy_static! {
+    static ref SESSIONS: Arc<Mutex<HashMap<SessionId, Session>>> = Arc::new(Mutex::new(HashMap::new()));
+}
+
+const ID_MS: &str = include_str!("clientid.microsoft");
+const SECRET_MS: &str = include_str!("secret.microsoft");
+const ID_GG: &str = include_str!("clientid.google");
+const SECRET_GG: &str = include_str!("secret.google");
 
 pub mod filters {
     use super::*;
-    use std::path::PathBuf;
     use std::convert::Infallible;
-    use warp::{Filter, filters::{cookie, header}};
+    use std::path::PathBuf;
+    use warp::{
+        filters::{cookie, header},
+        Filter,
+    };
 
     pub fn static_file(path: PathBuf) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("static").and(warp::fs::dir(path))
     }
 
-    pub fn get_userinfos() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    pub fn userinfos() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("userinfos")
             .and(warp::get())
             .and(cookie::optional("Csrf-Token"))
@@ -20,25 +35,27 @@ pub mod filters {
             .and(clone_sessions())
             .and_then(handlers::userinfos)
     }
-/*
-    pub fn patch_mds() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        warp::path("mds")
-            .and(warp::path::end())
-            .and(warp::patch())
-            .and(json_body())
-            .and(clone_mmds())
-            .and_then(handlers::patch_mds)
-    }
 
-    fn json_body() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
-        warp::body::content_length_limit(10240).and(warp::body::json())
+    pub fn auth() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path("auth").and(warp::get()).and(clone_sessions()).and_then(handlers::auth)
     }
-*/
-    fn clone_sessions() -> impl Filter<Extract = (Arc<Mutex<Session>>,), Error = Infallible> + Clone {
-        let test = ID_MS;
+    /*
+        pub fn patch_mds() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+            warp::path("mds")
+                .and(warp::path::end())
+                .and(warp::patch())
+                .and(json_body())
+                .and(clone_mmds())
+                .and_then(handlers::patch_mds)
+        }
+
+        fn json_body() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
+            warp::body::content_length_limit(10240).and(warp::body::json())
+        }
+    */
+    fn clone_sessions() -> impl Filter<Extract = (Arc<Mutex<HashMap<SessionId, Session>>>,), Error = Infallible> + Clone {
         warp::any().map(move || SESSIONS.clone())
     }
-
 }
 
 mod handlers {
@@ -64,7 +81,7 @@ mod handlers {
         let t = random_token(32);
         Ok(response)
     }
-/*
+    /*
     pub async fn put_mds(data: Value, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
         let result = mmds.lock().expect("Failed to build MMDS response due to poisoned lock").put_data(data);
 
@@ -87,16 +104,15 @@ mod handlers {
         };
 
         Ok(response)
-    }
+    }*/
 }
-*/
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
     use warp::http::StatusCode;
     use warp::test::request;
-    use std::path::PathBuf;
 
     #[tokio::test]
     async fn static_file_ok() {
