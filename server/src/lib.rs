@@ -2,21 +2,22 @@ pub mod filters {
     use super::*;
     use std::path::PathBuf;
     use std::convert::Infallible;
-    use warp::Filter;
+    use warp::{Filter, filters::{cookie, header}};
 
     pub fn static_file(path: PathBuf) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("static").and(warp::fs::dir(path))
     }
-/*
-    pub fn put_mds() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        warp::path("mds")
-            .and(warp::path::end())
-            .and(warp::put())
-            .and(json_body())
-            .and(clone_mmds())
-            .and_then(handlers::put_mds)
-    }
 
+    pub fn get_userinfos() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path("userinfos")
+            .and(warp::get())
+            .and(cookie::optional("Csrf-Token"))
+            .and(header::optional("X-Csrf-Token"))
+            .and(cookie::optional("Session-Id"))
+            .and(clone_sessions())
+            .and_then(handlers::userinfos)
+    }
+/*
     pub fn patch_mds() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("mds")
             .and(warp::path::end())
@@ -29,20 +30,21 @@ pub mod filters {
     fn json_body() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
         warp::body::content_length_limit(10240).and(warp::body::json())
     }
-
-    fn clone_mmds() -> impl Filter<Extract = (Arc<Mutex<Mmds>>,), Error = Infallible> + Clone {
-        warp::any().map(move || MMDS.clone())
-    }
 */
+    fn clone_sessions() -> impl Filter<Extract = (Arc<Mutex<Session>>,), Error = Infallible> + Clone {
+        let test = ID_MS;
+        warp::any().map(move || SESSIONS.clone())
+    }
+
 }
-/*
-pub mod handlers {
+
+mod handlers {
     use super::*;
     use std::convert::Infallible;
-    use warp::filters::path::FullPath;
     use warp::http::{Response, StatusCode};
+    use session::*;
 
-    pub async fn get_mds(fpath: FullPath, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
+    pub async fn userinfos(fpath: FullPath, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
         let path = fpath.as_str().strip_prefix("/mds").unwrap();
         let result = mmds
             .lock()
@@ -57,10 +59,10 @@ pub mod handlers {
                 MmdsError::UnsupportedValueType => Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body(format!("{}", e)),
             },
         };
-
+        let t = random_token(32);
         Ok(response)
     }
-
+/*
     pub async fn put_mds(data: Value, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
         let result = mmds.lock().expect("Failed to build MMDS response due to poisoned lock").put_data(data);
 
@@ -86,6 +88,19 @@ pub mod handlers {
     }
 }
 */
+
+mod session {
+    use rand::Rng; 
+    use rand::distributions::Alphanumeric;
+    
+    pub fn random_token(len: usize) -> String {
+        rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .collect::<String>()
+    }    
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,0 +1,11 @@
+[package]
+name = "test-oidc"
+version = "0.1.0"
+authors = ["Rrogntudju"]
+edition = "2018"
+
+[dependencies]
+server = {path = "../server"}
+warp = "0.2"
+tokio = {version = "0.2", features = ["macros"]}
+
