@@ -1,6 +1,6 @@
 mod session;
-use session::{SessionId, Session, random_token};
 use lazy_static::lazy_static;
+use session::{random_token, Session, SessionId};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -39,20 +39,7 @@ pub mod filters {
     pub fn auth() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("auth").and(warp::get()).and(clone_sessions()).and_then(handlers::auth)
     }
-    /*
-        pub fn patch_mds() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-            warp::path("mds")
-                .and(warp::path::end())
-                .and(warp::patch())
-                .and(json_body())
-                .and(clone_mmds())
-                .and_then(handlers::patch_mds)
-        }
 
-        fn json_body() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
-            warp::body::content_length_limit(10240).and(warp::body::json())
-        }
-    */
     fn clone_sessions() -> impl Filter<Extract = (Arc<Mutex<HashMap<SessionId, Session>>>,), Error = Infallible> + Clone {
         warp::any().map(move || SESSIONS.clone())
     }
