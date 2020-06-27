@@ -1,6 +1,6 @@
 mod session;
 use lazy_static::lazy_static;
-use session::{random_token, Session, SessionId};
+use session::{Session, SessionId};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -51,50 +51,44 @@ pub mod filters {
 mod handlers {
     use super::*;
     use std::convert::Infallible;
-    use warp::http::{Response, StatusCode};
+    use warp::http::{Response, StatusCode, Error};
 
-    pub async fn userinfos(fpath: FullPath, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
-        let path = fpath.as_str().strip_prefix("/mds").unwrap();
-        let result = mmds
+    pub async fn userinfos(
+        csrf_cookie: Option<String>,
+        csrf_header: Option<String>,
+        session_cookie: Option<String>,
+        body: HashMap<String, String>,
+        sessions: Arc<Mutex<HashMap<SessionId, Session>>>,
+    ) -> Result<impl warp::Reply, Infallible> {
+    
+        // Validation Csrf si le cookie Csrf est présent
+        if let Some(c_token) = csrf_cookie {
+            match csrf_header {
+                Some(h_token) if h_token != c_token => return Ok(reply_csrf_mismatch()),
+                None => return Ok(reply_csrf_mismatch())
+            }
+        };
+
+        if let Some(s_token) = session_cookie {
+
+        }
+        
+        let result = sessions
             .lock()
-            .expect("Failed to build MMDS response due to poisoned lock")
-            .get_value(path.to_string());
+            .expect("Failed due to poisoned lock")
+            .insert(k, v);
 
-        let response = match result {
-            Ok(value) => Response::builder().status(StatusCode::OK).body(value.join("\n")),
-
-            Err(e) => match e {
-                MmdsError::NotFound => Response::builder().status(StatusCode::NOT_FOUND).body(format!("{}", e)),
-                MmdsError::UnsupportedValueType => Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body(format!("{}", e)),
-            },
-        };
-        let t = random_token(32);
-        Ok(response)
-    }
-    /*
-    pub async fn put_mds(data: Value, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
-        let result = mmds.lock().expect("Failed to build MMDS response due to poisoned lock").put_data(data);
-
-        let response = match result {
-            Ok(()) => Response::builder().status(StatusCode::NO_CONTENT).body(String::new()),
-
-            Err(e) => Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body(format!("{}", e)),
-        };
-
+       
         Ok(response)
     }
 
-    pub async fn patch_mds(patch: Value, mmds: Arc<Mutex<Mmds>>) -> Result<impl warp::Reply, Infallible> {
-        let result = mmds.lock().expect("Failed to build MMDS response due to poisoned lock").patch_data(patch);
-
-        let response = match result {
-            Ok(()) => Response::builder().status(StatusCode::NO_CONTENT).body(String::new()),
-
-            Err(e) => Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body(format!("{}", e)),
-        };
-
-        Ok(response)
-    }*/
+    fn reply_csrf_mismatch() -> Result<Response<String>, Error> {
+        Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
+    }
+    
+    pub async fn auth(sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
+        Ok(reply_csrf_mismatch())
+    }
 }
 
 #[cfg(test)]
