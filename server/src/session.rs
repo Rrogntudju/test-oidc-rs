@@ -6,7 +6,13 @@ pub fn random_token(len: usize) -> String {
     rand::thread_rng().sample_iter(&Alphanumeric).take(len).collect::<String>()
 }
 
-pub type SessionId = String;
+pub struct SessionId(String);
+
+impl SessionId {
+    fn new() -> Self {
+        SessionId(random_token(32))
+    }
+}
 
 pub enum SessionState {
     AuthenticationRequested(Client),
@@ -19,26 +25,28 @@ impl SessionState {
     }
 
     fn AuthenticationCompleted(&mut self, t: Token) -> Self {
-        assert!(match self {
-            SessionState::AuthenticationRequested(..) => true,
-            _ => false,
-        });
+        assert!(!self.isAuthenticated());
         SessionState::Authenticated(t)
+    }
+
+    fn isAuthenticated(&self) -> bool {
+        match self {
+            SessionState::AuthenticationRequested(_) => true,
+            _ => false 
+        }
     }
 }
 
 pub struct Session {
     state: SessionState,
     nonce: String,
-    maxAge: String,
 }
 
 impl Session {
-    fn new(client: Client, maxAge: String) -> Self {
+    fn new(client: Client, max_age: String) -> Self {
         Session {
             state: SessionState::new(client),
-            nonce: random_token(32),
-            maxAge,
+            nonce: random_token(64),
         }
     }
 }

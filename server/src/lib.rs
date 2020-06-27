@@ -17,10 +17,8 @@ pub mod filters {
     use super::*;
     use std::convert::Infallible;
     use std::path::PathBuf;
-    use warp::{
-        filters::{cookie, header},
-        Filter,
-    };
+    use warp::filters::{cookie, header};
+    use warp::Filter;
 
     pub fn static_file(path: PathBuf) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("static").and(warp::fs::dir(path))
@@ -28,10 +26,11 @@ pub mod filters {
 
     pub fn userinfos() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("userinfos")
-            .and(warp::get())
+            .and(warp::post())
             .and(cookie::optional("Csrf-Token"))
             .and(header::optional("X-Csrf-Token"))
             .and(cookie::optional("Session-Id"))
+            .and(json_body())
             .and(clone_sessions())
             .and_then(handlers::userinfos)
     }
@@ -42,6 +41,10 @@ pub mod filters {
 
     fn clone_sessions() -> impl Filter<Extract = (Arc<Mutex<HashMap<SessionId, Session>>>,), Error = Infallible> + Clone {
         warp::any().map(move || SESSIONS.clone())
+    }
+
+    fn json_body() -> impl Filter<Extract = (HashMap<String, String>,), Error = warp::Rejection> + Clone {
+        warp::body::content_length_limit(1024).and(warp::body::json())
     }
 }
 

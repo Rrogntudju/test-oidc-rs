@@ -17,7 +17,7 @@
             <div><input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur" /> <b>Microsoft</b></div>
             <div><input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur" /> <b>Google</b></div>
         </div>
-        <button id="getUserInfos" class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos"><b>UserInfos</b></button>
+        <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos"><b>UserInfos</b></button>
 
         <div data-bind="visible: showUserInfos">
             <hr>
@@ -41,8 +41,9 @@
                 document.onreadystatechange = function () {
                     if (document.readyState === 'interactive') {
                         userInfosViewModel.fournisseur = ko.observable(sessionStorage.getItem("fournisseur"));
-                        userInfosViewModel[sessionStorage.getItem("actionAfterAuth")]();
+                        const actionAfterAuth = sessionStorage.getItem("actionAfterAuth");
                         sessionStorage.clear();
+                        userInfosViewModel[actionAfterAuth]();
                     }
                 }
             }
