@@ -11,46 +11,50 @@ pub fn random_token(len: usize) -> String {
 pub struct SessionId(String);
 
 impl SessionId {
-    fn new() -> Self {
+    pub fn new() -> Self {
         SessionId(random_token(32))
+    }
+}
+
+impl From<String> for SessionId {
+    fn from(s: String) -> Self {
+        SessionId(s)
     }
 }
 
 pub enum SessionState {
     AuthenticationRequested(Client),
-    Authenticated(Token),
+    Authenticated(Token, DateTime<Utc>),
 }
 
 impl SessionState {
-    fn new(c: Client) -> Self {
+    pub fn new(c: Client) -> Self {
         SessionState::AuthenticationRequested(c)
     }
 
-    fn AuthenticationCompleted(&mut self, t: Token) -> Self {
+    pub fn AuthenticationCompleted(&mut self, t: Token) -> Self {
         assert!(!self.isAuthenticated());
-        SessionState::Authenticated(t)
+        SessionState::Authenticated(t,  Utc::now() + Duration::days(1))
     }
 
-    fn isAuthenticated(&self) -> bool {
+    pub fn isAuthenticated(&self) -> bool {
         match self {
-            SessionState::AuthenticationRequested(_) => true,
+            SessionState::Authenticated(_, expires) if expires < &Utc::now()=> true,
             _ => false,
         }
     }
 }
 
 pub struct Session {
-    state: SessionState,
+    pub state: SessionState,
     nonce: String,
-    expires: DateTime<Utc>
 }
 
 impl Session {
-    fn new(client: Client) -> Self {
+    pub fn new(client: Client) -> Self {
         Session {
             state: SessionState::new(client),
             nonce: random_token(64),
-            expires: Utc::now() + Duration::days(1)
         }
     }
 }

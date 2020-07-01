@@ -62,22 +62,23 @@ mod handlers {
     ) -> Result<impl warp::Reply, Infallible> {
     
         // Validation Csrf si le cookie Csrf est présent
-        if let Some(c_token) = csrf_cookie {
+        if let Some(ctoken) = csrf_cookie {
             match csrf_header {
-                Some(h_token) if h_token != c_token => return Ok(reply_csrf_mismatch()),
+                Some(htoken) if htoken != ctoken => return Ok(reply_csrf_mismatch()),
                 None => return Ok(reply_csrf_mismatch())
             }
         };
 
-        if let Some(s_token) = session_cookie {
-
-        }
-        
-        let result = sessions
-            .lock()
-            .expect("Failed due to poisoned lock")
-            .insert(k, v);
-
+        let sguard = sessions.lock().expect("Failed due to poisoned lock");
+        let response = match session_cookie {
+            Some(stoken) => {
+                match sguard.get(&SessionId::from(stoken)) {
+                    Some(session) if session.state.isAuthenticated() => reply_userinfos(session),
+                    _ => reply_redirect_provider(&sguard)
+                }
+            },
+            none => reply_redirect_provider(&sguard)
+        };
        
         Ok(response)
     }
