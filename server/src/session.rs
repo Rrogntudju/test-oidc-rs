@@ -3,7 +3,7 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use chrono::{Utc, Duration, DateTime};
 
-pub fn random_token(len: usize) -> String {
+fn random_token(len: usize) -> String {
     rand::thread_rng().sample_iter(&Alphanumeric).take(len).collect::<String>()
 }
 

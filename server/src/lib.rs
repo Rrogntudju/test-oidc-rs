@@ -65,21 +65,34 @@ mod handlers {
         if let Some(ctoken) = csrf_cookie {
             match csrf_header {
                 Some(htoken) if htoken != ctoken => return Ok(reply_csrf_mismatch()),
-                None => return Ok(reply_csrf_mismatch())
+                _ => return Ok(reply_csrf_mismatch())
             }
         };
 
-        let sguard = sessions.lock().expect("Failed due to poisoned lock");
+        let fournisseur = match body.get("fournisseur") {
+            Some(fournisseur) => fournisseur,
+            None => "Microsoft"
+        };
+
         let response = match session_cookie {
             Some(stoken) => {
-                match sguard.get(&SessionId::from(stoken)) {
-                    Some(session) if session.state.isAuthenticated() => reply_userinfos(session),
-                    _ => reply_redirect_provider(&sguard)
+                let id = SessionId::from(stoken);
+                match sessions.lock().expect("Failed due to poisoned lock").get(&id) {
+                    Some(session) => {
+                        if session.state.isAuthenticated() {
+                            reply_userinfos(session)
+                        }
+                        else {
+                            sessions.lock().expect("Failed due to poisoned lock").remove(&id);
+                            reply_redirect_fournisseur(fournisseur, &sessions)
+                        }
+                    },
+                    None => reply_redirect_fournisseur(fournisseur, &sessions)
                 }
             },
-            none => reply_redirect_provider(&sguard)
+            None => reply_redirect_fournisseur(fournisseur, &sessions)
         };
-       
+
         Ok(response)
     }
 
@@ -87,6 +100,14 @@ mod handlers {
         Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
     
+    fn reply_userinfos(session: &Session) -> Result<Response<String>, Error> {
+        Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
+    }
+
+    fn reply_redirect_fournisseur(fournisseur: &str, sessions: &Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
+            Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
+    }
+
     pub async fn auth(sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
         Ok(reply_csrf_mismatch())
     }
