@@ -36,13 +36,21 @@ impl SessionState {
         assert!(!self.isAuthenticated());
         SessionState::Authenticated(t,  Utc::now() + Duration::days(1))
     }
-
+    
     pub fn isAuthenticated(&self) -> bool {
         match self {
-            SessionState::Authenticated(_, expires) if expires < &Utc::now()=> true,
+            SessionState::Authenticated(..) => true,
             _ => false,
         }
     }
+    
+    pub fn isExpired(&self) -> bool {
+        match self {
+            SessionState::Authenticated(_, expires) if expires < &Utc::now() => true,
+            _ => false,
+        }
+    }
+
 }
 
 pub struct Session {

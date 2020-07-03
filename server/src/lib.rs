@@ -77,17 +77,16 @@ mod handlers {
         let response = match session_cookie {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
-                match sessions.lock().expect("Failed due to poisoned lock").get(&id) {
-                    Some(session) => {
-                        if session.state.isAuthenticated() {
-                            reply_userinfos(session)
-                        }
-                        else {
-                            sessions.lock().expect("Failed due to poisoned lock").remove(&id);
-                            reply_redirect_fournisseur(fournisseur, &sessions)
-                        }
-                    },
-                    None => reply_redirect_fournisseur(fournisseur, &sessions)
+                let lock = sessions.lock().expect("Failed due to poisoned lock");
+                match lock.get(&id) {
+                    None => reply_redirect_fournisseur(fournisseur, &sessions),
+                    Some(session) if !session.state.isAuthenticated() => reply_bad_request(),
+                    Some(session) if session.state.isExpired() => {
+                        drop(lock);
+                        sessions.lock().expect("Failed due to poisoned lock").remove(&id);
+                        reply_redirect_fournisseur(fournisseur, &sessions)
+                    }
+                    Some(session) => reply_userinfos(&session)
                 }
             },
             None => reply_redirect_fournisseur(fournisseur, &sessions)
@@ -100,6 +99,10 @@ mod handlers {
         Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
     
+    fn reply_bad_request() -> Result<Response<String>, Error> {
+        Response::builder().status(StatusCode::BAD_REQUEST).body(String::default())
+    }
+
     fn reply_userinfos(session: &Session) -> Result<Response<String>, Error> {
         Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
