@@ -17,7 +17,9 @@
             <div><input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur" /> <b>Microsoft</b></div>
             <div><input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur" /> <b>Google</b></div>
         </div>
-        <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos"><b>UserInfos</b></button>
+        <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos, enable: enableUserInfos">
+            <b>UserInfos</b>
+        </button>
 
         <div data-bind="visible: showUserInfos">
             <hr>
@@ -60,18 +62,22 @@
                     ko.pureComputed(() => this.propriétés().length > 0)
                 },
 
+                enableUserInfos: ko.observable(true),
+
                 getUserInfos: function() {
+                    this.enableUserInfos = ko.observable(false);
+
                     const headers = new Headers({
                         'Content-Type': 'application/json',
                     });
 
-                    const csrfHeader =
+                    const csrfCookie =
                         document.cookie
                         .split(';')
                         .find((item) => item.trim().startsWith('Csrf-Token='));
                     
-                    if (csrfHeader) {
-                        headers.set('X-Csrf-Token', csrfHeader.split('=')[1])
+                    if (csrfCookie) {
+                        headers.set('X-Csrf-Token', csrfCookie.split('=')[1])
                     }
 
                     const request = new Request('/userinfos', {
@@ -91,6 +97,8 @@
                             window.location.replace(data.redirectOpenID);
                         } else {
                             this.propriétés = ko.observableArray(data);
+                            this.enableUserInfos = ko.observable(true);
+
                         }
                     })
                     .catch((error) => {

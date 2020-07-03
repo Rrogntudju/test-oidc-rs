@@ -1,6 +1,6 @@
 mod session;
 use lazy_static::lazy_static;
-use session::{Session, SessionId};
+use session::{Session, SessionId, random_token};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -18,7 +18,7 @@ pub mod filters {
     use super::*;
     use std::convert::Infallible;
     use std::path::PathBuf;
-    use warp::filters::{cookie, header};
+    use warp::filters::{cookie, header, reply};
     use warp::Filter;
 
     pub fn static_file(path: PathBuf) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -34,6 +34,7 @@ pub mod filters {
             .and(json_body())
             .and(clone_sessions())
             .and_then(handlers::userinfos)
+            .with(reply::header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64))))
     }
 
     pub fn auth() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -152,6 +153,6 @@ mod tests {
             .reply(&filters::userinfos())
             .await;
         assert_eq!(resp.status(), StatusCode::OK);
-        assert_eq!(resp.body().starts_with(r#"{ "redirectOpenID": "https://"#));
+        assert!(resp.body().starts_with(b"{ \"redirectOpenID\": \"https://"));
     }
 }

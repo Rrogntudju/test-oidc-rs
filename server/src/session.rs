@@ -3,7 +3,7 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use chrono::{Utc, Duration, DateTime};
 
-fn random_token(len: usize) -> String {
+pub fn random_token(len: usize) -> String {
     rand::thread_rng().sample_iter(&Alphanumeric).take(len).collect::<String>()
 }
 
@@ -43,7 +43,7 @@ impl SessionState {
             _ => false,
         }
     }
-    
+
     pub fn isExpired(&self) -> bool {
         match self {
             SessionState::Authenticated(_, expires) if expires < &Utc::now() => true,
