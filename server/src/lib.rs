@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 lazy_static! {
     static ref SESSIONS: Arc<Mutex<HashMap<SessionId, Session>>> = Arc::new(Mutex::new(HashMap::new()));
+    static ref MS: String = "Microsoft".into();
 }
 
 const ID_MS: &str = include_str!("clientid.microsoft");
@@ -64,15 +65,12 @@ mod handlers {
         // Validation Csrf si le cookie Csrf est présent
         if let Some(ctoken) = csrf_cookie {
             match csrf_header {
-                Some(htoken) if htoken != ctoken => return Ok(reply_csrf_mismatch()),
+                Some(htoken) if htoken == ctoken => (),
                 _ => return Ok(reply_csrf_mismatch())
             }
         };
 
-        let fournisseur = match body.get("fournisseur") {
-            Some(fournisseur) => fournisseur,
-            None => "Microsoft"
-        };
+        let fournisseur = body.get("fournisseur").unwrap_or(&MS);
 
         let response = match session_cookie {
             Some(stoken) => {
@@ -96,7 +94,7 @@ mod handlers {
     }
 
     fn reply_csrf_mismatch() -> Result<Response<String>, Error> {
-        Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
+        Response::builder().status(StatusCode::FORBIDDEN).body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
     
     fn reply_bad_request() -> Result<Response<String>, Error> {
@@ -124,12 +122,36 @@ mod tests {
     use warp::test::request;
 
     #[tokio::test]
-    async fn static_file_ok() {
+    async fn static_file() {
         let resp = request()
             .method("GET")
             .path("/static/userinfos.htm")
             .reply(&filters::static_file(PathBuf::from("./static")))
+            .await;  
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn csrf_mismatch() {
+        let resp = request()
+            .method("POST")
+            .path("userinfos")
+            .header("X-Csrf-Token", "LOL")
+            .body(r#"{"fournisseur": "Google"}"#)
+            .reply(&filters::userinfos())
+            .await;
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn no_session_cookie() {
+        let resp = request()
+            .method("POST")
+            .path("userinfos")
+            .body(r#"{"fournisseur": "Google"}"#)
+            .reply(&filters::userinfos())
             .await;
         assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(resp.body().starts_with(r#"{ "redirectOpenID": "https://"#));
     }
 }

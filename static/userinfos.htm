@@ -79,7 +79,7 @@
                         headers: headers,
                         cache: 'no-cache',
                         redirect: 'error',
-                        body: '{ fournisseur: ' + this.fournisseur() + ' }'
+                        body: '{ "fournisseur": "' + this.fournisseur() + '" }'
                     });
 
                     fetch(request)
