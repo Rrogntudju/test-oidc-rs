@@ -78,17 +78,20 @@ mod handlers {
                 let id = SessionId::from(stoken);
                 let lock = sessions.lock().expect("Failed due to poisoned lock");
                 match lock.get(&id) {
-                    None => reply_redirect_fournisseur(fournisseur, &sessions),
+                    None => {
+                        drop(lock);
+                        reply_redirect_fournisseur(fournisseur, sessions)
+                    }
                     Some(session) if !session.state.is_authenticated() => reply_bad_request(),
                     Some(session) if session.state.is_expired() => {
                         drop(lock);
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
-                        reply_redirect_fournisseur(fournisseur, &sessions)
+                        reply_redirect_fournisseur(fournisseur, sessions)
                     }
-                    Some(session) => reply_userinfos(&session)
+                    Some(session) => reply_userinfos(session)
                 }
             },
-            None => reply_redirect_fournisseur(fournisseur, &sessions)
+            None => reply_redirect_fournisseur(fournisseur, sessions)
         };
 
         Ok(response)
@@ -106,12 +109,12 @@ mod handlers {
         Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
 
-    fn reply_redirect_fournisseur(fournisseur: &str, sessions: &Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
+    fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
             Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
 
     pub async fn auth(sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
-        Ok(reply_csrf_mismatch())
+        Ok(reply_bad_request())
     }
 }
 
