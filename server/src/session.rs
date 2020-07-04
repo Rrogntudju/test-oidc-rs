@@ -24,7 +24,7 @@ impl From<String> for SessionId {
 
 pub enum SessionState {
     AuthenticationRequested(Client),
-    Authenticated(Token, DateTime<Utc>),
+    Authenticated(Client, Token, DateTime<Utc>),
 }
 
 impl SessionState {
@@ -32,21 +32,21 @@ impl SessionState {
         SessionState::AuthenticationRequested(c)
     }
 
-    pub fn AuthenticationCompleted(&mut self, t: Token) -> Self {
-        assert!(!self.isAuthenticated());
-        SessionState::Authenticated(t,  Utc::now() + Duration::days(1))
+    pub fn authentication_completed(&mut self, c: Client, t: Token) -> Self {
+        assert!(!self.is_authenticated());
+        SessionState::Authenticated(c,  t, Utc::now() + Duration::days(1))
     }
     
-    pub fn isAuthenticated(&self) -> bool {
+    pub fn is_authenticated(&self) -> bool {
         match self {
             SessionState::Authenticated(..) => true,
             _ => false,
         }
     }
 
-    pub fn isExpired(&self) -> bool {
+    pub fn is_expired(&self) -> bool {
         match self {
-            SessionState::Authenticated(_, expires) if expires < &Utc::now() => true,
+            SessionState::Authenticated(.., expires) if expires < &Utc::now() => true,
             _ => false,
         }
     }

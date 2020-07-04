@@ -79,8 +79,8 @@ mod handlers {
                 let lock = sessions.lock().expect("Failed due to poisoned lock");
                 match lock.get(&id) {
                     None => reply_redirect_fournisseur(fournisseur, &sessions),
-                    Some(session) if !session.state.isAuthenticated() => reply_bad_request(),
-                    Some(session) if session.state.isExpired() => {
+                    Some(session) if !session.state.is_authenticated() => reply_bad_request(),
+                    Some(session) if session.state.is_expired() => {
                         drop(lock);
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, &sessions)
