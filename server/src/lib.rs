@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 use session::{Session, SessionId, random_token};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::error;
 
 lazy_static! {
     static ref SESSIONS: Arc<Mutex<HashMap<SessionId, Session>>> = Arc::new(Mutex::new(HashMap::new()));
@@ -67,7 +68,14 @@ mod handlers {
         if let Some(ctoken) = csrf_cookie {
             match csrf_header {
                 Some(htoken) if htoken == ctoken => (),
-                _ => return Ok(reply_csrf_mismatch())
+                Some(htoken) if htoken != ctoken => {
+                    eprintln!("{0} != {1}", htoken, ctoken); 
+                    return Ok(reply_error(StatusCode::FORBIDDEN));
+                },
+                _ =>  {
+                    eprintln!("X-Csrf-Token est absent"); 
+                    return Ok(reply_error(StatusCode::FORBIDDEN));
+                },
             }
         };
 
@@ -82,7 +90,7 @@ mod handlers {
                         drop(lock);
                         reply_redirect_fournisseur(fournisseur, sessions)
                     }
-                    Some(session) if !session.state.is_authenticated() => reply_bad_request(),
+                    Some(session) if !session.state.is_authenticated() => reply_error(StatusCode::BAD_REQUEST),
                     Some(session) if session.state.is_expired() => {
                         drop(lock);
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
@@ -96,13 +104,9 @@ mod handlers {
 
         Ok(response)
     }
-
-    fn reply_csrf_mismatch() -> Result<Response<String>, Error> {
-        Response::builder().status(StatusCode::FORBIDDEN).body("<h1>Csrf Token Mismatch!</h1>".to_string())
-    }
     
-    fn reply_bad_request() -> Result<Response<String>, Error> {
-        Response::builder().status(StatusCode::BAD_REQUEST).body(String::default())
+    fn reply_error(sc: StatusCode) -> Result<Response<String>, Error> {
+        Response::builder().status(sc).body(String::default())
     }
 
     fn reply_userinfos(session: &Session) -> Result<Response<String>, Error> {
@@ -110,11 +114,46 @@ mod handlers {
     }
 
     fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
-            Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
+        use oidc::{discovery, Client, Options};
+        
+        let (id, secret, issuer) = match fournisseur {
+            "Google" => (ID_GG, SECRET_GG, oidc::issuer::google()),
+            "Microsoft" | _ => (ID_MS, SECRET_MS, oidc::issuer::microsoft())
+        };
+       
+        let redirect = match reqwest::Url::parse("http://localhost/static/userinfos.htm") {
+                Ok(url) => url,
+                Err(e) => {
+                    eprintln!("{0}", e.to_string());
+                    return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+        };
+        let http = reqwest::Client::new();
+        let config = match discovery::discover(&http, issuer) {
+            Ok(config) => config,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+
+        };
+        let jwks = match discovery::jwks(&http, config.jwks_uri.clone()) {
+            Ok(jwks) => jwks,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+        let provider = discovery::Discovered(config);
+        let client = Client::new(id.into(), secret.into(), redirect, provider, jwks);
+
+        let auth_url = client.auth_url(&Options::default());
+           
+        Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
 
     pub async fn auth(sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
-        Ok(reply_bad_request())
+        Ok(reply_error(StatusCode::BAD_REQUEST))
     }
 }
 
