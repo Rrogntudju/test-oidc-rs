@@ -3,7 +3,6 @@ use lazy_static::lazy_static;
 use session::{Session, SessionId, random_token};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::error;
 
 lazy_static! {
     static ref SESSIONS: Arc<Mutex<HashMap<SessionId, Session>>> = Arc::new(Mutex::new(HashMap::new()));
@@ -14,6 +13,19 @@ const ID_MS: &str = include_str!("clientid.microsoft");
 const SECRET_MS: &str = include_str!("secret.microsoft");
 const ID_GG: &str = include_str!("clientid.google");
 const SECRET_GG: &str = include_str!("secret.google");
+
+macro_rules! unwrap_or_reply {
+    ($match:expr) => {
+        match $match {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
+    }
+}
+
 
 pub mod filters {
     use super::*;
@@ -121,32 +133,12 @@ mod handlers {
             "Microsoft" | _ => (ID_MS, SECRET_MS, oidc::issuer::microsoft())
         };
        
-        let redirect = match reqwest::Url::parse("http://localhost/static/userinfos.htm") {
-                Ok(url) => url,
-                Err(e) => {
-                    eprintln!("{0}", e.to_string());
-                    return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-        };
+        let redirect = unwrap_or_reply!(reqwest::Url::parse("http://localhost/static/userinfos.htm"));
         let http = reqwest::Client::new();
-        let config = match discovery::discover(&http, issuer) {
-            Ok(config) => config,
-            Err(e) => {
-                eprintln!("{0}", e.to_string());
-                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-
-        };
-        let jwks = match discovery::jwks(&http, config.jwks_uri.clone()) {
-            Ok(jwks) => jwks,
-            Err(e) => {
-                eprintln!("{0}", e.to_string());
-                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
+        let config = unwrap_or_reply!(discovery::discover(&http, issuer));
+        let jwks = unwrap_or_reply!(discovery::jwks(&http, config.jwks_uri.clone()));
         let provider = discovery::Discovered(config);
         let client = Client::new(id.into(), secret.into(), redirect, provider, jwks);
-
         let auth_url = client.auth_url(&Options::default());
            
         Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
