@@ -28,7 +28,7 @@ pub enum Session {
 }
 
 impl Session {
-    pub fn new(c: Option<Client>, nonce: String) -> Self {
+    pub fn new(c: Client, nonce: String) -> Self {
         Session::AuthenticationRequested(Some(c), nonce)
     }
 

@@ -50,7 +50,11 @@ pub mod filters {
     }
 
     pub fn auth() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        warp::path("auth").and(warp::get()).and(clone_sessions()).and_then(handlers::auth)
+        warp::path("auth")
+            .and(warp::get())
+            .and(cookie::optional("Session-Id"))
+            .and(clone_sessions())
+            .and_then(handlers::auth)
     }
 
     fn clone_sessions() -> impl Filter<Extract = (Arc<Mutex<HashMap<SessionId, Session>>>,), Error = Infallible> + Clone {
@@ -147,16 +151,37 @@ mod handlers {
         let response = Response::builder()
             .status(StatusCode::OK)
             .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", sessionid.0))
-            .body(format!(r#"{{ "redirectOpenID": "{0}" }}"#, auth_url.to_string()));
+            .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
-        let session = Session::new(Some(client), options.nonce.clone().unwrap());
+        let session = Session::new(client, options.nonce.clone().unwrap());
         sessions.lock().expect("Failed due to poisoned lock").insert(sessionid, session);
 
         response
     }
 
-    pub async fn auth(sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
-        Ok(reply_error(StatusCode::BAD_REQUEST))
+    pub async fn auth(session_cookie: Option<String>, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
+        let response = match session_cookie {
+            Some(stoken) => {
+                let id = SessionId::from(stoken);
+                let lock = sessions.lock().expect("Failed due to poisoned lock");
+                match lock.get(&id) {
+                    None => {
+                        drop(lock);
+                        eprintln!("Cookie de session absent pour auth");
+                        reply_error(StatusCode::FORBIDDEN)
+                    }
+                    Some(session) if session.is_authenticated() => {
+                        drop(lock);
+                        sessions.lock().expect("Failed due to poisoned lock").remove(&id);
+                        reply_error(StatusCode::BAD_REQUEST)
+                    }
+                    Some(session) => reply_userinfos(session), //TODO
+                }
+            }
+            None => reply_error(StatusCode::BAD_REQUEST),
+        };
+
+        Ok(response)
     }
 }
 

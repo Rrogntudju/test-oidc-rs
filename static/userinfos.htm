@@ -91,7 +91,7 @@
                     fetch(request)
                     .then(response => response.json())
                     .then(data => {
-                        if (data.hasOwnProperty("redirectOpenID")) {
+                        if (data.hasOwnProperty("redirectOP")) {
                             sessionStorage.setItem("actionAfterAuth", "getUserInfos");
                             sessionStorage.setItem("fournisseur", this.fournisseur())
                             window.location.replace(data.redirectOpenID);
