@@ -1,6 +1,6 @@
 mod session;
 use lazy_static::lazy_static;
-use session::{Session, SessionId, random_token};
+use session::{random_token, Session, SessionId};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -23,9 +23,8 @@ macro_rules! unwrap_or_reply {
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
             }
         }
-    }
+    };
 }
-
 
 pub mod filters {
     use super::*;
@@ -66,7 +65,7 @@ pub mod filters {
 mod handlers {
     use super::*;
     use std::convert::Infallible;
-    use warp::http::{Response, StatusCode, Error};
+    use warp::http::{Error, Response, StatusCode};
 
     pub async fn userinfos(
         csrf_cookie: Option<String>,
@@ -75,19 +74,18 @@ mod handlers {
         body: HashMap<String, String>,
         sessions: Arc<Mutex<HashMap<SessionId, Session>>>,
     ) -> Result<impl warp::Reply, Infallible> {
-    
         // Validation Csrf si le cookie Csrf est présent
         if let Some(ctoken) = csrf_cookie {
             match csrf_header {
                 Some(htoken) if htoken == ctoken => (),
                 Some(htoken) if htoken != ctoken => {
-                    eprintln!("{0} != {1}", htoken, ctoken); 
+                    eprintln!("{0} != {1}", htoken, ctoken);
                     return Ok(reply_error(StatusCode::FORBIDDEN));
-                },
-                _ =>  {
-                    eprintln!("X-Csrf-Token est absent"); 
+                }
+                _ => {
+                    eprintln!("X-Csrf-Token est absent");
                     return Ok(reply_error(StatusCode::FORBIDDEN));
-                },
+                }
             }
         };
 
@@ -102,46 +100,59 @@ mod handlers {
                         drop(lock);
                         reply_redirect_fournisseur(fournisseur, sessions)
                     }
-                    Some(session) if !session.state.is_authenticated() => reply_error(StatusCode::BAD_REQUEST),
-                    Some(session) if session.state.is_expired() => {
+                    Some(session) if !session.is_authenticated() => reply_error(StatusCode::BAD_REQUEST),
+                    Some(session) if session.is_expired() => {
                         drop(lock);
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, sessions)
                     }
-                    Some(session) => reply_userinfos(session)
+                    Some(session) => reply_userinfos(session),
                 }
-            },
-            None => reply_redirect_fournisseur(fournisseur, sessions)
+            }
+            None => reply_redirect_fournisseur(fournisseur, sessions),
         };
 
         Ok(response)
     }
-    
+
     fn reply_error(sc: StatusCode) -> Result<Response<String>, Error> {
         Response::builder().status(sc).body(String::default())
     }
 
     fn reply_userinfos(session: &Session) -> Result<Response<String>, Error> {
-        Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
+        Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
 
     fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
         use oidc::{discovery, Client, Options};
-        
+
         let (id, secret, issuer) = match fournisseur {
             "Google" => (ID_GG, SECRET_GG, oidc::issuer::google()),
-            "Microsoft" | _ => (ID_MS, SECRET_MS, oidc::issuer::microsoft())
+            "Microsoft" | _ => (ID_MS, SECRET_MS, oidc::issuer::microsoft()),
         };
-       
-        let redirect = unwrap_or_reply!(reqwest::Url::parse("http://localhost/static/userinfos.htm"));
+
+        let redirect = unwrap_or_reply!(reqwest::Url::parse("http://localhost/auth"));
         let http = reqwest::Client::new();
         let config = unwrap_or_reply!(discovery::discover(&http, issuer));
         let jwks = unwrap_or_reply!(discovery::jwks(&http, config.jwks_uri.clone()));
         let provider = discovery::Discovered(config);
         let client = Client::new(id.into(), secret.into(), redirect, provider, jwks);
+        let mut options = Options::default();
+        options.nonce = Some(random_token(64));
         let auth_url = client.auth_url(&Options::default());
-           
-        Response::builder().status(StatusCode::INTERNAL_SERVER_ERROR).body("<h1>Csrf Token Mismatch!</h1>".to_string())
+
+        let sessionid = SessionId::new();
+        let response = Response::builder()
+            .status(StatusCode::OK)
+            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", sessionid.0))
+            .body(format!(r#"{{ "redirectOpenID": "{0}" }}"#, auth_url.to_string()));
+
+        let session = Session::new(Some(client), options.nonce.clone().unwrap());
+        sessions.lock().expect("Failed due to poisoned lock").insert(sessionid, session);
+
+        response
     }
 
     pub async fn auth(sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
@@ -162,7 +173,7 @@ mod tests {
             .method("GET")
             .path("/static/userinfos.htm")
             .reply(&filters::static_file(PathBuf::from("./static")))
-            .await;  
+            .await;
         assert_eq!(resp.status(), StatusCode::OK);
     }
 
