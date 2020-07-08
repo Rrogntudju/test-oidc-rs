@@ -32,9 +32,8 @@ impl Session {
         Session::AuthenticationRequested(Some(c), nonce)
     }
 
-    pub fn authentication_completed(&mut self, c: Client, t: Token) -> Self {
-        assert!(!self.is_authenticated());
-        Session::Authenticated(c, t, Utc::now() + Duration::days(1))
+    pub fn authentication_completed(&mut self, c: Client, t: Token) -> () {
+        *self = Session::Authenticated(c, t, Utc::now() + Duration::days(1));
     }
 
     pub fn is_authenticated(&self) -> bool {
@@ -51,17 +50,3 @@ impl Session {
         }
     }
 }
-
-/* pub struct Session {
-    pub state: SessionState,
-    pub nonce: String,
-}
-
-impl Session {
-    pub fn new(client: Client) -> Self {
-        Session {
-            state: SessionState::new(client),
-            nonce: random_token(64),
-        }
-    }
-} */
