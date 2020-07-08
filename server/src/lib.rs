@@ -53,6 +53,7 @@ pub mod filters {
         warp::path("auth")
             .and(warp::get())
             .and(cookie::optional("Session-Id"))
+            .and(warp::path::param().map(|code: String| code))
             .and(clone_sessions())
             .and_then(handlers::auth)
     }
@@ -101,15 +102,20 @@ mod handlers {
                 let lock = sessions.lock().expect("Failed due to poisoned lock");
                 match lock.get(&id) {
                     None => {
+                        eprintln!("userinfos: Pas de session");
                         drop(lock);
                         reply_redirect_fournisseur(fournisseur, sessions)
-                    }
-                    Some(session) if !session.is_authenticated() => reply_error(StatusCode::BAD_REQUEST),
+                    },
+                    Some(session) if !session.is_authenticated() => {
+                        eprintln!("userinfos: Session pas authentifiée");
+                        reply_error(StatusCode::BAD_REQUEST)
+                    },
                     Some(session) if session.is_expired() => {
+                        eprintln!("userinfos: Session expirée");
                         drop(lock);
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, sessions)
-                    }
+                    },
                     Some(session) => reply_userinfos(session),
                 }
             }
@@ -130,19 +136,33 @@ mod handlers {
     }
 
     fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
-        use oidc::{discovery, Client, Options};
+        use oidc::{Client, Options};
+        use url::Url;
 
         let (id, secret, issuer) = match fournisseur {
             "Google" => (ID_GG, SECRET_GG, oidc::issuer::google()),
             "Microsoft" | _ => (ID_MS, SECRET_MS, oidc::issuer::microsoft()),
         };
 
-        let redirect = unwrap_or_reply!(reqwest::Url::parse("http://localhost/auth"));
-        let http = reqwest::Client::new();
-        let config = unwrap_or_reply!(discovery::discover(&http, issuer));
-        let jwks = unwrap_or_reply!(discovery::jwks(&http, config.jwks_uri.clone()));
-        let provider = discovery::Discovered(config);
-        let client = Client::new(id.into(), secret.into(), redirect, provider, jwks);
+        let redirect = match Url::parse("http://localhost/auth") {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+        let client = match Client::discover(id.into(), secret.into(), redirect, issuer) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+        // let http = reqwest::Client::new();
+        // let config = unwrap_or_reply!(discovery::discover(&http, issuer));
+        // let jwks = unwrap_or_reply!(discovery::jwks(&http, config.jwks_uri.clone()));
+        // let provider = discovery::Discovered(config);
+        // let client = Client::new(id.into(), secret.into(), redirect, provider, jwks);
         let mut options = Options::default();
         options.nonce = Some(random_token(64));
         let auth_url = client.auth_url(&Options::default());
@@ -159,29 +179,52 @@ mod handlers {
         response
     }
 
-    pub async fn auth(session_cookie: Option<String>, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
+    pub async fn auth(session_cookie: Option<String>, code: String, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<impl warp::Reply, Infallible> {
         let response = match session_cookie {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
-                let lock = sessions.lock().expect("Failed due to poisoned lock");
-                match lock.get(&id) {
+                let mut lock = sessions.lock().expect("Failed due to poisoned lock");
+                match lock.get_mut(&id) {
                     None => {
-                        drop(lock);
-                        eprintln!("Cookie de session absent pour auth");
+                        eprintln!("auth: Session inexistante");
                         reply_error(StatusCode::FORBIDDEN)
-                    }
+                    },
                     Some(session) if session.is_authenticated() => {
+                        eprintln!("auth: Session déjà authentifiée");
                         drop(lock);
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
                         reply_error(StatusCode::BAD_REQUEST)
-                    }
-                    Some(session) => reply_userinfos(session), //TODO
+                    },
+                    Some(session) => reply_redirect_userinfos(session, &code) 
                 }
             }
-            None => reply_error(StatusCode::BAD_REQUEST),
+            None => {
+                eprintln!("auth: Cookie de session inexistant");
+                reply_error(StatusCode::BAD_REQUEST)
+            }
         };
 
         Ok(response)
+    }
+
+    fn reply_redirect_userinfos(session: &mut Session, code: &str) -> Result<Response<String>, Error> {
+        let (client, nonce) = match session {
+            Session::AuthenticationRequested(c, n) => (c.take().unwrap(), n.clone()),
+            _ => return reply_error(StatusCode::BAD_REQUEST)
+        };
+
+        let token = match client.authenticate(&code, Some(&nonce), None) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        
+        Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body("<h1>Csrf Token Mismatch!</h1>".to_string())
     }
 }
 
@@ -223,6 +266,6 @@ mod tests {
             .reply(&filters::userinfos())
             .await;
         assert_eq!(resp.status(), StatusCode::OK);
-        assert!(resp.body().starts_with(b"{ \"redirectOpenID\": \"https://"));
+        assert!(resp.body().starts_with(b"{ \"redirectOP\": \"https://"));
     }
 }
