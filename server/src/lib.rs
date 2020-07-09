@@ -90,11 +90,6 @@ mod handlers {
                 let lock = sessions.lock().expect("Failed due to poisoned lock");
 
                 match lock.get(&id) {
-                    None => {
-                        eprintln!("userinfos: Pas de session");
-                        drop(lock);
-                        reply_redirect_fournisseur(fournisseur, sessions)
-                    }
                     Some(session) if !session.is_authenticated() => {
                         eprintln!("userinfos: Session pas authentifiée");
                         reply_error(StatusCode::BAD_REQUEST)
@@ -106,6 +101,11 @@ mod handlers {
                         reply_redirect_fournisseur(fournisseur, sessions)
                     }
                     Some(session) => reply_userinfos(session),
+                    None => {
+                        eprintln!("userinfos: Pas de session");
+                        drop(lock);
+                        reply_redirect_fournisseur(fournisseur, sessions)
+                    }
                 }
             }
             None => reply_redirect_fournisseur(fournisseur, sessions),
@@ -119,18 +119,30 @@ mod handlers {
     }
 
     fn reply_userinfos(session: &Session) -> Result<Response<String>, Error> {
-        Response::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body("<h1>Csrf Token Mismatch!</h1>".to_string())
+        let (client, token) = match session {
+            Session::Authenticated(c, t, ..) => (c, t),
+            _ => return reply_error(StatusCode::BAD_REQUEST),
+        };
+
+        let http = reqwest::Client::new();
+        let userinfo = match client.request_userinfo(&http, token) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        Response::builder().status(StatusCode::OK).body(serde_json::to_string(&userinfo).unwrap())
     }
 
     fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
-        use oidc::{Client, Options};
-        use url::Url;
+        use oidc::{Client, Options, issuer};
+        use reqwest::Url;
 
         let (id, secret, issuer) = match fournisseur {
-            "Google" => (ID_GG, SECRET_GG, oidc::issuer::google()),
-            "Microsoft" | _ => (ID_MS, SECRET_MS, oidc::issuer::microsoft()),
+            "Google" => (ID_GG, SECRET_GG, issuer::google()),
+            "Microsoft" | _ => (ID_MS, SECRET_MS, issuer::microsoft()),
         };
 
         let redirect = match Url::parse("http://localhost/auth") {
@@ -176,10 +188,6 @@ mod handlers {
                 let lock = sessions.lock().expect("Failed due to poisoned lock");
 
                 match lock.get(&id) {
-                    None => {
-                        eprintln!("auth: Session inexistante");
-                        reply_error(StatusCode::FORBIDDEN)
-                    }
                     Some(session) if session.is_authenticated() => {
                         eprintln!("auth: Session déjà authentifiée");
                         drop(lock);
@@ -189,6 +197,10 @@ mod handlers {
                     Some(_) => {
                         drop(lock);
                         reply_redirect_userinfos(&id, sessions, &code)
+                    }
+                    None => {
+                        eprintln!("auth: Session inexistante");
+                        reply_error(StatusCode::FORBIDDEN)
                     }
                 }
             }
@@ -206,15 +218,12 @@ mod handlers {
         let mut lock = sessions.lock().expect("Failed due to poisoned lock");
 
         match lock.get_mut(id) {
-            None => {
-                eprintln!("auth: Session inexistante");
-                return reply_error(StatusCode::FORBIDDEN);
-            }
             Some(session) => {
                 let (client, nonce) = match session {
                     Session::AuthenticationRequested(c, n) => (c.take().unwrap(), n.clone()),
                     _ => return reply_error(StatusCode::BAD_REQUEST),
                 };
+
                 let token = match client.authenticate(&code, Some(&nonce), None) {
                     Ok(r) => r,
                     Err(e) => {
@@ -222,11 +231,16 @@ mod handlers {
                         return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
                     }
                 };
+
                 response = Response::builder()
                     .status(StatusCode::FOUND)
                     .header("Location", "http://localhost/userinfos")
                     .body(String::default());
                 session.authentication_completed(client, token);
+            }
+            None => {
+                eprintln!("auth: Session inexistante");
+                return reply_error(StatusCode::FORBIDDEN);
             }
         };
 
@@ -246,7 +260,7 @@ mod tests {
         let resp = request()
             .method("GET")
             .path("/static/userinfos.htm")
-            .reply(&filters::static_file(PathBuf::from("./static")))
+            .reply(&filters::static_file(PathBuf::from("../static")))
             .await;
         assert_eq!(resp.status(), StatusCode::OK);
     }
@@ -255,7 +269,7 @@ mod tests {
     async fn csrf_mismatch() {
         let resp = request()
             .method("POST")
-            .path("userinfos")
+            .path("/userinfos")
             .header("X-Csrf-Token", "LOL")
             .body(r#"{"fournisseur": "Google"}"#)
             .reply(&filters::userinfos())
@@ -264,14 +278,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn no_session_cookie() {
+    async fn no_session_cookie1() {
         let resp = request()
             .method("POST")
-            .path("userinfos")
-            .body(r#"{"fournisseur": "Google"}"#)
+            .path("/userinfos")
+            .body(r#"{"fournisseur": "Microsoft"}"#)
             .reply(&filters::userinfos())
             .await;
         assert_eq!(resp.status(), StatusCode::OK);
         assert!(resp.body().starts_with(b"{ \"redirectOP\": \"https://"));
+    }
+
+    #[tokio::test]
+    async fn no_session_cookie2() {
+        let resp = request()
+            .method("GET")
+            .path("/auth?code=LOL")
+            .reply(&filters::auth())
+            .await;
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
     }
 }

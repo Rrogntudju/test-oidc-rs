@@ -26,7 +26,7 @@ fn parse_args(args: &mut Args) -> Result<(SocketAddr, PathBuf), Box<dyn Error>> 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let (addr, path) = parse_args(&mut args())?;
-    let routes = static_file(path);
+    let routes = static_file(path).or(userinfos()).or(auth());
 
     warp::serve(routes).run(addr).await;
     Ok(())
