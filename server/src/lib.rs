@@ -41,7 +41,7 @@ pub mod filters {
         warp::path("auth")
             .and(warp::get())
             .and(cookie::optional("Session-Id"))
-            .and(warp::path::param().map(|code: String| code))
+            .and(warp::query::<HashMap<String, String>>())
             .and(clone_sessions())
             .and_then(handlers::auth)
     }
@@ -179,7 +179,7 @@ mod handlers {
 
     pub async fn auth(
         session_cookie: Option<String>,
-        code: String,
+        params: HashMap<String, String>,
         sessions: Arc<Mutex<HashMap<SessionId, Session>>>,
     ) -> Result<impl warp::Reply, Infallible> {
         let response = match session_cookie {
@@ -196,6 +196,13 @@ mod handlers {
                     }
                     Some(_) => {
                         drop(lock);
+                        let code = match params.get("code") {
+                            Some(code) => code,
+                            None => {
+                                eprintln!("auth: auth code manquant");
+                                return Ok(reply_error(StatusCode::BAD_REQUEST))
+                            }
+                        };
                         reply_redirect_userinfos(&id, sessions, &code)
                     }
                     None => {
@@ -266,11 +273,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn csrf_mismatch() {
+    async fn csrf_mismatch1() {
         let resp = request()
             .method("POST")
             .path("/userinfos")
-            .header("X-Csrf-Token", "LOL")
+            .header("Cookie", "Csrf-Token=LOL")
+            .body(r#"{"fournisseur": "Google"}"#)
+            .reply(&filters::userinfos())
+            .await;
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn csrf_mismatch2() {
+        let resp = request()
+            .method("POST")
+            .path("/userinfos")
+            .header("Cookie", "Csrf-Token=LOL")
+            .header("X-Csrf-Token", "BOUH!")
             .body(r#"{"fournisseur": "Google"}"#)
             .reply(&filters::userinfos())
             .await;
