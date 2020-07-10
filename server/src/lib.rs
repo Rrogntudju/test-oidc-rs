@@ -119,6 +119,8 @@ mod handlers {
     }
 
     fn reply_userinfos(session: &Session) -> Result<Response<String>, Error> {
+        use serde_json::Value;
+
         let (client, token) = match session {
             Session::Authenticated(c, t, ..) => (c, t),
             _ => return reply_error(StatusCode::BAD_REQUEST),
@@ -133,11 +135,24 @@ mod handlers {
             }
         };
 
-        Response::builder().status(StatusCode::OK).body(serde_json::to_string(&userinfo).unwrap())
+        let value = serde_json::to_value(&userinfo).unwrap();
+        let map = value.as_object().unwrap();
+        let infos = Value::Array(
+            map.into_iter()
+                .map(|(k, v)| {
+                    let mut map = serde_json::Map::new();
+                    map.insert("propriété".into(), Value::String(k.to_owned()));
+                    map.insert("valeur".into(), v.to_owned());
+                    Value::Object(map)
+                })
+                .collect::<Vec<Value>>()
+        );
+
+        Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap())
     }
 
     fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
-        use oidc::{Client, Options, issuer};
+        use oidc::{issuer, Client, Options};
         use reqwest::Url;
 
         let (id, secret, issuer) = match fournisseur {
@@ -200,7 +215,7 @@ mod handlers {
                             Some(code) => code,
                             None => {
                                 eprintln!("auth: auth code manquant");
-                                return Ok(reply_error(StatusCode::BAD_REQUEST))
+                                return Ok(reply_error(StatusCode::BAD_REQUEST));
                             }
                         };
                         reply_redirect_userinfos(&id, sessions, &code)
@@ -311,11 +326,7 @@ mod tests {
 
     #[tokio::test]
     async fn no_session_cookie2() {
-        let resp = request()
-            .method("GET")
-            .path("/auth?code=LOL")
-            .reply(&filters::auth())
-            .await;
+        let resp = request().method("GET").path("/auth?code=LOL").reply(&filters::auth()).await;
         assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
     }
 }

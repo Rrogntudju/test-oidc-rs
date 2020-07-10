@@ -52,8 +52,7 @@
 
             const userInfosViewModel = {
                 propriétés: ko.observableArray( [
-                    { propriété: 'name', valeur : 'LOL' },
-                    { propriété: 'name', valeur : 'LOL' }
+                 // { propriété: 'name', valeur : 'LOL' },
                 ]),
 
                 fournisseur: ko.observable("Microsoft"),
@@ -98,7 +97,6 @@
                         } else {
                             this.propriétés = ko.observableArray(data);
                             this.enableUserInfos = ko.observable(true);
-
                         }
                     })
                     .catch((error) => {
