@@ -21,7 +21,7 @@
             <b>UserInfos</b>
         </button>
 
-        <div data-bind="visible: showUserInfos">
+        <div data-bind="visible: propriétés().length > 0">
             <hr>
             <h3><b>UserInfos</b></h3>
 
@@ -57,10 +57,6 @@
 
                 fournisseur: ko.observable("Microsoft"),
             
-                showUserInfos: function() {
-                    ko.pureComputed(() => this.propriétés().length > 0)
-                },
-
                 enableUserInfos: ko.observable(true),
 
                 getUserInfos: function() {
@@ -87,13 +83,13 @@
                         body: '{ "fournisseur": "' + this.fournisseur() + '" }'
                     });
 
-                    fetch(request)
+                    fetch(request, { credentials: 'include' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.hasOwnProperty("redirectOP")) {
                             sessionStorage.setItem("actionAfterAuth", "getUserInfos");
                             sessionStorage.setItem("fournisseur", this.fournisseur())
-                            window.location.replace(data.redirectOpenID);
+                            window.location.replace(data.redirectOP);
                         } else {
                             this.propriétés = ko.observableArray(data);
                             this.enableUserInfos = ko.observable(true);

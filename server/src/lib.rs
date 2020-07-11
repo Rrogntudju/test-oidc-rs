@@ -86,7 +86,7 @@ mod handlers {
 
         let response = match session_cookie {
             Some(stoken) => {
-                let id = SessionId::from(stoken);
+                let id: SessionId = stoken.into();
                 let lock = sessions.lock().expect("Failed due to poisoned lock");
 
                 match lock.get(&id) {
