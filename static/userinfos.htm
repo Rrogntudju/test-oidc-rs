@@ -83,7 +83,7 @@
                         body: '{ "fournisseur": "' + this.fournisseur() + '" }'
                     });
 
-                    fetch(request, { credentials: 'include' })
+                    fetch(request)
                     .then(response => response.json())
                     .then(data => {
                         if (data.hasOwnProperty("redirectOP")) {

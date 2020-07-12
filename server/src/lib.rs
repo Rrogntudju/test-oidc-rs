@@ -18,7 +18,7 @@ pub mod filters {
     use super::*;
     use std::convert::Infallible;
     use std::path::PathBuf;
-    use warp::filters::{cookie, header, reply};
+    use warp::filters::{cookie, header};
     use warp::Filter;
 
     pub fn static_file(path: PathBuf) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -34,7 +34,6 @@ pub mod filters {
             .and(json_body())
             .and(clone_sessions())
             .and_then(handlers::userinfos)
-            .with(reply::header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64))))
     }
 
     pub fn auth() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -162,7 +161,7 @@ mod handlers {
 
         let (id, secret, issuer) = match fournisseur {
             "Google" => (ID_GG, SECRET_GG, issuer::google()),
-            "Microsoft" | _ => (ID_MS, SECRET_MS, issuer::microsoft()),
+            "Microsoft" | _ => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers")),
         };
 
         let redirect = match Url::parse("http://localhost/auth") {
@@ -188,7 +187,8 @@ mod handlers {
         let sessionid = SessionId::new();
         let response = Response::builder()
             .status(StatusCode::OK)
-            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", sessionid.0))
+            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.0)) // Lax nécessaire pour l'envoi du cookie à un url redirigé d'un «third party»
+            .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
             .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
         let session = Session::new(client, options.nonce.clone().unwrap());
@@ -259,11 +259,11 @@ mod handlers {
                     }
                 };
 
+                session.authentication_completed(client, token);
                 response = Response::builder()
                     .status(StatusCode::FOUND)
                     .header("Location", "http://localhost/userinfos")
                     .body(String::default());
-                session.authentication_completed(client, token);
             }
             None => {
                 eprintln!("auth: Session inexistante");
