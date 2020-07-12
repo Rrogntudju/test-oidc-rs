@@ -14,8 +14,14 @@
 
         <div class="w3-text-orange">
             <h5><b>Fournisseur:</b></h5>
-            <div><input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur" /> <b>Microsoft</b></div>
-            <div><input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur" /> <b>Google</b></div>
+            <div>
+                <input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur, click: resetCookie" />
+                <b>Microsoft</b>
+            </div>
+            <div>
+                <input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur, click: resetCookie" />
+                <b>Google</b>
+            </div>
         </div>
         <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos, enable: enableUserInfos">
             <b>UserInfos</b>
@@ -56,6 +62,11 @@
                 ]),
 
                 fournisseur: ko.observable("Microsoft"),
+
+                resetCookie: function() {
+                    document.cookie = "Session-Id=; Max-Age=0";
+                    return true
+                },
             
                 enableUserInfos: ko.observable(true),
 

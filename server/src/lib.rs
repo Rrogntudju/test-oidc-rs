@@ -91,7 +91,9 @@ mod handlers {
                 match lock.get(&id) {
                     Some(session) if !session.is_authenticated() => {
                         eprintln!("userinfos: Session pas authentifiée");
-                        reply_error(StatusCode::BAD_REQUEST)
+                        drop(lock);
+                        sessions.lock().expect("Failed due to poisoned lock").remove(&id);
+                        reply_redirect_fournisseur(fournisseur, sessions)
                     }
                     Some(session) if session.is_expired() => {
                         eprintln!("userinfos: Session expirée");
@@ -187,7 +189,7 @@ mod handlers {
         let sessionid = SessionId::new();
         let response = Response::builder()
             .status(StatusCode::OK)
-            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.0)) // Lax nécessaire pour l'envoi du cookie à un url redirigé d'un «third party»
+            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.0)) // Lax nécessaire pour l'envoi du cookie avec un url redirigé d'un «third party»
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
             .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
