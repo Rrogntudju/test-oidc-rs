@@ -184,7 +184,7 @@ mod handlers {
 
         let mut options = Options::default();
         options.nonce = Some(random_token(64));
-        let auth_url = client.auth_url(&Options::default());
+        let auth_url = client.auth_url(&options);
 
         let sessionid = SessionId::new();
         let response = Response::builder()
@@ -264,7 +264,7 @@ mod handlers {
                 session.authentication_completed(client, token);
                 response = Response::builder()
                     .status(StatusCode::FOUND)
-                    .header("Location", "http://localhost/userinfos")
+                    .header("Location", "http://localhost/static/userinfos.htm")
                     .body(String::default());
             }
             None => {
