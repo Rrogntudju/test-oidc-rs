@@ -15,11 +15,11 @@
         <div class="w3-text-orange">
             <h5><b>Fournisseur:</b></h5>
             <div>
-                <input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur, click: resetCookie" />
+                <input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur, click: clicFournisseur" />
                 <b>Microsoft</b>
             </div>
             <div>
-                <input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur, click: resetCookie" />
+                <input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur, click: clicFournisseur" />
                 <b>Google</b>
             </div>
         </div>
@@ -29,7 +29,7 @@
 
         <div data-bind="visible: propriétés().length > 0">
             <hr>
-            <h3><b>UserInfos</b></h3>
+            <h3><b>UserInfos</b> <span data-bind="text: fournisseur"></span></h3>
 
             <table class="w3-table-all">
                 <thead>
@@ -50,8 +50,10 @@
                     if (document.readyState === 'interactive') {
                         userInfosViewModel.fournisseur = ko.observable(sessionStorage.getItem("fournisseur"));
                         const actionAfterAuth = sessionStorage.getItem("actionAfterAuth");
-                        sessionStorage.clear();
-                        userInfosViewModel[actionAfterAuth]();
+                        if (actionAfterAuth) {
+                            sessionStorage.removeItem("actionAfterAuth");
+                            userInfosViewModel[actionAfterAuth]();
+                        }
                     }
                 }
             }
@@ -62,12 +64,14 @@
                 ]),
 
                 fournisseur: ko.observable("Microsoft"),
-
-                resetCookie: function() {
-                    document.cookie = "Session-Id=; Max-Age=0";
-                    return true
+                
+                clicFournisseur : function() {
+                    document.cookie = "Session-Id=; Max-Age=0;path=/; domain=" + location.host;
+                    document.cookie = "Csrf-Token=; Max-Age=0;path=/; domain=" + location.host;
+                    sessionStorage.setItem("fournisseur", this.fournisseur());
+                    return true;
                 },
-            
+
                 enableUserInfos: ko.observable(true),
 
                 getUserInfos: function() {
@@ -99,10 +103,12 @@
                     .then(data => {
                         if (data.hasOwnProperty("redirectOP")) {
                             sessionStorage.setItem("actionAfterAuth", "getUserInfos");
-                            sessionStorage.setItem("fournisseur", this.fournisseur())
                             window.location.replace(data.redirectOP);
                         } else {
-                            this.propriétés = ko.observableArray(data);
+                            this.propriétés.removeAll();
+                            for (const propriété of data) {
+                                this.propriétés.push(propriété)
+                            }
                             this.enableUserInfos = ko.observable(true);
                         }
                     })
@@ -110,6 +116,11 @@
                         console.error('Erreur:', error);
                     });
                 }
+            }
+            
+            const fournisseur = (sessionStorage.getItem("fournisseur"));
+            if (fournisseur) {
+                userInfosViewModel.fournisseur = ko.observable(fournisseur);
             }
 
             ko.applyBindings(userInfosViewModel);

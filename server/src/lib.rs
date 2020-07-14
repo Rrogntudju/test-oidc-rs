@@ -163,7 +163,7 @@ mod handlers {
 
         let (id, secret, issuer) = match fournisseur {
             "Google" => (ID_GG, SECRET_GG, issuer::google()),
-            "Microsoft" | _ => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers")),
+            "Microsoft" | _ => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers/v2.0")),
         };
 
         let redirect = match Url::parse("http://localhost/auth") {
