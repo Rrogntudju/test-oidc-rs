@@ -140,18 +140,16 @@ mod handlers {
         let map = value.as_object().unwrap();
         let infos = Value::Array(
             map.into_iter()
-                .filter_map(|(k, v)| {
-                    match v.is_null() {
-                        true => None,
-                        false => {
-                            let mut map = serde_json::Map::new();
-                            map.insert("propriété".into(), Value::String(k.to_owned()));
-                            map.insert("valeur".into(), v.to_owned());
-                            Some(Value::Object(map))
-                        }
+                .filter_map(|(k, v)| match v.is_null() {
+                    true => None,
+                    false => {
+                        let mut map = serde_json::Map::new();
+                        map.insert("propriété".into(), Value::String(k.to_owned()));
+                        map.insert("valeur".into(), v.to_owned());
+                        Some(Value::Object(map))
                     }
                 })
-                .collect::<Vec<Value>>()
+                .collect::<Vec<Value>>(),
         );
 
         Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap())
