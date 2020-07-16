@@ -23,10 +23,12 @@
                 <b>Google</b>
             </div>
         </div>
+
         <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos, enable: enableUserInfos">
             <b>UserInfos</b>
-        </button>
-
+        </button>  
+        <br><span class="w3-text-red" data-bind="text: erreurFetch"></span></br>
+        
         <div data-bind="visible: propriétés().length > 0">
             <hr>
             <h3><b>UserInfos</b> <span data-bind="text: fournisseur"></span></h3>
@@ -48,7 +50,7 @@
             if (sessionStorage.length > 0) {
                 document.onreadystatechange = function () {
                     if (document.readyState === 'interactive') {
-                        userInfosViewModel.fournisseur = ko.observable(sessionStorage.getItem("fournisseur"));
+                        userInfosViewModel.fournisseur(sessionStorage.getItem("fournisseur"));
                         const actionAfterAuth = sessionStorage.getItem("actionAfterAuth");
                         if (actionAfterAuth) {
                             sessionStorage.removeItem("actionAfterAuth");
@@ -74,8 +76,11 @@
 
                 enableUserInfos: ko.observable(true),
 
+                erreurFetch: ko.observable(""),
+
                 getUserInfos: function() {
-                    this.enableUserInfos = ko.observable(false);
+                    this.enableUserInfos(false);
+                    this.erreurFetch("");
 
                     const headers = new Headers({
                         'Content-Type': 'application/json',
@@ -109,21 +114,25 @@
                             for (const propriété of data) {
                                 this.propriétés.push(propriété)
                             }
-                            this.enableUserInfos = ko.observable(true);
+                            this.enableUserInfos(true);
                         }
                     })
                     .catch((error) => {
-                        console.error('Erreur:', error);
+                        console.log("Erreur Fetch: " + error);
+                        this.erreurFetch(error);
+                        this.propriétés.removeAll();
+                        this.enableUserInfos(true);
                     });
                 }
             }
             
-            const fournisseur = (sessionStorage.getItem("fournisseur"));
+            ko.applyBindings(userInfosViewModel);
+
+            const fournisseur = sessionStorage.getItem("fournisseur");
             if (fournisseur) {
-                userInfosViewModel.fournisseur = ko.observable(fournisseur);
+                userInfosViewModel.fournisseur(fournisseur);
             }
 
-            ko.applyBindings(userInfosViewModel);
         </script>
 
     </body>
