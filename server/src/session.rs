@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Utc};
+use inth_oauth2::token::{Lifetime, Token as OauthToken};
 use oidc::{token::Token, Client};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
@@ -24,7 +24,7 @@ impl From<String> for SessionId {
 
 pub enum Session {
     AuthenticationRequested(Option<Client>, String),
-    Authenticated(Client, Token, DateTime<Utc>),
+    Authenticated(Client, Token),
 }
 
 impl Session {
@@ -33,7 +33,7 @@ impl Session {
     }
 
     pub fn authentication_completed(&mut self, c: Client, t: Token) -> () {
-        *self = Session::Authenticated(c, t, Utc::now() + Duration::days(1));
+        *self = Session::Authenticated(c, t);
     }
 
     pub fn is_authenticated(&self) -> bool {
@@ -44,9 +44,10 @@ impl Session {
     }
 
     pub fn is_expired(&self) -> bool {
-        match self {
-            Session::Authenticated(.., expires) if expires < &Utc::now() => true,
-            _ => false,
+        if let Session::Authenticated(.., token) = self {
+            token.lifetime().expired()
+        } else {
+            false
         }
     }
 }

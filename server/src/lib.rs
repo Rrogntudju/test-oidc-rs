@@ -123,7 +123,7 @@ mod handlers {
         use serde_json::Value;
 
         let (client, token) = match session {
-            Session::Authenticated(c, t, ..) => (c, t),
+            Session::Authenticated(c, t) => (c, t),
             _ => return reply_error(StatusCode::BAD_REQUEST),
         };
 
@@ -161,7 +161,7 @@ mod handlers {
 
         let (id, secret, issuer) = match fournisseur {
             "Google" => (ID_GG, SECRET_GG, issuer::google()),
-            "Microsoft" | _ => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers/v2.0")),
+            _ => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers/v2.0")),
         };
 
         let redirect = match Url::parse("http://localhost/auth") {
