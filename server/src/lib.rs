@@ -28,6 +28,7 @@ pub mod filters {
     pub fn userinfos() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("userinfos")
             .and(warp::post())
+            .and(warp::path::end())
             .and(cookie::optional("Csrf-Token"))
             .and(header::optional("X-Csrf-Token"))
             .and(cookie::optional("Session-Id"))
@@ -38,6 +39,7 @@ pub mod filters {
 
     pub fn auth() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         warp::path("auth")
+            .and(warp::path::end())
             .and(warp::get())
             .and(cookie::optional("Session-Id"))
             .and(warp::query::<HashMap<String, String>>())
