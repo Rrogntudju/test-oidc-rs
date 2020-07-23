@@ -178,6 +178,7 @@ mod handlers {
 
         let mut options = Options::default();
         options.nonce = Some(random_token(64));
+        options.scope = Some("email profile".into());
         let auth_url = client.auth_url(&options);
 
         let sessionid = SessionId::new();
