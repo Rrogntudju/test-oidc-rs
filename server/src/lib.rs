@@ -184,7 +184,7 @@ mod handlers {
         let sessionid = SessionId::new();
         let response = Response::builder()
             .status(StatusCode::OK)
-            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.0)) // Lax nécessaire pour l'envoi du cookie avec un url redirigé d'un «third party»
+            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.0)) // Lax temporairement nécessaire pour l'envoi du cookie avec le redirect par OP
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
             .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
@@ -260,6 +260,7 @@ mod handlers {
                 response = Response::builder()
                     .status(StatusCode::FOUND)
                     .header("Location", "http://localhost/static/userinfos.htm")
+                    .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", id.0)) // Après le redirect par OP, réécrire le cookie avec Strict
                     .body(String::default());
             }
             None => {
