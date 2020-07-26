@@ -92,15 +92,15 @@ mod handlers {
 
                 match lock.get(&id) {
                     Some(session) if session.is_expired().unwrap_or(true) => {
-                        eprintln!("userinfos: Session expirée ou pas authentifiée");
                         drop(lock);
+                        eprintln!("userinfos: Session expirée ou pas authentifiée");
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, sessions)
                     }
                     Some(session) => reply_userinfos(session),
                     None => {
-                        eprintln!("userinfos: Pas de session");
                         drop(lock);
+                        eprintln!("userinfos: Pas de session");
                         reply_redirect_fournisseur(fournisseur, sessions)
                     }
                 }
@@ -206,8 +206,8 @@ mod handlers {
 
                 match lock.get(&id) {
                     Some(session) if session.is_authenticated() => {
-                        eprintln!("auth: Session déjà authentifiée");
                         drop(lock);
+                        eprintln!("auth: Session déjà authentifiée");
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
                         reply_error(StatusCode::BAD_REQUEST)
                     }
@@ -241,22 +241,34 @@ mod handlers {
         let response;
         let mut lock = sessions.lock().expect("Failed due to poisoned lock");
 
+        let (client, nonce) = match lock.get_mut(id) {
+            Some(session) => match session {
+                Session::AuthenticationRequested(c, n) => (c.take().unwrap(), n.clone()),
+                _ => return reply_error(StatusCode::BAD_REQUEST),
+            },
+            None => {
+                eprintln!("auth: Session inexistante");
+                return reply_error(StatusCode::FORBIDDEN);
+            }
+        };
+
+        drop(lock);
+
+        let token = match client.authenticate(&code, Some(&nonce), None) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("{0}", e.to_string());
+                sessions.lock().expect("Failed due to poisoned lock").remove(id);
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        };
+
+        let mut lock = sessions.lock().expect("Failed due to poisoned lock");
+
         match lock.get_mut(id) {
             Some(session) => {
-                let (client, nonce) = match session {
-                    Session::AuthenticationRequested(c, n) => (c.take().unwrap(), n.clone()),
-                    _ => return reply_error(StatusCode::BAD_REQUEST),
-                };
-
-                let token = match client.authenticate(&code, Some(&nonce), None) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        eprintln!("{0}", e.to_string());
-                        return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-                    }
-                };
-
                 session.authentication_completed(client, token);
+                drop(lock);
                 response = Response::builder()
                     .status(StatusCode::FOUND)
                     .header("Location", "http://localhost/static/userinfos.htm")
