@@ -91,8 +91,8 @@ mod handlers {
                 let lock = sessions.lock().expect("Failed due to poisoned lock");
 
                 match lock.get(&id) {
-                    Some(session) if !session.is_authenticated() || session.is_expired() => {
-                        eprintln!("userinfos: Token absent ou expiré");
+                    Some(session) if session.is_expired().unwrap_or(true) => {
+                        eprintln!("userinfos: Session expirée ou pas authentifiée");
                         drop(lock);
                         sessions.lock().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, sessions)

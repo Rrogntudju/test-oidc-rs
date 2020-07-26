@@ -43,11 +43,11 @@ impl Session {
         }
     }
 
-    pub fn is_expired(&self) -> bool {
+    pub fn is_expired(&self) -> Option<bool> {
         if let Session::Authenticated(.., token) = self {
-            token.lifetime().expired()
+            Some(token.lifetime().expired())
         } else {
-            false
+            None
         }
     }
 }
