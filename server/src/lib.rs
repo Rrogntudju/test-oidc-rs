@@ -120,7 +120,10 @@ mod handlers {
 
         let (client, token) = match session {
             Session::Authenticated(c, t) => (c, t),
-            _ => return reply_error(StatusCode::BAD_REQUEST),
+            _ => {
+                eprintln!("userinfos: DOH!"); 
+                return reply_error(StatusCode::BAD_REQUEST);
+            }
         };
 
         let http = reqwest::Client::new();
@@ -224,7 +227,7 @@ mod handlers {
                     }
                     None => {
                         eprintln!("auth: Session inexistante");
-                        reply_error(StatusCode::FORBIDDEN)
+                        reply_error(StatusCode::BAD_REQUEST)
                     }
                 }
             }
@@ -244,11 +247,14 @@ mod handlers {
         let (client, nonce) = match lock.get_mut(id) {
             Some(session) => match session {
                 Session::AuthenticationRequested(c, n) => (c.take().unwrap(), n.clone()),
-                _ => return reply_error(StatusCode::BAD_REQUEST),
+                _ => {
+                    eprintln!("auth: Session déjà authentifiée");
+                    return reply_error(StatusCode::BAD_REQUEST);
+                }
             },
             None => {
-                eprintln!("auth: Session inexistante");
-                return reply_error(StatusCode::FORBIDDEN);
+                eprintln!("auth: Session inexistante (avant authentification)");
+                return reply_error(StatusCode::BAD_REQUEST);
             }
         };
 
@@ -276,8 +282,8 @@ mod handlers {
                     .body(String::default());
             }
             None => {
-                eprintln!("auth: Session inexistante");
-                return reply_error(StatusCode::FORBIDDEN);
+                eprintln!("auth: Session inexistante (après authentification)");
+                return reply_error(StatusCode::BAD_REQUEST);
             }
         };
 
