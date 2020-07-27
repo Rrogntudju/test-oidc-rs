@@ -2,10 +2,10 @@ mod session;
 use lazy_static::lazy_static;
 use session::{random_token, Session, SessionId};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 lazy_static! {
-    static ref SESSIONS: Arc<Mutex<HashMap<SessionId, Session>>> = Arc::new(Mutex::new(HashMap::new()));
+    static ref SESSIONS: Arc<RwLock<HashMap<SessionId, Session>>> = Arc::new(RwLock::new(HashMap::new()));
     static ref MS: String = "Microsoft".into();
 }
 
@@ -47,7 +47,7 @@ pub mod filters {
             .and_then(handlers::auth)
     }
 
-    fn clone_sessions() -> impl Filter<Extract = (Arc<Mutex<HashMap<SessionId, Session>>>,), Error = Infallible> + Clone {
+    fn clone_sessions() -> impl Filter<Extract = (Arc<RwLock<HashMap<SessionId, Session>>>,), Error = Infallible> + Clone {
         warp::any().map(move || SESSIONS.clone())
     }
 
@@ -66,7 +66,7 @@ mod handlers {
         csrf_header: Option<String>,
         session_cookie: Option<String>,
         body: HashMap<String, String>,
-        sessions: Arc<Mutex<HashMap<SessionId, Session>>>,
+        sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<impl warp::Reply, Infallible> {
         // Validation Csrf si le cookie Csrf est présent
         if let Some(ctoken) = csrf_cookie {
@@ -88,13 +88,13 @@ mod handlers {
         let response = match session_cookie {
             Some(stoken) => {
                 let id: SessionId = stoken.into();
-                let lock = sessions.lock().expect("Failed due to poisoned lock");
+                let lock = sessions.read().expect("Failed due to poisoned lock");
 
                 match lock.get(&id) {
                     Some(session) if session.is_expired().unwrap_or(true) => {
                         drop(lock);
                         eprintln!("userinfos: Session expirée ou pas authentifiée");
-                        sessions.lock().expect("Failed due to poisoned lock").remove(&id);
+                        sessions.write().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, sessions)
                     }
                     Some(session) => reply_userinfos(session),
@@ -154,7 +154,7 @@ mod handlers {
         Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap())
     }
 
-    fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<Mutex<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
+    fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<RwLock<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
         use oidc::{issuer, Client, Options};
         use reqwest::Url;
 
@@ -192,7 +192,7 @@ mod handlers {
             .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
         let session = Session::new(client, options.nonce.clone().unwrap());
-        sessions.lock().expect("Failed due to poisoned lock").insert(sessionid, session);
+        sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
 
         response
     }
@@ -200,18 +200,18 @@ mod handlers {
     pub async fn auth(
         session_cookie: Option<String>,
         params: HashMap<String, String>,
-        sessions: Arc<Mutex<HashMap<SessionId, Session>>>,
+        sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<impl warp::Reply, Infallible> {
         let response = match session_cookie {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
-                let lock = sessions.lock().expect("Failed due to poisoned lock");
+                let lock = sessions.read().expect("Failed due to poisoned lock");
 
                 match lock.get(&id) {
                     Some(session) if session.is_authenticated() => {
                         drop(lock);
                         eprintln!("auth: Session déjà authentifiée");
-                        sessions.lock().expect("Failed due to poisoned lock").remove(&id);
+                        sessions.write().expect("Failed due to poisoned lock").remove(&id);
                         reply_error(StatusCode::BAD_REQUEST)
                     }
                     Some(_) => {
@@ -240,9 +240,9 @@ mod handlers {
         Ok(response)
     }
 
-    fn reply_redirect_userinfos(id: &SessionId, sessions: Arc<Mutex<HashMap<SessionId, Session>>>, code: &str) -> Result<Response<String>, Error> {
+    fn reply_redirect_userinfos(id: &SessionId, sessions: Arc<RwLock<HashMap<SessionId, Session>>>, code: &str) -> Result<Response<String>, Error> {
         let response;
-        let mut lock = sessions.lock().expect("Failed due to poisoned lock");
+        let mut lock = sessions.write().expect("Failed due to poisoned lock");
 
         let (client, nonce) = match lock.get_mut(id) {
             Some(session) => match session {
@@ -264,12 +264,12 @@ mod handlers {
             Ok(r) => r,
             Err(e) => {
                 eprintln!("{0}", e.to_string());
-                sessions.lock().expect("Failed due to poisoned lock").remove(id);
+                sessions.write().expect("Failed due to poisoned lock").remove(id);
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
             }
         };
 
-        let mut lock = sessions.lock().expect("Failed due to poisoned lock");
+        let mut lock = sessions.write().expect("Failed due to poisoned lock");
 
         match lock.get_mut(id) {
             Some(session) => {
