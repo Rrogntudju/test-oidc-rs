@@ -6,7 +6,7 @@ use std::sync::{Arc, RwLock};
 
 lazy_static! {
     static ref SESSIONS: Arc<RwLock<HashMap<SessionId, Session>>> = Arc::new(RwLock::new(HashMap::new()));
-    static ref MS: String = "Microsoft".into();
+    static ref LOL: String = "LOL".into();
 }
 
 const ID_MS: &str = include_str!("clientid.microsoft");
@@ -83,7 +83,8 @@ mod handlers {
             }
         };
 
-        let fournisseur = body.get("fournisseur").unwrap_or(&MS);
+        let fournisseur = body.get("fournisseur").unwrap_or(&LOL);
+        let origine = body.get("origine").unwrap_or(&LOL);
 
         let response = match session_cookie {
             Some(stoken) => {
@@ -95,17 +96,17 @@ mod handlers {
                         drop(lock);
                         eprintln!("userinfos: Session expirée ou pas authentifiée");
                         sessions.write().expect("Failed due to poisoned lock").remove(&id);
-                        reply_redirect_fournisseur(fournisseur, sessions)
+                        reply_redirect_fournisseur(fournisseur, origine, sessions)
                     }
                     Some(session) => reply_userinfos(session),
                     None => {
                         drop(lock);
                         eprintln!("userinfos: Pas de session");
-                        reply_redirect_fournisseur(fournisseur, sessions)
+                        reply_redirect_fournisseur(fournisseur, origine, sessions)
                     }
                 }
             }
-            None => reply_redirect_fournisseur(fournisseur, sessions),
+            None => reply_redirect_fournisseur(fournisseur, origine, sessions),
         };
 
         Ok(response)
@@ -121,7 +122,7 @@ mod handlers {
         let (client, token) = match session {
             Session::Authenticated(c, t) => (c, t),
             _ => {
-                eprintln!("userinfos: DOH!"); 
+                eprintln!("userinfos: DOH!");
                 return reply_error(StatusCode::BAD_REQUEST);
             }
         };
@@ -154,16 +155,25 @@ mod handlers {
         Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap())
     }
 
-    fn reply_redirect_fournisseur(fournisseur: &str, sessions: Arc<RwLock<HashMap<SessionId, Session>>>) -> Result<Response<String>, Error> {
+    fn reply_redirect_fournisseur(
+        fournisseur: &str,
+        origine: &str,
+        sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
+    ) -> Result<Response<String>, Error> {
         use oidc::{issuer, Client, Options};
         use reqwest::Url;
 
         let (id, secret, issuer) = match fournisseur {
             "Google" => (ID_GG, SECRET_GG, issuer::google()),
-            _ => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers/v2.0")),
+            "Microsoft" => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers/v2.0")),
+            _ => {
+                eprintln!("{0}", "Fournisseur invalide");
+                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
+            }
         };
 
-        let redirect = match Url::parse("http://localhost/auth") {
+        let url_redirect = origine.to_string() + "/auth";
+        let redirect = match Url::parse(&url_redirect) {
             Ok(r) => r,
             Err(e) => {
                 eprintln!("{0}", e.to_string());
@@ -277,7 +287,7 @@ mod handlers {
                 drop(lock);
                 response = Response::builder()
                     .status(StatusCode::FOUND)
-                    .header("Location", "http://localhost/static/userinfos.htm")
+                    .header("Location", "/static/userinfos.htm")
                     .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", id.0)) // Après le redirect par OP, réécrire le cookie avec Strict
                     .body(String::default());
             }
@@ -314,7 +324,7 @@ mod tests {
             .method("POST")
             .path("/userinfos")
             .header("Cookie", "Csrf-Token=LOL")
-            .body(r#"{"fournisseur": "Google"}"#)
+            .body(r#"{"fournisseur": "Google", "origine": "http://localhost"}"#)
             .reply(&filters::userinfos())
             .await;
         assert_eq!(resp.status(), StatusCode::FORBIDDEN);
@@ -327,7 +337,7 @@ mod tests {
             .path("/userinfos")
             .header("Cookie", "Csrf-Token=LOL")
             .header("X-Csrf-Token", "BOUH!")
-            .body(r#"{"fournisseur": "Google"}"#)
+            .body(r#"{"fournisseur": "Google", "origine": "http://localhost"}"#)
             .reply(&filters::userinfos())
             .await;
         assert_eq!(resp.status(), StatusCode::FORBIDDEN);
@@ -338,7 +348,7 @@ mod tests {
         let resp = request()
             .method("POST")
             .path("/userinfos")
-            .body(r#"{"fournisseur": "Microsoft"}"#)
+            .body(r#"{"fournisseur": "Microsoft", "origine": "http://localhost"}"#)
             .reply(&filters::userinfos())
             .await;
         assert_eq!(resp.status(), StatusCode::OK);

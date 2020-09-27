@@ -70,8 +70,8 @@
                 fournisseur: ko.observable("Microsoft"),
                 
                 clicFournisseur : function() {
-                    document.cookie = "Session-Id=; Max-Age=0;path=/; domain=" + location.host;
-                    document.cookie = "Csrf-Token=; Max-Age=0;path=/; domain=" + location.host;
+                    document.cookie = "Session-Id=; Max-Age=0;path=/; domain=" + location.hostname;
+                    document.cookie = "Csrf-Token=; Max-Age=0;path=/; domain=" + location.hostname;
                     this.propriétés.removeAll();
                     sessionStorage.setItem("fournisseur", this.fournisseur());
                     return true;
@@ -103,7 +103,7 @@
                         headers: headers,
                         cache: 'no-cache',
                         redirect: 'error',
-                        body: '{ "fournisseur": "' + this.fournisseur() + '" }'
+                        body: '{ "fournisseur": "' + this.fournisseur() + '", "origine": "' + window.location.origin + '" }'
                     });
 
                     fetch(request)
