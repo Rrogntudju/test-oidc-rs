@@ -6,7 +6,7 @@ use std::sync::{Arc, RwLock};
 
 lazy_static! {
     static ref SESSIONS: Arc<RwLock<HashMap<SessionId, Session>>> = Arc::new(RwLock::new(HashMap::new()));
-    static ref LOL: String = "LOL".into();
+    static ref LOL: String = String::default();
 }
 
 const ID_MS: &str = include_str!("clientid.microsoft");
