@@ -98,7 +98,17 @@ mod handlers {
                         sessions.write().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, origine, sessions)
                     }
-                    Some(session) => reply_userinfos(session),
+                    Some(session) => {
+                        match session {
+                            Session::Authenticated(_, f, _) if f == fournisseur => reply_userinfos(session),
+                            _ => {
+                                // Changement de fournisseur
+                                drop(lock);
+                                sessions.write().expect("Failed due to poisoned lock").remove(&id);
+                                reply_redirect_fournisseur(fournisseur, origine, sessions)
+                            }
+                        }
+                    }
                     None => {
                         drop(lock);
                         eprintln!("userinfos: Pas de session");
@@ -120,7 +130,7 @@ mod handlers {
         use serde_json::Value;
 
         let (client, token) = match session {
-            Session::Authenticated(c, t) => (c, t),
+            Session::Authenticated(c, _, t) => (c, t),
             _ => {
                 eprintln!("userinfos: DOH!");
                 return reply_error(StatusCode::BAD_REQUEST);
@@ -198,11 +208,11 @@ mod handlers {
         let response = Response::builder()
             .status(StatusCode::OK)
             // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
-            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.0)) 
+            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.0))
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
             .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
-        let session = Session::new(client, options.nonce.clone().unwrap());
+        let session = Session::new(client, fournisseur.into(), options.nonce.clone().unwrap());
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
 
         response
@@ -255,9 +265,9 @@ mod handlers {
         let response;
         let mut lock = sessions.write().expect("Failed due to poisoned lock");
 
-        let (client, nonce) = match lock.get_mut(id) {
+        let (client, fournisseur, nonce) = match lock.get_mut(id) {
             Some(session) => match session {
-                Session::AuthenticationRequested(c, n) => (c.take().unwrap(), n.clone()),
+                Session::AuthenticationRequested(c, f, n) => (c.take().unwrap(), f.clone(), n.clone()),
                 _ => {
                     eprintln!("auth: Session déjà authentifiée");
                     return reply_error(StatusCode::BAD_REQUEST);
@@ -284,13 +294,13 @@ mod handlers {
 
         match lock.get_mut(id) {
             Some(session) => {
-                session.authentication_completed(client, token);
+                session.authentication_completed(client, fournisseur, token);
                 drop(lock);
                 response = Response::builder()
                     .status(StatusCode::FOUND)
                     .header("Location", "/static/userinfos.htm")
                     // Après le redirect par OP, réécrire le cookie Session-Id avec Strict
-                    .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", id.0)) 
+                    .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", id.0))
                     .body(String::default());
             }
             None => {

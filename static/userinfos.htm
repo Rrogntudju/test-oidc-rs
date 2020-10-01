@@ -3,7 +3,7 @@
         <meta charset="utf-8"/>
         <script src='knockout-3.5.1.js'></script>
         <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-        <link rel="icon" type="image/gif" href=http://wiki.openid.net/f/openid-16x16.gif/>
+        <link rel="icon" type="image/gif" href="https://openid.net/images/logo/openid-16x16.gif"/>
     </head>
 
     <body>
@@ -70,8 +70,6 @@
                 fournisseur: ko.observable("Microsoft"),
                 
                 clicFournisseur : function() {
-                    document.cookie = "Session-Id=; Max-Age=0;path=/; domain=" + location.hostname;
-                    document.cookie = "Csrf-Token=; Max-Age=0;path=/; domain=" + location.hostname;
                     this.propriétés.removeAll();
                     sessionStorage.setItem("fournisseur", this.fournisseur());
                     return true;
@@ -103,7 +101,7 @@
                         headers: headers,
                         cache: 'no-cache',
                         redirect: 'error',
-                        body: '{ "fournisseur": "' + this.fournisseur() + '", "origine": "' + window.location.origin + '" }'
+                        body: '{ "fournisseur": "' + this.fournisseur() + '", "origine": "' + location.origin + '" }'
                     });
 
                     fetch(request)
@@ -137,8 +135,6 @@
             } else {
                 sessionStorage.setItem("fournisseur", userInfosViewModel.fournisseur());
             }
-
         </script>
-
     </body>
 </html>

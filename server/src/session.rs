@@ -22,18 +22,20 @@ impl From<String> for SessionId {
     }
 }
 
+type Fournisseur = String;
+
 pub enum Session {
-    AuthenticationRequested(Option<Client>, String),
-    Authenticated(Client, Token),
+    AuthenticationRequested(Option<Client>, Fournisseur, String),
+    Authenticated(Client, Fournisseur, Token),
 }
 
 impl Session {
-    pub fn new(c: Client, nonce: String) -> Self {
-        Session::AuthenticationRequested(Some(c), nonce)
+    pub fn new(c: Client, f: Fournisseur, nonce: String) -> Self {
+        Session::AuthenticationRequested(Some(c), f, nonce)
     }
 
-    pub fn authentication_completed(&mut self, c: Client, t: Token) -> () {
-        *self = Session::Authenticated(c, t);
+    pub fn authentication_completed(&mut self, c: Client, f: Fournisseur, t: Token) -> () {
+        *self = Session::Authenticated(c, f, t);
     }
 
     pub fn is_authenticated(&self) -> bool {
