@@ -23,15 +23,16 @@ impl From<String> for SessionId {
 }
 
 type Fournisseur = String;
+type Nonce = String;
 
 pub enum Session {
-    AuthenticationRequested(Option<Client>, Fournisseur, String),
+    AuthenticationRequested(Option<Client>, Fournisseur, Nonce),
     Authenticated(Client, Fournisseur, Token),
 }
 
 impl Session {
-    pub fn new(c: Client, f: Fournisseur, nonce: String) -> Self {
-        Session::AuthenticationRequested(Some(c), f, nonce)
+    pub fn new(c: Client, f: Fournisseur, n: Nonce) -> Self {
+        Session::AuthenticationRequested(Some(c), f, n)
     }
 
     pub fn authentication_completed(&mut self, c: Client, f: Fournisseur, t: Token) -> () {
