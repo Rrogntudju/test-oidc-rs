@@ -8,11 +8,15 @@ pub fn random_token(len: usize) -> String {
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct SessionId(pub String);
+pub struct SessionId(String);
 
 impl SessionId {
     pub fn new() -> Self {
         SessionId(random_token(32))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
