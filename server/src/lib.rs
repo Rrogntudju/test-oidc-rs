@@ -263,11 +263,11 @@ mod handlers {
 
     fn reply_redirect_userinfos(id: &SessionId, sessions: Arc<RwLock<HashMap<SessionId, Session>>>, code: &str) -> Result<Response<String>, Error> {
         let response;
-        let mut lock = sessions.write().expect("Failed due to poisoned lock");
+        let lock = sessions.read().expect("Failed due to poisoned lock");
 
-        let (client, fournisseur, nonce) = match lock.get_mut(id) {
+        let (client, nonce) = match lock.get(id) {
             Some(session) => match session {
-                Session::AuthenticationRequested(c, f, n) => (c.take().unwrap(), f.clone(), n.clone()),
+                Session::AuthenticationRequested(c, _, n) => (c.as_ref().unwrap(), n),
                 _ => {
                     eprintln!("auth: Session déjà authentifiée");
                     return reply_error(StatusCode::BAD_REQUEST);
@@ -279,22 +279,22 @@ mod handlers {
             }
         };
 
-        drop(lock);
-
-        let token = match client.authenticate(&code, Some(&nonce), None) {
+        let token = match client.authenticate(&code, Some(nonce), None) {
             Ok(r) => r,
             Err(e) => {
+                drop(lock);
                 eprintln!("{0}", e.to_string());
                 sessions.write().expect("Failed due to poisoned lock").remove(id);
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
             }
         };
 
+        drop(lock);
         let mut lock = sessions.write().expect("Failed due to poisoned lock");
 
         match lock.get_mut(id) {
             Some(session) => {
-                session.authentication_completed(client, fournisseur, token);
+                session.authentication_completed(token);
                 drop(lock);
                 response = Response::builder()
                     .status(StatusCode::FOUND)

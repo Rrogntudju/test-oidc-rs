@@ -39,8 +39,11 @@ impl Session {
         Session::AuthenticationRequested(Some(c), f, n)
     }
 
-    pub fn authentication_completed(&mut self, c: Client, f: Fournisseur, t: Token) -> () {
-        *self = Session::Authenticated(c, f, t);
+    pub fn authentication_completed(&mut self, t: Token) -> () {
+        match self {
+            Session::AuthenticationRequested(c, f, _) => *self = Session::Authenticated(c.take().unwrap(), f.clone(), t),
+            _ => (),
+        }
     }
 
     pub fn is_authenticated(&self) -> bool {
