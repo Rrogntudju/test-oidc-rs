@@ -100,7 +100,36 @@ mod handlers {
                     }
                     Some(session) => {
                         match session {
-                            Session::Authenticated(_, f, _) if f == fournisseur => reply_userinfos(session),
+                            Session::Authenticated(client, f, token) if f == fournisseur => {
+                                let http = reqwest::Client::new();
+                                let userinfo = match client.request_userinfo(&http, token) {
+                                    Ok(r) => r,
+                                    Err(e) => {
+                                        eprintln!("{0}", e.to_string());
+                                        return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
+                                    }
+                                };
+                                drop(lock);
+
+                                use serde_json::Value;
+                                let value = serde_json::to_value(&userinfo).unwrap();
+                                let map = value.as_object().unwrap();
+                                let infos = Value::Array(
+                                    map.into_iter()
+                                        .filter_map(|(k, v)| match v.is_null() {
+                                            true => None,
+                                            false => {
+                                                let mut map = serde_json::Map::new();
+                                                map.insert("propriété".into(), Value::String(k.to_owned()));
+                                                map.insert("valeur".into(), v.to_owned());
+                                                Some(Value::Object(map))
+                                            }
+                                        })
+                                        .collect::<Vec<Value>>(),
+                                );
+                        
+                                Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap())
+                            },
                             _ => {
                                 // Changement de fournisseur
                                 drop(lock);
@@ -124,45 +153,6 @@ mod handlers {
 
     fn reply_error(sc: StatusCode) -> Result<Response<String>, Error> {
         Response::builder().status(sc).body(String::default())
-    }
-
-    fn reply_userinfos(session: &Session) -> Result<Response<String>, Error> {
-        use serde_json::Value;
-
-        let (client, token) = match session {
-            Session::Authenticated(c, _, t) => (c, t),
-            _ => {
-                eprintln!("userinfos: DOH!");
-                return reply_error(StatusCode::BAD_REQUEST);
-            }
-        };
-
-        let http = reqwest::Client::new();
-        let userinfo = match client.request_userinfo(&http, token) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("{0}", e.to_string());
-                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
-
-        let value = serde_json::to_value(&userinfo).unwrap();
-        let map = value.as_object().unwrap();
-        let infos = Value::Array(
-            map.into_iter()
-                .filter_map(|(k, v)| match v.is_null() {
-                    true => None,
-                    false => {
-                        let mut map = serde_json::Map::new();
-                        map.insert("propriété".into(), Value::String(k.to_owned()));
-                        map.insert("valeur".into(), v.to_owned());
-                        Some(Value::Object(map))
-                    }
-                })
-                .collect::<Vec<Value>>(),
-        );
-
-        Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap())
     }
 
     fn reply_redirect_fournisseur(
