@@ -30,19 +30,19 @@ type Fournisseur = String;
 type Nonce = String;
 
 pub enum Session {
-    AuthenticationRequested(Option<Client>, Fournisseur, Nonce),
+    AuthenticationRequested(Client, Fournisseur, Nonce),
     Authenticated(Client, Fournisseur, Token),
 }
 
 impl Session {
     pub fn new(c: Client, f: Fournisseur, n: Nonce) -> Self {
-        Session::AuthenticationRequested(Some(c), f, n)
+        Session::AuthenticationRequested(c, f, n)
     }
 
-    pub fn authentication_completed(&mut self, t: Token) -> () {
+    pub fn authentication_completed(self, t: Token) -> Option<Self> {
         match self {
-            Session::AuthenticationRequested(c, f, _) => *self = Session::Authenticated(c.take().unwrap(), f.clone(), t),
-            _ => (),
+            Session::AuthenticationRequested(c, f, _) => Some(Session::Authenticated(c, f, t)),
+            _ => None,
         }
     }
 
