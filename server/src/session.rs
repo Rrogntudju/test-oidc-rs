@@ -14,15 +14,17 @@ impl SessionId {
     pub fn new() -> Self {
         SessionId(random_token(32))
     }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
 }
 
 impl From<String> for SessionId {
     fn from(s: String) -> Self {
         SessionId(s)
+    }
+}
+
+impl AsRef<str> for SessionId {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 
