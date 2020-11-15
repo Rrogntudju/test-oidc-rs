@@ -41,25 +41,18 @@ impl Session {
         Session::AuthenticationRequested(c, f, n)
     }
 
-    pub fn authentication_completed(self, t: Token) -> Option<Self> {
+    pub fn authentication_completed(self, t: Token) -> Self {
         match self {
-            Session::AuthenticationRequested(c, f, _) => Some(Session::Authenticated(c, f, t)),
-            _ => None,
+            Session::AuthenticationRequested(c, f, _) => Session::Authenticated(c, f, t),
+            _ => self,
         }
     }
 
-    pub fn is_authenticated(&self) -> bool {
-        match self {
-            Session::Authenticated(..) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_expired(&self) -> Option<bool> {
+    pub fn is_expired(&self) -> bool {
         if let Session::Authenticated(.., token) = self {
-            Some(token.lifetime().expired())
+            token.lifetime().expired()
         } else {
-            None
+            true
         }
     }
 }

@@ -3,10 +3,12 @@ use lazy_static::lazy_static;
 use session::{random_token, Session, SessionId};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use serde_json::{Value, Map};
 
 lazy_static! {
     static ref SESSIONS: Arc<RwLock<HashMap<SessionId, Session>>> = Arc::new(RwLock::new(HashMap::new()));
     static ref LOL: String = String::default();
+    static ref LOL_MAP: Map<String, Value> = Map::default();
 }
 
 const ID_MS: &str = include_str!("clientid.microsoft");
@@ -92,7 +94,7 @@ mod handlers {
                 let lock = sessions.read().expect("Failed due to poisoned lock");
 
                 match lock.get(&id) {
-                    Some(session) if session.is_expired().unwrap_or(true) => {
+                    Some(session) if session.is_expired() => {
                         drop(lock);
                         eprintln!("userinfos: Session expirée ou pas authentifiée");
                         sessions.write().expect("Failed due to poisoned lock").remove(&id);
@@ -111,9 +113,8 @@ mod handlers {
                                 };
                                 drop(lock);
 
-                                use serde_json::Value;
-                                let value = serde_json::to_value(&userinfo).unwrap();
-                                let map = value.as_object().unwrap();
+                                let value = serde_json::to_value(&userinfo).unwrap_or_default();
+                                let map = value.as_object().unwrap_or(&LOL_MAP);
                                 let infos = Value::Array(
                                     map.into_iter()
                                         .filter_map(|(k, v)| match v.is_null() {
@@ -128,7 +129,7 @@ mod handlers {
                                         .collect::<Vec<Value>>(),
                                 );
                         
-                                Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap())
+                                Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap_or_default())
                             },
                             _ => {
                                 // Changement de fournisseur
@@ -182,7 +183,7 @@ mod handlers {
         };
 
         let client = match Client::discover(id.into(), secret.into(), redirect, issuer) {
-            Ok(r) => r,
+            Ok(c) => c,
             Err(e) => {
                 eprintln!("{0}", e.to_string());
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
@@ -190,7 +191,8 @@ mod handlers {
         };
 
         let mut options = Options::default();
-        options.nonce = Some(random_token(64));
+        let nonce = random_token(64);
+        options.nonce = Some(nonce.clone());
         options.scope = Some("email profile".into());
         let auth_url = client.auth_url(&options);
 
@@ -202,7 +204,7 @@ mod handlers {
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
             .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
-        let session = Session::new(client, fournisseur.into(), options.nonce.clone().unwrap());
+        let session = Session::new(client, fournisseur.into(), nonce);
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
 
         response
@@ -216,21 +218,51 @@ mod handlers {
         let response = match session_cookie {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
-                let session = sessions.write().expect("Failed due to poisoned lock").remove(&id).unwrap();
+                let session = match sessions.write().expect("Failed due to poisoned lock").remove(&id) {
+                    Some(s) => s,
+                    None => {
+                        eprintln!("auth: session inexistante");
+                        return Ok(reply_error(StatusCode::BAD_REQUEST));
+                    }
+                };
 
-                if session.is_authenticated() {
-                    eprintln!("auth: Session déjà authentifiée");
-                    reply_error(StatusCode::BAD_REQUEST)
-                } else {
-                    let code = match params.get("code") {
-                        Some(code) => code,
-                        None => {
-                            eprintln!("auth: auth code manquant");
-                            return Ok(reply_error(StatusCode::BAD_REQUEST));
-                        }
-                    };
-                    reply_redirect_userinfos(id, session, sessions, code)
-                }
+                let code = match params.get("code") {
+                    Some(code) => code,
+                    None => {
+                        eprintln!("auth: auth code manquant");
+                        return Ok(reply_error(StatusCode::BAD_REQUEST));
+                    }
+                };
+
+                let (client, nonce) = match session {
+                    Session::AuthenticationRequested(ref c, _, ref n) => (c, n),
+                    _ => {
+                        eprintln!("auth: session déjà authentifiée");
+                        return Ok(reply_error(StatusCode::BAD_REQUEST));
+                    }
+                };
+        
+                let token = match client.authenticate(code, Some(nonce), None) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        eprintln!("{0}", e.to_string());
+                        return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
+                    }
+                };
+        
+                let response = Response::builder()
+                    .status(StatusCode::FOUND)
+                    .header("Location", "/static/userinfos.htm")
+                    // Après le redirect par OP, réécrire le cookie Session-Id avec Strict
+                    .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", id.as_ref()))
+                    .body(String::default());
+        
+                sessions
+                    .write()
+                    .expect("Failed due to poisoned lock")
+                    .insert(id, session.authentication_completed(token));
+                    
+                response
             }
             None => {
                 eprintln!("auth: Cookie de session inexistant");
@@ -239,43 +271,6 @@ mod handlers {
         };
 
         Ok(response)
-    }
-
-    fn reply_redirect_userinfos(
-        id: SessionId,
-        session: Session,
-        sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
-        code: &String,
-    ) -> Result<Response<String>, Error> {
-        let (client, nonce) = match session {
-            Session::AuthenticationRequested(ref c, _, ref n) => (c, n),
-            _ => {
-                eprintln!("auth: Session déjà authentifiée");
-                return reply_error(StatusCode::BAD_REQUEST);
-            }
-        };
-
-        let token = match client.authenticate(code, Some(nonce), None) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("{0}", e.to_string());
-                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
-
-        let response = Response::builder()
-            .status(StatusCode::FOUND)
-            .header("Location", "/static/userinfos.htm")
-            // Après le redirect par OP, réécrire le cookie Session-Id avec Strict
-            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", id.as_ref()))
-            .body(String::default());
-
-        sessions
-            .write()
-            .expect("Failed due to poisoned lock")
-            .insert(id, session.authentication_completed(token).unwrap());
-            
-        response
     }
 }
 
