@@ -105,7 +105,7 @@ mod handlers {
                             Session::Authenticated(client, f, token) if f == fournisseur => {
                                 let http = reqwest::Client::new();
                                 let userinfo = match client.request_userinfo(&http, token) {
-                                    Ok(r) => r,
+                                    Ok(u) => u,
                                     Err(e) => {
                                         eprintln!("{0}", e.to_string());
                                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
@@ -243,7 +243,7 @@ mod handlers {
                 };
         
                 let token = match client.authenticate(code, Some(nonce), None) {
-                    Ok(r) => r,
+                    Ok(t) => t,
                     Err(e) => {
                         eprintln!("{0}", e.to_string());
                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
