@@ -105,7 +105,7 @@ mod handlers {
                             Session::Authenticated(client, f, token) if f == fournisseur => {
                                 let http = reqwest::Client::new();
                                 let userinfo = match client.request_userinfo(&http, token) {
-                                    Ok(u) => u,
+                                    Ok(userinfo) => userinfo,
                                     Err(e) => {
                                         eprintln!("{0}", e.to_string());
                                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
@@ -175,7 +175,7 @@ mod handlers {
 
         let url_redirect = origine.to_string() + "/auth";
         let redirect = match Url::parse(&url_redirect) {
-            Ok(r) => r,
+            Ok(redirect) => redirect,
             Err(e) => {
                 eprintln!("{0}", e.to_string());
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
@@ -183,7 +183,7 @@ mod handlers {
         };
 
         let client = match Client::discover(id.into(), secret.into(), redirect, issuer) {
-            Ok(c) => c,
+            Ok(client) => client,
             Err(e) => {
                 eprintln!("{0}", e.to_string());
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
@@ -219,7 +219,7 @@ mod handlers {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
                 let session = match sessions.write().expect("Failed due to poisoned lock").remove(&id) {
-                    Some(s) => s,
+                    Some(session) => session,
                     None => {
                         eprintln!("auth: session inexistante");
                         return Ok(reply_error(StatusCode::BAD_REQUEST));
@@ -243,7 +243,7 @@ mod handlers {
                 };
         
                 let token = match client.authenticate(code, Some(nonce), None) {
-                    Ok(t) => t,
+                    Ok(token) => token,
                     Err(e) => {
                         eprintln!("{0}", e.to_string());
                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
