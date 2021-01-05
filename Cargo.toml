@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "server", "test-oidc"
+    "server", "test-oidc", "userinfos"
 ]
 
 [profile.release]
