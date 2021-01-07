@@ -52,24 +52,25 @@ fn ui_builder() -> impl Widget<AppData> {
             .fix_height(30.0),
     );
 
-    let mut infos = Flex::column()
+    let infos = Flex::column()
         .must_fill_main_axis(true)
         .cross_axis_alignment(CrossAxisAlignment::Start)
-        .main_axis_alignment(MainAxisAlignment::Center);
-    
-    infos.add_child(Label::new(|data: &AppData, _env: &_| {
-        let f = match data.fournisseur {
-            Fournisseur::Microsoft => "Microsoft",
-            Fournisseur::Google => "Google",
-        };
-        format!("UserInfos {}", f)
-    }));
-
-    infos.add_child(
-        Scroll::new(List::new(|| Label::new(|info: &Info, _env: &_| format!("{}    {}", info.valeur, info.propriete))).with_spacing(10.))
-            .vertical()
-            .lens(AppData::infos),
-    );
+        .main_axis_alignment(MainAxisAlignment::Center)
+        .with_child(
+            Label::new(|data: &AppData, _env: &_| {
+                let f = match data.fournisseur {
+                    Fournisseur::Microsoft => "Microsoft",
+                    Fournisseur::Google => "Google",
+                };
+                format!("UserInfos {}", f)
+            })
+        )
+        .with_child(
+            Scroll::new(
+                List::new(|| Label::new(|info: &Info, _env: &_| format!("{}    {}", info.valeur, info.propriete))).with_spacing(10.))
+                .vertical()
+                .lens(AppData::infos),
+        );
 
     let main = Flex::row()
         .with_spacer(20.)
@@ -86,7 +87,6 @@ fn ui_builder() -> impl Widget<AppData> {
                 .with_text_color(Color::rgb(1., 0., 0.))
                 .expand_width()
         )
-
 }
 
 pub fn main() {
