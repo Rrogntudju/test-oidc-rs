@@ -3,7 +3,11 @@ name = "userinfos"
 version = "0.1.0"
 authors = ["Rrogntudju"]
 edition = "2018"
+build = "build/build.rs"
 
 
 [dependencies]
 druid = { version = "0.7", features = [ "png", "im" ] }
+
+[build-dependencies]
+winres = "0.1"

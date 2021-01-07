@@ -1,9 +1,6 @@
-use druid::im::{vector, Vector};
-use druid::lens::{self, LensExt};
-use druid::widget::{Button, CrossAxisAlignment, Flex, Label, List, Scroll};
-use druid::{
-    AppLauncher, Color, Data, Lens, UnitPoint, Widget, WidgetExt, WindowDesc,
-};
+use druid::{im::{Vector}, widget::LabelText};
+use druid::widget::{Button, CrossAxisAlignment, Flex, Image, Label, List, Scroll, RadioGroup};
+use druid::{AppLauncher, Color, Data, ImageBuf, Lens, UnitPoint, Widget, WidgetExt, WindowDesc};
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -24,114 +21,74 @@ struct Info {
     propriete: String,
 }
 
-pub fn main() {
-    let main_window = WindowDesc::new(ui_builder)
-        .title("UserInfos");
-    let data = AppData {
-        fournisseur: Fournisseur::Microsoft,
-        erreur: String::new(),
-        infos: Vector::new(),
-    };
-    AppLauncher::with_window(main_window)
-    //    .use_simple_logger()
-        .launch(data)
-        .expect("launch failed");
-}
-
 fn ui_builder() -> impl Widget<AppData> {
-    let mut root = Flex::column();
+    let mut oidc = Flex::column();
 
-    // Build a button to add children to both lists
-    root.add_child(
-        Button::new("Add")
+    let png_data = ImageBuf::from_data(include_bytes!("openid-icon-100x100.png")).unwrap();
+    oidc.add_child(Image::new(png_data.clone()));
+    let mut titre = Label::new("OpenID Connect");
+    titre.set_text_size(30.);
+    oidc.add_child(titre);
+    oidc.add_default_spacer();
+
+    oidc.add_child(Label::new("Fournisseur:"));
+    let mut fournisseurs = Vector::new();
+    fournisseurs.push_back(("Microsoft".to_string(), Fournisseur::Microsoft));
+    fournisseurs.push_back(("Google".to_string(), Fournisseur::Google));
+    oidc.add_child(RadioGroup::new(fournisseurs).lens(AppData::fournisseur));
+
+    oidc.add_child(
+        Button::new("UserInfos")
             .on_click(|_, data: &mut AppData, _| {
-                // Add child to left list
-                data.l_index += 1;
-                data.left.push_back(data.l_index as u32);
-
-                // Add child to right list
-                data.r_index += 1;
-                data.right.push_back(data.r_index as u32);
+               data.erreur = "LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOL".into();
             })
             .fix_height(30.0)
-            .expand_width(),
     );
 
-    let mut lists = Flex::row().cross_axis_alignment(CrossAxisAlignment::Start);
+    oidc.add_child(Label::new(|data: &AppData, _env: &_| data.erreur.clone()));
 
-    // Build a simple list
-    lists.add_flex_child(
-        Scroll::new(List::new(|| {
-            Label::new(|item: &u32, _env: &_| format!("List item #{}", item))
-                .align_vertical(UnitPoint::LEFT)
-                .padding(10.0)
-                .expand()
-                .height(50.0)
-                .background(Color::rgb(0.5, 0.5, 0.5))
-        }))
-        .vertical()
-        .lens(AppData::left),
-        1.0,
+    let mut infos = Flex::column();
+    infos.add_child(
+        Label::new(|data: &AppData, _env: &_| {
+            let f = match data.fournisseur {
+                Fournisseur::Microsoft => "Microsoft",
+                Fournisseur::Google => "Google",
+            };
+            format!("UserInfos {}", f)
+        })
     );
 
-    // Build a list with shared data
-    lists.add_flex_child(
+    infos.add_flex_child(
         Scroll::new(
             List::new(|| {
-                Flex::row()
-                    .with_child(
-                        Label::new(|(_, item): &(Vector<u32>, u32), _env: &_| {
-                            format!("List item #{}", item)
-                        })
-                        .align_vertical(UnitPoint::LEFT),
-                    )
-                    .with_flex_spacer(1.0)
-                    .with_child(
-                        Button::new("Delete")
-                            .on_click(|_ctx, (shared, item): &mut (Vector<u32>, u32), _env| {
-                                // We have access to both child's data and shared data.
-                                // Remove element from right list.
-                                shared.retain(|v| v != item);
-                            })
-                            .fix_size(80.0, 30.0)
-                            .align_vertical(UnitPoint::CENTER),
-                    )
-                    .padding(10.0)
-                    .background(Color::rgb(0.5, 0.0, 0.5))
-                    .fix_height(50.0)
+                    Label::new(|info: &Info,  _env: &_| format!("{}    {}", info.valeur, info.propriete))
             })
             .with_spacing(10.),
         )
         .vertical()
-        .lens(lens::Identity.map(
-            // Expose shared data with children data
-            |d: &AppData| (d.right.clone(), d.right.clone()),
-            |d: &mut AppData, x: (Vector<u32>, Vector<u32>)| {
-                // If shared data was changed reflect the changes in our AppData
-                d.right = x.0
-            },
-        )),
+        .lens(AppData::infos),
         1.0,
     );
 
-    root.add_flex_child(lists, 1.0);
-
-    root.with_child(Label::new("horizontal list"))
-        .with_child(
-            Scroll::new(
-                List::new(|| {
-                    Label::new(|item: &u32, _env: &_| format!("List item #{}", item))
-                        .padding(10.0)
-                        .background(Color::rgb(0.5, 0.5, 0.0))
-                        .fix_height(50.0)
-                })
-                .horizontal()
-                .with_spacing(10.)
-                .lens(AppData::left),
-            )
-            .horizontal(),
-        )
-    //    .debug_paint_layout()
+    let root = Flex::row().cross_axis_alignment(CrossAxisAlignment::Start);
+    root.with_spacer(20.).with_child(oidc).with_spacer(40.).with_child(infos).debug_paint_layout()
 }
-// let png_data = ImageBuf::from_data(include_bytes!("./assets/PicWithAlpha.png")).unwrap();
+
+pub fn main() {
+    let main_window = WindowDesc::new(ui_builder).title("UserInfos");
+    let mut infos = Vector::new();
+    let info  = Info {
+        valeur: "Name".to_string(),
+        propriete: "LOOOOOOOOOOOOOOOOOOOOOOOOOL!".to_string(),
+    };
+    infos.push_back(info);
+    let data = AppData {
+        fournisseur: Fournisseur::Microsoft,
+        erreur: String::new(),
+        infos,
+    };
+    AppLauncher::with_window(main_window)
+        .launch(data)
+        .expect("launch failed");
+}
 
