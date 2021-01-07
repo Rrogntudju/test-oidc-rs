@@ -37,11 +37,7 @@ fn ui_builder() -> impl Widget<AppData> {
     let mut fournisseurs = Vector::new();
     fournisseurs.push_back(("Microsoft".to_string(), Fournisseur::Microsoft));
     fournisseurs.push_back(("Google".to_string(), Fournisseur::Google));
-    oidc.add_child(
-        RadioGroup::new(fournisseurs)
-            .border(Color::rgb(1., 1., 1.), 0.3)
-            .lens(AppData::fournisseur),
-    );
+    oidc.add_child(RadioGroup::new(fournisseurs).lens(AppData::fournisseur));
     oidc.add_default_spacer();
 
     oidc.add_child(
@@ -73,7 +69,7 @@ fn ui_builder() -> impl Widget<AppData> {
         );
 
     let main = Flex::row()
-        .with_spacer(20.)
+        .with_default_spacer()
         .with_child(oidc)
         .with_spacer(40.)
         .with_child(infos);
@@ -83,14 +79,18 @@ fn ui_builder() -> impl Widget<AppData> {
         .with_child(main)
         .with_default_spacer()
         .with_child(
-            Label::new(|data: &AppData, _env: &_| data.erreur.clone())
-                .with_text_color(Color::rgb(1., 0., 0.))
-                .expand_width()
+            Flex::row()
+                .with_default_spacer()
+                .with_child(
+                    Label::new(|data: &AppData, _env: &_| data.erreur.clone())
+                        .with_text_color(Color::rgb(1., 0., 0.))
+                        .expand_width()
+                )
         )
 }
 
 pub fn main() {
-    let main_window = WindowDesc::new(ui_builder).title("UserInfos");
+    let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1000., 200.));
     let mut infos = Vector::new();
     let info = Info {
         valeur: "Name".to_string(),
