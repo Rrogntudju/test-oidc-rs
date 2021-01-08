@@ -1,6 +1,7 @@
 use druid::im::Vector;
-use druid::widget::{Button, CrossAxisAlignment, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll};
-use druid::{AppLauncher, Color, Data, ImageBuf, Lens, Widget, WidgetExt, WindowDesc};
+use druid::widget::{Button, CrossAxisAlignment, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, BackgroundBrush};
+use druid::{AppLauncher, Color, Data, ImageBuf, Lens, Widget, WidgetExt, WindowDesc, Env, theme, lens, };
+use druid::lens::{LensExt};
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -60,12 +61,26 @@ fn ui_builder() -> impl Widget<AppData> {
                 };
                 format!("UserInfos {}", f)
             })
+            .with_text_size(18.)
         )
+        .with_default_spacer()
         .with_child(
             Scroll::new(
-                List::new(|| Label::new(|info: &Info, _env: &_| format!("{}    {}", info.valeur, info.propriete))).with_spacing(10.))
-                .vertical()
-                .lens(AppData::infos),
+                List::new(||
+                    Label::new(|(infos, info): &(Vector<Info>, Info), env: &Env| {
+                        format!("{}    {}", info.valeur, info.propriete) 
+                    })
+//                    .background(Color::rgb(0.3, 0.3, 0.3))
+                )
+//                .lens(AppData::infos)
+            )
+            .vertical()
+            .lens(lens::Identity.map(
+                |data: &AppData| (data.infos.clone(), data.infos.clone()),
+                |_: &mut AppData, _: (Vector<Info>, Vector<Info>)| 
+                    ()
+                )
+            )
         );
 
     let main = Flex::row()
@@ -96,6 +111,7 @@ pub fn main() {
         valeur: "Name".to_string(),
         propriete: "LOOOOOOOOOOOOOOOOOOOOOOOOOL!".to_string(),
     };
+    infos.push_back(info.clone());
     infos.push_back(info);
     let data = AppData {
         fournisseur: Fournisseur::Microsoft,
