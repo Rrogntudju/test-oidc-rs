@@ -1,6 +1,6 @@
 use druid::im::Vector;
-use druid::widget::{Button, CrossAxisAlignment, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, BackgroundBrush};
-use druid::{AppLauncher, Color, Data, ImageBuf, Lens, Widget, WidgetExt, WindowDesc, Env, theme, lens, };
+use druid::widget::{Button, CrossAxisAlignment, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll};
+use druid::{AppLauncher, Color, Data, ImageBuf, Lens, Widget, WidgetExt, WindowDesc, Env, theme, lens, FontFamily, FontDescriptor};
 use druid::lens::{LensExt};
 
 #[derive(Clone, Data, Lens)]
@@ -16,10 +16,10 @@ enum Fournisseur {
     Google,
 }
 
-#[derive(Clone, Data)]
+#[derive(Clone, PartialEq, Data)]
 struct Info {
-    valeur: String,
     propriete: String,
+    valeur: String,
 }
 
 fn ui_builder() -> impl Widget<AppData> {
@@ -68,11 +68,24 @@ fn ui_builder() -> impl Widget<AppData> {
             Scroll::new(
                 List::new(||
                     Label::new(|(infos, info): &(Vector<Info>, Info), env: &Env| {
-                        format!("{}    {}", info.valeur, info.propriete) 
+                        let propriete_col_len = infos.into_iter().map(|info| info.propriete.len()).max().unwrap() + 3;
+                        let even_item = (infos.index_of(info).unwrap() % 2) == 0;
+                        if even_item {
+                            if let Ok(dark) = env.try_get(theme::BACKGROUND_DARK) {
+
+                            }
+
+                            if let Ok(light) = env.try_get(theme::BACKGROUND_LIGHT) {
+                                
+                            }
+
+                        }
+                        format!("{:2$}{}", info.propriete, info.valeur, propriete_col_len)
                     })
-//                    .background(Color::rgb(0.3, 0.3, 0.3))
+                    .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
+                    .with_text_size(16.)
                 )
-//                .lens(AppData::infos)
+//                    .background(Color::rgb(0.3, 0.3, 0.3))
             )
             .vertical()
             .lens(lens::Identity.map(
@@ -107,12 +120,16 @@ fn ui_builder() -> impl Widget<AppData> {
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1000., 200.));
     let mut infos = Vector::new();
-    let info = Info {
+    let info1 = Info {
         valeur: "Name".to_string(),
-        propriete: "LOOOOOOOOOOOOOOOOOOOOOOOOOL!".to_string(),
+        propriete: "LOOOOOOoooOOOOOO   OOOOOOOL!".to_string(),
     };
-    infos.push_back(info.clone());
-    infos.push_back(info);
+    let info2 = Info {
+        valeur: "Address".to_string(),
+        propriete: "lOOOO   OOOOOOOO  iiOOOOOOL!".to_string(),
+    };
+    infos.push_back(info1);
+    infos.push_back(info2);
     let data = AppData {
         fournisseur: Fournisseur::Microsoft,
         erreur: String::new(),
