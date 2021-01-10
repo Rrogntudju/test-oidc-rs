@@ -2,6 +2,9 @@ use druid::im::Vector;
 use druid::widget::{Button, CrossAxisAlignment, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll};
 use druid::{AppLauncher, Color, Data, ImageBuf, Lens, Widget, WidgetExt, WindowDesc, Env, theme, lens, FontFamily, FontDescriptor};
 use druid::lens::{LensExt};
+use druid::Key;
+
+const LABEL_BACKGROUND: Key<Color> = Key::new("org.linebender.label-background");
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -68,24 +71,24 @@ fn ui_builder() -> impl Widget<AppData> {
             Scroll::new(
                 List::new(||
                     Label::new(|(infos, info): &(Vector<Info>, Info), env: &Env| {
-                        let propriete_col_len = infos.into_iter().map(|info| info.propriete.len()).max().unwrap() + 3;
-                        let even_item = (infos.index_of(info).unwrap() % 2) == 0;
-                        if even_item {
-                            if let Ok(dark) = env.try_get(theme::BACKGROUND_DARK) {
-
-                            }
-
-                            if let Ok(light) = env.try_get(theme::BACKGROUND_LIGHT) {
-                                
-                            }
-
-                        }
-                        format!("{:2$}{}", info.propriete, info.valeur, propriete_col_len)
+                        let propriete_col_len = infos.into_iter().map(|info| info.propriete.len()).max().unwrap();
+                        let valeur_col_len = infos.into_iter().map(|info| info.valeur.len()).max().unwrap();
+                        format!("{:2$}   {:3$}", info.propriete, info.valeur, propriete_col_len, valeur_col_len)
                     })
                     .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
                     .with_text_size(16.)
+                    .background(LABEL_BACKGROUND)
+                    .env_scope(|env: &mut druid::Env, (infos, info): &(Vector<Info>, Info)| {
+                        if  (infos.index_of(info).unwrap() % 2) == 0 {
+                            env.set(LABEL_BACKGROUND, Color::grey(0.3));
+                        }
+                        else {
+                            let wb = env.get(theme::WINDOW_BACKGROUND_COLOR);
+                            env.set(LABEL_BACKGROUND, wb);
+                        }
+                    })
                 )
-//                    .background(Color::rgb(0.3, 0.3, 0.3))
+
             )
             .vertical()
             .lens(lens::Identity.map(
@@ -121,15 +124,20 @@ pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1000., 200.));
     let mut infos = Vector::new();
     let info1 = Info {
-        valeur: "Name".to_string(),
-        propriete: "LOOOOOOoooOOOOOO   OOOOOOOL!".to_string(),
+        propriete: "Name".to_string(),
+        valeur: "LOOOOOOoooOOOOOO   OOOOOOOL!".to_string(),
     };
     let info2 = Info {
-        valeur: "Address".to_string(),
-        propriete: "lOOOO   OOOOOOOO  iiOOOOOOL!".to_string(),
+        propriete: "Address".to_string(),
+        valeur: "lOOOO   OOOOOOOO  iiOOOOOOL!".to_string(),
+    };
+    let info3 = Info {
+        propriete: "Address".to_string(),
+        valeur: "lOOOO   OOOO0OOOO  iiOOOOOOL!".to_string(),
     };
     infos.push_back(info1);
     infos.push_back(info2);
+    infos.push_back(info3);
     let data = AppData {
         fournisseur: Fournisseur::Microsoft,
         erreur: String::new(),
