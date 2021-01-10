@@ -79,11 +79,12 @@ fn ui_builder() -> impl Widget<AppData> {
                     .with_text_size(16.)
                     .with_text_color(LIST_TEXT_COLOR)
                     .env_scope(|env: &mut druid::Env, (infos, info): &(Vector<Info>, Info)| {
+                        let label_color = env.get(theme::LABEL_COLOR);
                         if  (infos.index_of(info).unwrap() % 2) == 0 {
-                            env.set(LIST_TEXT_COLOR, Color::grey(0.75));
+                            env.set(LIST_TEXT_COLOR, label_color.with_alpha(0.8));
                         }
                         else {
-                            env.set(LIST_TEXT_COLOR, env.get(theme::LABEL_COLOR));
+                            env.set(LIST_TEXT_COLOR, label_color);
                         }
                     })
                 )
