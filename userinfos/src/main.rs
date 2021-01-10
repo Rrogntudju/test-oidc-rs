@@ -4,7 +4,7 @@ use druid::{AppLauncher, Color, Data, ImageBuf, Lens, Widget, WidgetExt, WindowD
 use druid::lens::{LensExt};
 use druid::Key;
 
-const LABEL_BACKGROUND: Key<Color> = Key::new("org.linebender.label-background");
+const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -65,30 +65,28 @@ fn ui_builder() -> impl Widget<AppData> {
                 format!("UserInfos {}", f)
             })
             .with_text_size(18.)
+            .with_text_color(Color::from_hex_str("FFA500").unwrap())
         )
         .with_default_spacer()
         .with_child(
             Scroll::new(
                 List::new(||
-                    Label::new(|(infos, info): &(Vector<Info>, Info), env: &Env| {
+                    Label::new(|(infos, info): &(Vector<Info>, Info), _: &Env| {
                         let propriete_col_len = infos.into_iter().map(|info| info.propriete.len()).max().unwrap();
-                        let valeur_col_len = infos.into_iter().map(|info| info.valeur.len()).max().unwrap();
-                        format!("{:2$}   {:3$}", info.propriete, info.valeur, propriete_col_len, valeur_col_len)
+                        format!("{:2$}    {}", info.propriete, info.valeur, propriete_col_len)
                     })
                     .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
                     .with_text_size(16.)
-                    .background(LABEL_BACKGROUND)
+                    .with_text_color(LIST_TEXT_COLOR)
                     .env_scope(|env: &mut druid::Env, (infos, info): &(Vector<Info>, Info)| {
                         if  (infos.index_of(info).unwrap() % 2) == 0 {
-                            env.set(LABEL_BACKGROUND, Color::grey(0.3));
+                            env.set(LIST_TEXT_COLOR, Color::grey(0.75));
                         }
                         else {
-                            let wb = env.get(theme::WINDOW_BACKGROUND_COLOR);
-                            env.set(LABEL_BACKGROUND, wb);
+                            env.set(LIST_TEXT_COLOR, env.get(theme::LABEL_COLOR));
                         }
                     })
                 )
-
             )
             .vertical()
             .lens(lens::Identity.map(
@@ -135,9 +133,14 @@ pub fn main() {
         propriete: "Address".to_string(),
         valeur: "lOOOO   OOOO0OOOO  iiOOOOOOL!".to_string(),
     };
+    let info4 = Info {
+        propriete: "URL".to_string(),
+        valeur: "lOOOOOOL!".to_string(),
+    };
     infos.push_back(info1);
     infos.push_back(info2);
     infos.push_back(info3);
+    infos.push_back(info4);
     let data = AppData {
         fournisseur: Fournisseur::Microsoft,
         erreur: String::new(),
