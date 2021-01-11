@@ -8,6 +8,7 @@ build = "build/build.rs"
 
 [dependencies]
 druid = { version = "0.7", features = [ "png", "im" ] }
+minreq = { version = "3", features = ["https", "json-using-serde"]}
 
 [build-dependencies]
 winres = "0.1"
