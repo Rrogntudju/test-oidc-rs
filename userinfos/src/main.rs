@@ -6,14 +6,14 @@ use druid::{
     lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, FontDescriptor, FontFamily, Handled, ImageBuf, Lens,
     Selector, Target, Widget, WidgetExt, WindowDesc,
 };
-use std::thread;
+use std::{fmt, thread};
 use std::error::Error;
 use minreq;
 use serde_json::value::Value;
 
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
-const FINISH_GET_USERINFOS: Selector<Vector<Info>> = Selector::new("finish_get_userinfos");
+const FINISH_GET_USERINFOS: Selector<Result<Vector<Info>, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "https://127.0.0.1:443";
 const SESSION: &str = "";
 const CSRF: &str = "";
@@ -30,6 +30,16 @@ struct AppData {
 enum Fournisseur {
     Microsoft,
     Google,
+}
+
+impl fmt::Display for Fournisseur {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fournisseur = match &self {
+            Fournisseur::Microsoft => "Microsoft",
+            Fournisseur::Google => "Google",
+        };
+        write!(f, "{}", fournisseur)
+    }
 }
 
 #[derive(Clone, PartialEq, Data)]
@@ -50,13 +60,24 @@ fn request_userinfos(fournisseur: &str) -> Result<Value, Box<dyn Error>> {
     )
 }
 
-
-
-fn get_userinfos(sink: ExtEventSink, number: u32) {
+fn get_userinfos(sink: ExtEventSink, fournisseur: &'static str) {
     thread::spawn(move || {
-       
+        let result = match request_userinfos(fournisseur) {
+            Ok(value) => {
+               let infos: Vector<Info> = value.as_array().unwrap().iter()
+                    .map(|value| {
+                        Info {
+                            propriete: value["propriété"].to_string(),
+                            valeur: value["valeur"].to_string(),
+                        }
+                    })
+                    .collect();
+                Ok(infos)
+            },
+            Err(e) => Err(e.to_string())
+        };
 
-        sink.submit_command(FINISH_GET_USERINFOS, number, Target::Auto)
+        sink.submit_command(FINISH_GET_USERINFOS, result, Target::Auto)
             .expect("command failed to submit");
     });
 }
@@ -65,12 +86,18 @@ struct Delegate;
 
 impl AppDelegate<AppData> for Delegate {
     fn command(&mut self, _ctx: &mut DelegateCtx, _target: Target, cmd: &Command, data: &mut AppData, _env: &Env) -> Handled {
-        if let Some(number) = cmd.get(FINISH_GET_USERINFOS) {
-             data.processing = false;
-            data.infos = *number;
-            Handled::Yes
-        } else {
-            Handled::No
+        match cmd.get(FINISH_GET_USERINFOS) {
+            Some(Ok(infos)) => {
+                data.en_traitement = false;
+                data.infos = infos.to_owned();
+                Handled::Yes
+            },
+            Some(Err(e)) => {
+                data.en_traitement = false;
+                data.erreur = e.to_string();
+                Handled::Yes
+            },
+            None => Handled::No
         }
     }
 }
@@ -108,11 +135,7 @@ fn ui_builder() -> impl Widget<AppData> {
         .main_axis_alignment(MainAxisAlignment::Center)
         .with_child(
             Label::new(|data: &AppData, _env: &_| {
-                let f = match data.fournisseur {
-                    Fournisseur::Microsoft => "Microsoft",
-                    Fournisseur::Google => "Google",
-                };
-                format!("UserInfos {}", f)
+                format!("UserInfos {}", data.fournisseur)
             })
             .with_text_size(18.)
             .with_text_color(Color::from_hex_str("FFA500").unwrap()),
