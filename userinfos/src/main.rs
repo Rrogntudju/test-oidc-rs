@@ -7,9 +7,14 @@ use druid::{
     Selector, Target, Widget, WidgetExt, WindowDesc,
 };
 use std::thread;
+use std::error::Error;
+use minreq;
+use serde_json::value::Value;
+
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Vector<Info>> = Selector::new("finish_get_userinfos");
+const ORIGINE: &str = "https://127.0.0.1:443";
 const SESSION: &str = "";
 const CSRF: &str = "";
 
@@ -32,6 +37,20 @@ struct Info {
     propriete: String,
     valeur: String,
 }
+
+fn request_userinfos(fournisseur: &str) -> Result<Value, Box<dyn Error>> {
+    Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
+        .with_header("Content-Type", "application/json")
+        .with_header("Cookie", format!("Session-Id={}; Csrf-Token={}", SESSION, CSRF))
+        .with_header("X-Csrf-Token", CSRF)
+        .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
+        .with_timeout(10)
+        .send()?
+        .json()?
+    )
+}
+
+
 
 fn get_userinfos(sink: ExtEventSink, number: u32) {
     thread::spawn(move || {
