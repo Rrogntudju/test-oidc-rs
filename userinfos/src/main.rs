@@ -14,9 +14,9 @@ use serde_json::value::Value;
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<Vector<Info>, String>> = Selector::new("finish_get_userinfos");
-const ORIGINE: &str = "https://127.0.0.1:443";
-const SESSION: &str = "";
-const CSRF: &str = "";
+const ORIGINE: &str = "http://localhost";
+const SESSION: &str = "SOcePviSJFEfLxrrBGIIJhvV6vWpNaoa";
+const CSRF: &str = "097XS6jQSZdQay5YHxo6WkYMATNI6SZooLlMMLK7h1ZjqE8lcmyW5lGUTVeXdQVE";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -60,16 +60,15 @@ fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Box<dyn Error>>
         .json()?
     )
 }
-
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur) {
             Ok(value) => {
-               let infos: Vector<Info> = value.as_array().unwrap().iter()
+               let infos: Vector<Info> = value.as_array().unwrap_or(&Vec::<Value>::new()).iter()
                     .map(|value| {
                         Info {
-                            propriete: value["propriété"].to_string(),
-                            valeur: value["valeur"].to_string(),
+                            propriete: value["propriété"].as_str().unwrap_or_default().to_owned(),
+                            valeur: value["valeur"].to_string().trim_matches('"').to_owned(),
                         }
                     })
                     .collect();
