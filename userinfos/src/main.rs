@@ -20,7 +20,8 @@ const CSRF: &str = "";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
-    fournisseur: Fournisseur,
+    radio_fournisseur: Fournisseur,
+    label_fournisseur: Fournisseur,
     infos: Vector<Info>,
     en_traitement: bool,
     erreur: String,
@@ -38,7 +39,7 @@ impl fmt::Display for Fournisseur {
             Fournisseur::Microsoft => "Microsoft",
             Fournisseur::Google => "Google",
         };
-        write!(f, "{}", fournisseur)
+        f.write_str(fournisseur)
     }
 }
 
@@ -48,7 +49,7 @@ struct Info {
     valeur: String,
 }
 
-fn request_userinfos(fournisseur: &str) -> Result<Value, Box<dyn Error>> {
+fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Box<dyn Error>> {
     Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
         .with_header("Content-Type", "application/json")
         .with_header("Cookie", format!("Session-Id={}; Csrf-Token={}", SESSION, CSRF))
@@ -60,9 +61,9 @@ fn request_userinfos(fournisseur: &str) -> Result<Value, Box<dyn Error>> {
     )
 }
 
-fn get_userinfos(sink: ExtEventSink, fournisseur: &'static str) {
+fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
-        let result = match request_userinfos(fournisseur) {
+        let result = match request_userinfos(&fournisseur) {
             Ok(value) => {
                let infos: Vector<Info> = value.as_array().unwrap().iter()
                     .map(|value| {
@@ -116,15 +117,18 @@ fn ui_builder() -> impl Widget<AppData> {
     oidc.add_child(Label::new("Fournisseur:"));
     oidc.add_default_spacer();
     let mut fournisseurs = Vector::new();
-    fournisseurs.push_back(("Microsoft".to_string(), Fournisseur::Microsoft));
-    fournisseurs.push_back(("Google".to_string(), Fournisseur::Google));
-    oidc.add_child(RadioGroup::new(fournisseurs).lens(AppData::fournisseur));
+    fournisseurs.push_back((Fournisseur::Microsoft.to_string(), Fournisseur::Microsoft));
+    fournisseurs.push_back((Fournisseur::Google.to_string(), Fournisseur::Google));
+    oidc.add_child(RadioGroup::new(fournisseurs).lens(AppData::radio_fournisseur));
     oidc.add_default_spacer();
 
     oidc.add_child(
         Button::new("UserInfos")
-            .on_click(|_, data: &mut AppData, _| {
-                data.erreur = "LOOOO OOOOOOOOO OOOOOOOOO OOOOOOOL".into();
+            .on_click(|ctx, data: &mut AppData, _| {
+                data.erreur = String::new();
+                data.label_fournisseur = data.radio_fournisseur.clone();
+                data.en_traitement = true;
+                get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone());
             })
             .fix_height(30.0),
     );
@@ -135,7 +139,7 @@ fn ui_builder() -> impl Widget<AppData> {
         .main_axis_alignment(MainAxisAlignment::Center)
         .with_child(
             Label::new(|data: &AppData, _env: &_| {
-                format!("UserInfos {}", data.fournisseur)
+                format!("UserInfos {}", data.label_fournisseur)
             })
             .with_text_size(18.)
             .with_text_color(Color::from_hex_str("FFA500").unwrap()),
@@ -183,10 +187,11 @@ fn ui_builder() -> impl Widget<AppData> {
 
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1000., 200.));
-    let mut infos = Vector::new();
+    let infos = Vector::new();
     
     let data = AppData {
-        fournisseur: Fournisseur::Microsoft,
+        radio_fournisseur: Fournisseur::Microsoft,
+        label_fournisseur: Fournisseur::Microsoft,
         infos,
         en_traitement: false,
         erreur: String::new(),
