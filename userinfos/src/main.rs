@@ -1,6 +1,6 @@
 use druid::im::Vector;
 use druid::lens::LensExt;
-use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll};
+use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, Spinner};
 use druid::Key;
 use druid::{
     lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, FontDescriptor, FontFamily, Handled, ImageBuf, Lens,
@@ -21,7 +21,7 @@ const CSRF: &str = "";
 #[derive(Clone, Data, Lens)]
 struct AppData {
     radio_fournisseur: Fournisseur,
-    label_fournisseur: Fournisseur,
+    label_fournisseur: String,
     infos: Vector<Info>,
     en_traitement: bool,
     erreur: String,
@@ -122,16 +122,39 @@ fn ui_builder() -> impl Widget<AppData> {
     oidc.add_child(RadioGroup::new(fournisseurs).lens(AppData::radio_fournisseur));
     oidc.add_default_spacer();
 
-    oidc.add_child(
-        Button::new("UserInfos")
-            .on_click(|ctx, data: &mut AppData, _| {
-                data.erreur = String::new();
-                data.label_fournisseur = data.radio_fournisseur.clone();
-                data.en_traitement = true;
-                get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone());
-            })
-            .fix_height(30.0),
-    );
+    let bouton = Button::new("UserInfos")
+        .on_click(|ctx, data: &mut AppData, _| {
+            data.erreur = String::new();
+            data.label_fournisseur = data.radio_fournisseur.to_string();
+            data.en_traitement = true;
+            get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone());
+        })
+        .fix_height(30.0);
+
+    oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
+
+    let table = Scroll::new(List::new(|| {
+        Label::new(|(infos, info): &(Vector<Info>, Info), _: &Env| {
+            let propriete_col_len = infos.into_iter().map(|info| info.propriete.len()).max().unwrap();
+            format!("{:2$}    {}", info.propriete, info.valeur, propriete_col_len)
+        })
+        .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
+        .with_text_size(16.)
+        .with_text_color(LIST_TEXT_COLOR)
+        .env_scope(|env: &mut druid::Env, (infos, info): &(Vector<Info>, Info)| {
+            let label_color = env.get(theme::LABEL_COLOR);
+            if (infos.index_of(info).unwrap() % 2) == 0 {
+                env.set(LIST_TEXT_COLOR, label_color.with_alpha(0.75));
+            } else {
+                env.set(LIST_TEXT_COLOR, label_color);
+            }
+        })
+    }))
+    .vertical()
+    .lens(lens::Identity.map(
+        |data: &AppData| (data.infos.clone(), data.infos.clone()),
+        |_: &mut AppData, _: (Vector<Info>, Vector<Info>)| (),
+    ));
 
     let infos = Flex::column()
         .must_fill_main_axis(true)
@@ -145,30 +168,7 @@ fn ui_builder() -> impl Widget<AppData> {
             .with_text_color(Color::from_hex_str("FFA500").unwrap()),
         )
         .with_default_spacer()
-        .with_child(
-            Scroll::new(List::new(|| {
-                Label::new(|(infos, info): &(Vector<Info>, Info), _: &Env| {
-                    let propriete_col_len = infos.into_iter().map(|info| info.propriete.len()).max().unwrap();
-                    format!("{:2$}    {}", info.propriete, info.valeur, propriete_col_len)
-                })
-                .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
-                .with_text_size(16.)
-                .with_text_color(LIST_TEXT_COLOR)
-                .env_scope(|env: &mut druid::Env, (infos, info): &(Vector<Info>, Info)| {
-                    let label_color = env.get(theme::LABEL_COLOR);
-                    if (infos.index_of(info).unwrap() % 2) == 0 {
-                        env.set(LIST_TEXT_COLOR, label_color.with_alpha(0.75));
-                    } else {
-                        env.set(LIST_TEXT_COLOR, label_color);
-                    }
-                })
-            }))
-            .vertical()
-            .lens(lens::Identity.map(
-                |data: &AppData| (data.infos.clone(), data.infos.clone()),
-                |_: &mut AppData, _: (Vector<Info>, Vector<Info>)| (),
-            )),
-        );
+        .with_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), table));
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
 
@@ -191,7 +191,7 @@ pub fn main() {
     
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
-        label_fournisseur: Fournisseur::Microsoft,
+        label_fournisseur: String::new(),
         infos,
         en_traitement: false,
         erreur: String::new(),
