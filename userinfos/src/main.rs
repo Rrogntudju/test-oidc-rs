@@ -3,7 +3,7 @@ use druid::lens::LensExt;
 use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, Spinner};
 use druid::Key;
 use druid::{
-    lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, FontDescriptor, FontFamily, Handled, ImageBuf, Lens,
+    lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens,
     Selector, Target, Widget, WidgetExt, WindowDesc,
 };
 use std::{fmt, thread};
@@ -11,12 +11,11 @@ use std::error::Error;
 use minreq;
 use serde_json::value::Value;
 
-
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<Vector<Info>, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "SOcePviSJFEfLxrrBGIIJhvV6vWpNaoa";
-const CSRF: &str = "097XS6jQSZdQay5YHxo6WkYMATNI6SZooLlMMLK7h1ZjqE8lcmyW5lGUTVeXdQVE";
+const SESSION: &str = "Wihy2ObVL1JVa8lSs9ChFrcfawararqo";
+const CSRF: &str = "RVHeVAeNiizU8VAQuRHc7cFct2lAL3lmgfNvF7boNQ8C2oQjfTmgXQ2i4z4QVqwh";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -82,6 +81,14 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     });
 }
 
+fn set_table_text_color(env: &mut Env, infos: &Vector<Info>, info: &Info) {
+    let label_color = env.get(theme::LABEL_COLOR);
+    if (infos.index_of(info).unwrap() % 2) == 0 {
+        env.set(LIST_TEXT_COLOR, label_color.with_alpha(0.75));
+    } else {
+        env.set(LIST_TEXT_COLOR, label_color);
+    }
+}
 struct Delegate;
 
 impl AppDelegate<AppData> for Delegate {
@@ -131,24 +138,26 @@ fn ui_builder() -> impl Widget<AppData> {
         .fix_height(30.0);
 
     oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
-
-    let table = Scroll::new(List::new(|| {
-        Label::new(|(infos, info): &(Vector<Info>, Info), _: &Env| {
-            let propriete_col_len = infos.into_iter().map(|info| info.propriete.len()).max().unwrap();
-            format!("{:2$}    {}", info.propriete, info.valeur, propriete_col_len)
-        })
-        .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
-        .with_text_size(16.)
-        .with_text_color(LIST_TEXT_COLOR)
-        .env_scope(|env: &mut druid::Env, (infos, info): &(Vector<Info>, Info)| {
-            let label_color = env.get(theme::LABEL_COLOR);
-            if (infos.index_of(info).unwrap() % 2) == 0 {
-                env.set(LIST_TEXT_COLOR, label_color.with_alpha(0.75));
-            } else {
-                env.set(LIST_TEXT_COLOR, label_color);
-            }
-        })
-    }))
+    
+    let table = Scroll::new(Flex::row()
+        .with_child(List::new(|| {
+            Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.propriete.clone())
+                .with_text_color(LIST_TEXT_COLOR)
+                .env_scope(|env: &mut Env, (infos, info): &(Vector<Info>, Info)| {
+                    set_table_text_color(env, infos, info);
+                })
+            })
+        )
+        .with_default_spacer()
+        .with_child(List::new(|| {
+            Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.valeur.clone())
+                .with_text_color(LIST_TEXT_COLOR)
+                .env_scope(|env: &mut Env, (infos, info): &(Vector<Info>, Info)| {
+                    set_table_text_color(env, infos, info);
+                })
+            })
+        )
+    )
     .vertical()
     .lens(lens::Identity.map(
         |data: &AppData| (data.infos.clone(), data.infos.clone()),
