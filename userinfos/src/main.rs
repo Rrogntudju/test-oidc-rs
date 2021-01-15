@@ -81,7 +81,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     });
 }
 
-fn set_table_text_color(env: &mut Env, infos: &Vector<Info>, info: &Info) {
+fn set_list_text_color(env: &mut Env, infos: &Vector<Info>, info: &Info) {
     let label_color = env.get(theme::LABEL_COLOR);
     if (infos.index_of(info).unwrap() % 2) == 0 {
         env.set(LIST_TEXT_COLOR, label_color.with_alpha(0.75));
@@ -144,7 +144,7 @@ fn ui_builder() -> impl Widget<AppData> {
             Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.propriete.clone())
                 .with_text_color(LIST_TEXT_COLOR)
                 .env_scope(|env: &mut Env, (infos, info): &(Vector<Info>, Info)| {
-                    set_table_text_color(env, infos, info);
+                    set_list_text_color(env, infos, info);
                 })
             })
         )
@@ -153,7 +153,7 @@ fn ui_builder() -> impl Widget<AppData> {
             Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.valeur.clone())
                 .with_text_color(LIST_TEXT_COLOR)
                 .env_scope(|env: &mut Env, (infos, info): &(Vector<Info>, Info)| {
-                    set_table_text_color(env, infos, info);
+                    set_list_text_color(env, infos, info);
                 })
             })
         )
