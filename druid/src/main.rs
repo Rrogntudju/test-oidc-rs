@@ -14,8 +14,8 @@ use serde_json::value::Value;
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<Vector<Info>, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "Wihy2ObVL1JVa8lSs9ChFrcfawararqo";
-const CSRF: &str = "RVHeVAeNiizU8VAQuRHc7cFct2lAL3lmgfNvF7boNQ8C2oQjfTmgXQ2i4z4QVqwh";
+const SESSION: &str = "j5dOTMMPqdvF1ZOmqF0aJ4lQxAwV2VAS";
+const CSRF: &str = "wNWS16SjbQlCEUQus0pfWO3dxsBwD37KIpzmWHqEwl68c4tcKIETjJwKEk6B8sE1";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -190,7 +190,7 @@ fn ui_builder() -> impl Widget<AppData> {
                     .with_text_color(Color::rgb(1., 0., 0.))
                     .expand_width(),
             ),
-        )
+        ).debug_paint_layout()
 }
 
 pub fn main() {
