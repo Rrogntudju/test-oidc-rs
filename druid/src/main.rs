@@ -1,10 +1,10 @@
 use druid::im::Vector;
 use druid::lens::LensExt;
-use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, Spinner};
+use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, Spinner, Painter, ClipBox};
 use druid::Key;
 use druid::{
     lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens,
-    Selector, Target, Widget, WidgetExt, WindowDesc,
+    Selector, Target, Widget, WidgetExt, WindowDesc, RenderContext,
 };
 use std::{fmt, thread};
 use std::error::Error;
@@ -14,8 +14,8 @@ use serde_json::value::Value;
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<Vector<Info>, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "j5dOTMMPqdvF1ZOmqF0aJ4lQxAwV2VAS";
-const CSRF: &str = "wNWS16SjbQlCEUQus0pfWO3dxsBwD37KIpzmWHqEwl68c4tcKIETjJwKEk6B8sE1";
+const SESSION: &str = "a8aadY8XEGSKz8QtXRqOMPugDbwqI2cf";
+const CSRF: &str = "YdMTXDrWbHbBoW4daYoexory1Q4RtzuJYpBZgSg0VaaCU07ubDGp4JbI9wRD8QaO";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -139,10 +139,18 @@ fn ui_builder() -> impl Widget<AppData> {
 
     oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
     
-    let table = Scroll::new(Flex::row()
+    /* let my_painter = Painter::new(|ctx, _data: &_, env| {
+        let bounds = ctx.size().to_rect();
+
+    
+            ctx.fill(bounds, &Color::from_hex_str("FFA500").unwrap());
+        }
+    ); */
+
+    let table = /* Scroll::new( */Flex::row()
         .with_child(List::new(|| {
             Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.propriete.clone())
-                .with_text_color(LIST_TEXT_COLOR)
+                .background(Color::from_hex_str("FFA500").unwrap())
                 .env_scope(|env: &mut Env, (infos, info): &(Vector<Info>, Info)| {
                     set_list_text_color(env, infos, info);
                 })
@@ -157,8 +165,8 @@ fn ui_builder() -> impl Widget<AppData> {
                 })
             })
         )
-    )
-    .vertical()
+//    )
+//    .vertical()
     .lens(lens::Identity.map(
         |data: &AppData| (data.infos.clone(), data.infos.clone()),
         |_: &mut AppData, _: (Vector<Info>, Vector<Info>)| (),
@@ -194,7 +202,7 @@ fn ui_builder() -> impl Widget<AppData> {
 }
 
 pub fn main() {
-    let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1000., 200.));
+    let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
     let infos = Vector::new();
     
     let data = AppData {
