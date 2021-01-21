@@ -1,15 +1,15 @@
 use druid::im::Vector;
 use druid::lens::LensExt;
-use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, Spinner, Painter, ClipBox};
+use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, Spinner};
 use druid::Key;
 use druid::{
-    lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens,
-    Selector, Target, Widget, WidgetExt, WindowDesc, RenderContext,
+    lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector,
+    Target, Widget, WidgetExt, WindowDesc,
 };
-use std::{fmt, thread};
-use std::error::Error;
 use minreq;
 use serde_json::value::Value;
+use std::error::Error;
+use std::{fmt, thread};
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<Vector<Info>, String>> = Selector::new("finish_get_userinfos");
@@ -56,24 +56,24 @@ fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Box<dyn Error>>
         .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
         .with_timeout(10)
         .send()?
-        .json()?
-    )
+        .json()?)
 }
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur) {
             Ok(value) => {
-               let infos: Vector<Info> = value.as_array().unwrap_or(&Vec::<Value>::new()).iter()
-                    .map(|value| {
-                        Info {
-                            propriete: value["propriété"].as_str().unwrap_or_default().to_owned(),
-                            valeur: value["valeur"].to_string().trim_matches('"').to_owned(),
-                        }
+                let infos: Vector<Info> = value
+                    .as_array()
+                    .unwrap_or(&Vec::<Value>::new())
+                    .iter()
+                    .map(|value| Info {
+                        propriete: value["propriété"].as_str().unwrap_or_default().to_owned(),
+                        valeur: value["valeur"].to_string().trim_matches('"').to_owned(),
                     })
                     .collect();
                 Ok(infos)
-            },
-            Err(e) => Err(e.to_string())
+            }
+            Err(e) => Err(e.to_string()),
         };
 
         sink.submit_command(FINISH_GET_USERINFOS, result, Target::Auto)
@@ -98,13 +98,13 @@ impl AppDelegate<AppData> for Delegate {
                 data.en_traitement = false;
                 data.infos = infos.to_owned();
                 Handled::Yes
-            },
+            }
             Some(Err(e)) => {
                 data.en_traitement = false;
                 data.erreur = e.to_string();
                 Handled::Yes
-            },
-            None => Handled::No
+            }
+            None => Handled::No,
         }
     }
 }
@@ -138,16 +138,8 @@ fn ui_builder() -> impl Widget<AppData> {
         .fix_height(30.0);
 
     oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
-    
-    /* let my_painter = Painter::new(|ctx, _data: &_, env| {
-        let bounds = ctx.size().to_rect();
 
-    
-            ctx.fill(bounds, &Color::from_hex_str("FFA500").unwrap());
-        }
-    ); */
-
-    let table = /* Scroll::new( */Flex::row()
+    let table = Scroll::new(Flex::row()
         .with_child(List::new(|| {
             Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.propriete.clone())
                 .background(Color::from_hex_str("FFA500").unwrap())
@@ -165,8 +157,8 @@ fn ui_builder() -> impl Widget<AppData> {
                 })
             })
         )
-//    )
-//    .vertical()
+    )
+    .vertical()
     .lens(lens::Identity.map(
         |data: &AppData| (data.infos.clone(), data.infos.clone()),
         |_: &mut AppData, _: (Vector<Info>, Vector<Info>)| (),
@@ -177,11 +169,9 @@ fn ui_builder() -> impl Widget<AppData> {
         .cross_axis_alignment(CrossAxisAlignment::Start)
         .main_axis_alignment(MainAxisAlignment::Center)
         .with_child(
-            Label::new(|data: &AppData, _env: &_| {
-                format!("UserInfos {}", data.label_fournisseur)
-            })
-            .with_text_size(18.)
-            .with_text_color(Color::from_hex_str("FFA500").unwrap()),
+            Label::new(|data: &AppData, _env: &_| format!("UserInfos {}", data.label_fournisseur))
+                .with_text_size(18.)
+                .with_text_color(Color::from_hex_str("FFA500").unwrap()),
         )
         .with_default_spacer()
         .with_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), table));
@@ -198,13 +188,14 @@ fn ui_builder() -> impl Widget<AppData> {
                     .with_text_color(Color::rgb(1., 0., 0.))
                     .expand_width(),
             ),
-        ).debug_paint_layout()
+        )
+        .debug_paint_layout()
 }
 
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
     let infos = Vector::new();
-    
+
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),
@@ -212,5 +203,8 @@ pub fn main() {
         en_traitement: false,
         erreur: String::new(),
     };
-    AppLauncher::with_window(main_window).delegate(Delegate {}).launch(data).expect("launch failed");
+    AppLauncher::with_window(main_window)
+        .delegate(Delegate {})
+        .launch(data)
+        .expect("launch failed");
 }

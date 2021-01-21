@@ -1,34 +1,34 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//! An example of a custom drawing widget.
-//! We draw an image, some text, a shape, and a curve.
-
-use druid::kurbo::BezPath;
 use druid::piet::{FontFamily, ImageFormat, InterpolationMode, Text, TextLayoutBuilder};
 use druid::widget::prelude::*;
 use druid::{
-    Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect, TextLayout,
-    WindowDesc,
+    Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect,
+    WindowDesc, LabelText, Label,
 };
 
-struct CustomWidget;
+type Columns = Vec<Label<T>>;
+type Rows = Vec<Columns>;
+pub struct Table<T> {
+    rows: Rows,
+    column_sizes: Vec<Size>,
+}
+
+impl<T: Data> Table<T> {
+    pub fn new(rows: Vec<Vec<impl Into<LabelText<T>>>>) -> Self {
+        with_rows(rows)
+    }
+    
+    pub fn with_rows(rows: Vec<Vec<impl Into<LabelText<T>>>>) -> Self {
+        Self {
+            rows: rows.iter().map(|row| row.iter().map(|col| Label::new(col)).collect::<Columns>()).collect::<Rows>(),
+            column_sizes: Vec::new(),
+        }
+    }
+}
 
 // If this widget has any child widgets it should call its event, update and layout
 // (and lifecycle) methods as well to make sure it works. Some things can be filtered,
 // but a general rule is to just pass it through unless you really know you don't want it.
-impl Widget<String> for CustomWidget {
+impl<T: Data> Widget<T> for CustomWidget {
     fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut String, _env: &Env) {}
 
     fn lifecycle(
@@ -150,24 +150,3 @@ impl Widget<String> for CustomWidget {
     }
 }
 
-pub fn main() {
-    let window = WindowDesc::new(|| CustomWidget {}).title(LocalizedString::new("Fancy Colors"));
-    AppLauncher::with_window(window)
-        .use_simple_logger()
-        .launch("Druid + Piet".to_string())
-        .expect("launch failed");
-}
-
-fn make_image_data(width: usize, height: usize) -> Vec<u8> {
-    let mut result = vec![0; width * height * 4];
-    for y in 0..height {
-        for x in 0..width {
-            let ix = (y * width + x) * 4;
-            result[ix] = x as u8;
-            result[ix + 1] = y as u8;
-            result[ix + 2] = !(x as u8);
-            result[ix + 3] = 127;
-        }
-    }
-    result
-}
