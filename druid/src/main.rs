@@ -6,8 +6,8 @@ use druid::{
     lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector,
     Target, Widget, WidgetExt, WindowDesc,
 };
-//mod table;
-//use table::Table;
+mod table;
+use table::Table;
 use minreq;
 use serde_json::value::Value;
 use std::error::Error;
@@ -20,8 +20,8 @@ const ORIGINE: &str = "http://localhost";
 const SESSION: &str = "PjxOlr3ThjPm5oaKMToeWexWToie2LgJ";
 const CSRF: &str = "3xXCi8p8zkZrlDMo8I7wsQYEzAUpEZfOSXuoJzmrEqF66MegZRTDdaB4SVOGtDj4";
 
-type Columns = Vec<String>;
-type Rows = Vec<Columns>;
+type Columns = Vector<String>;
+type Rows = Vector<Columns>;
 #[derive(Clone, Data, Lens)]
 struct AppData {
     radio_fournisseur: Fournisseur,
@@ -73,8 +73,8 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
                     .iter()
                     .map(|value| { 
                         let mut columns = Columns::new();
-                        columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
-                        columns.push(value["valeur"].to_string().trim_matches('"').to_owned());
+                        columns.push_back(value["propriété"].as_str().unwrap_or_default().to_owned());
+                        columns.push_back(value["valeur"].to_string().trim_matches('"').to_owned());
                         columns
                     })
                     .collect::<Rows>();
@@ -182,7 +182,7 @@ fn ui_builder() -> impl Widget<AppData> {
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
     let mut infos = Rows::new();
-    infos.push(Columns::new());
+    infos.push_back(Columns::new());
 
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,

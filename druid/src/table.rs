@@ -7,24 +7,33 @@ use druid::{
 
 type Columns<T> = Vec<Label<T>>;
 type Rows<T> = Vec<Columns<T>>;
-pub struct Table {
-    max_column_sizes: Vec<Size>,
-
-}
+pub struct Table;
 
 impl Table {
-    pub fn new() -> Self {
-        Self {
-            max_column_sizes: Vec::new(),
-        }
+    pub fn new<T: Data>(data: impl IntoIterator<Item = impl IntoIterator<Item = impl Into<LabelText<T>>>>) -> impl Widget<T> {
 
+
+    }
+}
+
+pub struct TableCell<T> {
+    cell_size: Size,
+    cell_label: Label<T>,
+}
+
+impl<T: Data> TableCell<T> {
+    pub fn new(label: impl Into<LabelText<T>>, cell_size: Size) -> Self {
+        Self {
+            cell_size,
+            cell_label: Label::new(label),
+        }
     }
 }
 
 // If this widget has any child widgets it should call its event, update and layout
 // (and lifecycle) methods as well to make sure it works. Some things can be filtered,
 // but a general rule is to just pass it through unless you really know you don't want it.
-impl<T: Data> Widget<T> for Table<T> {
+impl<T: Data> Widget<T> for TableCell<T> {
     fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut T, _env: &Env) {}
 
     fn lifecycle(
