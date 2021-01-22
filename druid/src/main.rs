@@ -6,22 +6,27 @@ use druid::{
     lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector,
     Target, Widget, WidgetExt, WindowDesc,
 };
+//mod table;
+//use table::Table;
 use minreq;
 use serde_json::value::Value;
 use std::error::Error;
 use std::{fmt, thread};
+use std::sync::Arc;
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
-const FINISH_GET_USERINFOS: Selector<Result<Vector<Info>, String>> = Selector::new("finish_get_userinfos");
+const FINISH_GET_USERINFOS: Selector<Result<Rows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "a8aadY8XEGSKz8QtXRqOMPugDbwqI2cf";
-const CSRF: &str = "YdMTXDrWbHbBoW4daYoexory1Q4RtzuJYpBZgSg0VaaCU07ubDGp4JbI9wRD8QaO";
+const SESSION: &str = "PjxOlr3ThjPm5oaKMToeWexWToie2LgJ";
+const CSRF: &str = "3xXCi8p8zkZrlDMo8I7wsQYEzAUpEZfOSXuoJzmrEqF66MegZRTDdaB4SVOGtDj4";
 
+type Columns = Vec<String>;
+type Rows = Vec<Columns>;
 #[derive(Clone, Data, Lens)]
 struct AppData {
     radio_fournisseur: Fournisseur,
     label_fournisseur: String,
-    infos: Vector<Info>,
+    infos: Arc<Rows>,
     en_traitement: bool,
     erreur: String,
 }
@@ -62,15 +67,17 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur) {
             Ok(value) => {
-                let infos: Vector<Info> = value
+                let infos = value
                     .as_array()
                     .unwrap_or(&Vec::<Value>::new())
                     .iter()
-                    .map(|value| Info {
-                        propriete: value["propriété"].as_str().unwrap_or_default().to_owned(),
-                        valeur: value["valeur"].to_string().trim_matches('"').to_owned(),
+                    .map(|value| { 
+                        let mut columns = Columns::new();
+                        columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
+                        columns.push(value["valeur"].to_string().trim_matches('"').to_owned());
+                        columns
                     })
-                    .collect();
+                    .collect::<Rows>();
                 Ok(infos)
             }
             Err(e) => Err(e.to_string()),
@@ -96,7 +103,7 @@ impl AppDelegate<AppData> for Delegate {
         match cmd.get(FINISH_GET_USERINFOS) {
             Some(Ok(infos)) => {
                 data.en_traitement = false;
-                data.infos = infos.to_owned();
+                data.infos = Arc::new(infos.to_owned());
                 Handled::Yes
             }
             Some(Err(e)) => {
@@ -139,30 +146,10 @@ fn ui_builder() -> impl Widget<AppData> {
 
     oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
 
-    let table = Scroll::new(Flex::row()
-        .with_child(List::new(|| {
-            Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.propriete.clone())
-                .background(Color::from_hex_str("FFA500").unwrap())
-                .env_scope(|env: &mut Env, (infos, info): &(Vector<Info>, Info)| {
-                    set_list_text_color(env, infos, info);
-                })
-            })
+    let table = Flex::row().lens(AppData::infos); /*.with_child(Table::new()
         )
-        .with_default_spacer()
-        .with_child(List::new(|| {
-            Label::new(|(_infos, info): &(Vector<Info>, Info), _: &Env| info.valeur.clone())
-                .with_text_color(LIST_TEXT_COLOR)
-                .env_scope(|env: &mut Env, (infos, info): &(Vector<Info>, Info)| {
-                    set_list_text_color(env, infos, info);
-                })
-            })
-        )
-    )
-    .vertical()
-    .lens(lens::Identity.map(
-        |data: &AppData| (data.infos.clone(), data.infos.clone()),
-        |_: &mut AppData, _: (Vector<Info>, Vector<Info>)| (),
-    ));
+
+    .lens(AppData::infos); */
 
     let infos = Flex::column()
         .must_fill_main_axis(true)
@@ -194,12 +181,13 @@ fn ui_builder() -> impl Widget<AppData> {
 
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
-    let infos = Vector::new();
+    let mut infos = Rows::new();
+    infos.push(Columns::new());
 
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),
-        infos,
+        infos: Arc::new(infos),
         en_traitement: false,
         erreur: String::new(),
     };
