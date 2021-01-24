@@ -1,31 +1,24 @@
+use std::boxed;
+
 use druid::piet::{FontFamily, ImageFormat, InterpolationMode, Text, TextLayoutBuilder};
 use druid::widget::{prelude::*, Label, LabelText};
 use druid::{
     Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect,
-    WindowDesc,
+    WindowDesc, WidgetPod,
 };
 
-type Columns<T> = Vec<Label<T>>;
-type Rows<T> = Vec<Columns<T>>;
-pub struct Table;
-
-impl Table {
-    pub fn new<T: Data>(data: impl IntoIterator<Item = impl IntoIterator<Item = impl Into<LabelText<T>>>>) -> impl Widget<T> {
-
-
-    }
+pub type TableColumns = Vec<String>;
+pub type TableRows = Vec<TableColumns>;
+pub struct Table<T> {
+    max_label_width: Vec<f64>,
+    inner: WidgetPod<T, Box<dyn Widget<T>>>,
 }
 
-pub struct TableCell<T> {
-    cell_size: Size,
-    cell_label: Label<T>,
-}
-
-impl<T: Data> TableCell<T> {
-    pub fn new(label: impl Into<LabelText<T>>, cell_size: Size) -> Self {
-        Self {
-            cell_size,
-            cell_label: Label::new(label),
+impl<T: Data> Table<T> {
+    pub fn new() -> Self {
+        Table {
+            max_label_width: Vec::new(),
+            inner: WidgetPod::new(Label::new("LOL")).boxed(),
         }
     }
 }
@@ -33,7 +26,7 @@ impl<T: Data> TableCell<T> {
 // If this widget has any child widgets it should call its event, update and layout
 // (and lifecycle) methods as well to make sure it works. Some things can be filtered,
 // but a general rule is to just pass it through unless you really know you don't want it.
-impl<T: Data> Widget<T> for TableCell<T> {
+impl<T: Data> Widget<T> for Table<T> {
     fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut T, _env: &Env) {}
 
     fn lifecycle(

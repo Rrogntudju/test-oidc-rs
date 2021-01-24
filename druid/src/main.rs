@@ -1,13 +1,12 @@
 use druid::im::Vector;
-use druid::lens::LensExt;
-use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, List, MainAxisAlignment, RadioGroup, Scroll, Spinner};
+use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, MainAxisAlignment, RadioGroup, Scroll, Spinner};
 use druid::Key;
 use druid::{
     lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector,
     Target, Widget, WidgetExt, WindowDesc,
 };
 mod table;
-use table::Table;
+use table::{Table, TableColumns, TableRows};
 use minreq;
 use serde_json::value::Value;
 use std::error::Error;
@@ -15,18 +14,16 @@ use std::{fmt, thread};
 use std::sync::Arc;
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
-const FINISH_GET_USERINFOS: Selector<Result<Rows, String>> = Selector::new("finish_get_userinfos");
+const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
 const SESSION: &str = "PjxOlr3ThjPm5oaKMToeWexWToie2LgJ";
 const CSRF: &str = "3xXCi8p8zkZrlDMo8I7wsQYEzAUpEZfOSXuoJzmrEqF66MegZRTDdaB4SVOGtDj4";
 
-type Columns = Vector<String>;
-type Rows = Vector<Columns>;
 #[derive(Clone, Data, Lens)]
 struct AppData {
     radio_fournisseur: Fournisseur,
     label_fournisseur: String,
-    infos: Arc<Rows>,
+    infos: Arc<TableRows>,
     en_traitement: bool,
     erreur: String,
 }
@@ -72,12 +69,12 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
                     .unwrap_or(&Vec::<Value>::new())
                     .iter()
                     .map(|value| { 
-                        let mut columns = Columns::new();
-                        columns.push_back(value["propriété"].as_str().unwrap_or_default().to_owned());
-                        columns.push_back(value["valeur"].to_string().trim_matches('"').to_owned());
+                        let mut columns = TableColumns::new();
+                        columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
+                        columns.push(value["valeur"].to_string().trim_matches('"').to_owned());
                         columns
                     })
-                    .collect::<Rows>();
+                    .collect::<TableRows>();
                 Ok(infos)
             }
             Err(e) => Err(e.to_string()),
@@ -88,14 +85,6 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     });
 }
 
-fn set_list_text_color(env: &mut Env, infos: &Vector<Info>, info: &Info) {
-    let label_color = env.get(theme::LABEL_COLOR);
-    if (infos.index_of(info).unwrap() % 2) == 0 {
-        env.set(LIST_TEXT_COLOR, label_color.with_alpha(0.75));
-    } else {
-        env.set(LIST_TEXT_COLOR, label_color);
-    }
-}
 struct Delegate;
 
 impl AppDelegate<AppData> for Delegate {
@@ -146,10 +135,7 @@ fn ui_builder() -> impl Widget<AppData> {
 
     oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
 
-    let table = Flex::row().lens(AppData::infos); /*.with_child(Table::new()
-        )
-
-    .lens(AppData::infos); */
+    let table = Flex::row().lens(AppData::infos); 
 
     let infos = Flex::column()
         .must_fill_main_axis(true)
@@ -161,7 +147,7 @@ fn ui_builder() -> impl Widget<AppData> {
                 .with_text_color(Color::from_hex_str("FFA500").unwrap()),
         )
         .with_default_spacer()
-        .with_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), table));
+        .with_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), Table::new().lens(AppData::infos)));
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
 
@@ -181,8 +167,8 @@ fn ui_builder() -> impl Widget<AppData> {
 
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
-    let mut infos = Rows::new();
-    infos.push_back(Columns::new());
+    let mut infos = TableRows::new();
+    infos.push(TableColumns::new());
 
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
