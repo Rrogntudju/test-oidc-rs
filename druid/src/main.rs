@@ -6,7 +6,7 @@ use druid::{
     Target, Widget, WidgetExt, WindowDesc,
 };
 mod table;
-use table::{Table, TableColumns, TableRows};
+use table::{Table, TableColumns, TableRows, TableHeaders, TableData};
 use minreq;
 use serde_json::value::Value;
 use std::error::Error;
@@ -23,7 +23,7 @@ const CSRF: &str = "3xXCi8p8zkZrlDMo8I7wsQYEzAUpEZfOSXuoJzmrEqF66MegZRTDdaB4SVOG
 struct AppData {
     radio_fournisseur: Fournisseur,
     label_fournisseur: String,
-    infos: Arc<TableRows>,
+    infos: Arc<TableData>,
     en_traitement: bool,
     erreur: String,
 }
@@ -92,7 +92,10 @@ impl AppDelegate<AppData> for Delegate {
         match cmd.get(FINISH_GET_USERINFOS) {
             Some(Ok(infos)) => {
                 data.en_traitement = false;
-                data.infos = Arc::new(infos.to_owned());
+                data.infos = Arc::new(TableData {
+                    rows: infos.to_owned(), 
+                    headers: vec!("Propriété".to_owned(), "Valeur".to_owned()),
+                });
                 Handled::Yes
             }
             Some(Err(e)) => {
@@ -135,8 +138,6 @@ fn ui_builder() -> impl Widget<AppData> {
 
     oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
 
-    let table = Flex::row().lens(AppData::infos); 
-
     let infos = Flex::column()
         .must_fill_main_axis(true)
         .cross_axis_alignment(CrossAxisAlignment::Start)
@@ -167,9 +168,10 @@ fn ui_builder() -> impl Widget<AppData> {
 
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
-    let mut infos = TableRows::new();
-    infos.push(TableColumns::new());
-
+    let mut rows = TableRows::new();
+    rows.push(TableColumns::new());
+    let infos = TableData {rows, headers: TableHeaders::new()};
+    
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),

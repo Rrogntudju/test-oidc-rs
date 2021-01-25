@@ -4,20 +4,25 @@ use druid::piet::{FontFamily, ImageFormat, InterpolationMode, Text, TextLayoutBu
 use druid::widget::{prelude::*, Label, LabelText};
 use druid::{
     Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect,
-    WindowDesc, WidgetPod,
+    WindowDesc, WidgetPod, theme,
 };
 
 pub type TableColumns = Vec<String>;
 pub type TableRows = Vec<TableColumns>;
+pub type TableHeaders = Vec<String>;
+pub struct TableData {
+    pub headers: TableHeaders,
+    pub rows: TableRows,
+}
 pub struct Table<T> {
-    max_label_width: Vec<f64>,
+    label_width: Vec<f64>,
     inner: WidgetPod<T, Box<dyn Widget<T>>>,
 }
 
 impl<T: Data> Table<T> {
     pub fn new() -> Self {
         Table {
-            max_label_width: Vec::new(),
+            label_width: Vec::new(),
             inner: WidgetPod::new(Label::new("LOL")).boxed(),
         }
     }
@@ -27,56 +32,25 @@ impl<T: Data> Table<T> {
 // (and lifecycle) methods as well to make sure it works. Some things can be filtered,
 // but a general rule is to just pass it through unless you really know you don't want it.
 impl<T: Data> Widget<T> for Table<T> {
-    fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut T, _env: &Env) {}
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
+        self.inner.event(ctx, event, data, env);
+    }
 
-    fn lifecycle(
-        &mut self,
-        _ctx: &mut LifeCycleCtx,
-        _event: &LifeCycle,
-        _data: &T,
-        _env: &Env,
-    ) {
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, env: &Env) {
+        self.inner.lifecycle(ctx, event, data, env);
     }
 
     fn update(&mut self, _ctx: &mut UpdateCtx, _old_data: &T, _data: &T, _env: &Env) {}
 
-    fn layout(
-        &mut self,
-        _layout_ctx: &mut LayoutCtx,
-        bc: &BoxConstraints,
-        _data: &T,
-        _env: &Env,
-    ) -> Size {
-        // BoxConstraints are passed by the parent widget.
-        // This method can return any Size within those constraints:
-        // bc.constrain(my_size)
-        //
-        // To check if a dimension is infinite or not (e.g. scrolling):
-        // bc.is_width_bounded() / bc.is_height_bounded()
-        //
-        // bx.max() returns the maximum size of the widget. Be careful
-        // using this, since always make sure the widget is bounded.
-        // If bx.max() is used in a scrolling widget things will probably
-        // not work correctly.
-        if bc.is_width_bounded() | bc.is_height_bounded() {
-            let size = Size::new(100.0, 100.0);
-            bc.constrain(size)
-        } else {
-            bc.max()
-        }
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &T, env: &Env) -> Size {
+        self.inner.layout(ctx, bc, data, env)
     }
 
     // The paint method gets called last, after an event flow.
     // It goes event -> update -> layout -> paint, and each method can influence the next.
     // Basically, anything that changes the appearance of a widget causes a paint.
     fn paint(&mut self, ctx: &mut PaintCtx, data: &T, env: &Env) {
-        // Clear the whole widget with the color of your choice
-        // (ctx.size() returns the size of the layout rect we're painting in)
-        // Note: ctx also has a `clear` method, but that clears the whole context,
-        // and we only want to clear this widget's area.
-        let size = ctx.size();
-        let rect = size.to_rect();
-        ctx.fill(rect, env.get(theme::WINDOW_BACKGROUND_COLOR));
+        self.inner.paint(ctx, data, env);
 
         
     }
