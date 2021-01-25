@@ -15,16 +15,26 @@ pub struct TableData {
     pub rows: TableRows,
 }
 pub struct Table<T> {
-    label_width: Vec<f64>,
+    columns_width: Vec<f64>,
+    cw_layout_pass: bool,
     inner: WidgetPod<T, Box<dyn Widget<T>>>,
 }
 
 impl<T: Data> Table<T> {
     pub fn new() -> Self {
         Table {
-            label_width: Vec::new(),
+            columns_width: Vec::new(),
+            cw_layout_pass: false,
             inner: WidgetPod::new(Label::new("LOL")).boxed(),
         }
+    }
+
+    fn build_table(&mut self, data: &T) {
+
+    }
+
+    fn set_columns_width(&mut self, ctx: &mut LayoutCtx, Data: &T, ) {
+
     }
 }
 
@@ -40,9 +50,22 @@ impl<T: Data> Widget<T> for Table<T> {
         self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(&mut self, _ctx: &mut UpdateCtx, _old_data: &T, _data: &T, _env: &Env) {}
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &T, data: &T, _env: &Env) {
+        if !old_data.same(data) {
+            self.cw_layout_pass = true;
+            ctx.request_layout();  // to build the table, we need the calculate the width of each column
+            self.build_table(data); // build the table widget
+            ctx.request_layout();   
+            ctx.request_paint();
+        }
+    }
 
     fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &T, env: &Env) -> Size {
+        if self.cw_layout_pass {
+            self.set_columns_width(ctx, data);
+            self.cw_layout_pass = false;
+        }
+        
         self.inner.layout(ctx, bc, data, env)
     }
 
