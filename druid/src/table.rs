@@ -1,4 +1,4 @@
-use druid::{TextLayout, piet::{FontFamily, ImageFormat, InterpolationMode, Text, TextLayoutBuilder, dwrite::TextLayout}};
+use druid::TextLayout ;
 use druid::widget::{prelude::*, Label, LabelText,};
 use druid::{theme, Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect, WidgetPod, WindowDesc,};
 use std::boxed;
@@ -29,26 +29,29 @@ impl Table {
     fn build_table(&mut self, data: &Arc<TableData>) {}
 
     fn set_columns_width(&mut self, ctx: &mut LayoutCtx, data: &Arc<TableData>, env: &Env) {
-        let mut cw = Vec::<f64>::new();
+        self.columns_width = Vec::new();
         for col in 0.. {
-            cw.push(0.);
             let mut nb_cols: usize = 0;
+            let mut max_width = 0.;
             for row in data.rows.clone() {
                 if let Some(text) = row.get(col) {
                     nb_cols+=1;
-                    let layout = TextLayout::<String>::from_text(text.to_owned());
+                    let mut layout = TextLayout::<String>::from_text(text.to_owned());
                     layout.rebuild_if_needed(ctx.text(), env);
-                    cw.push(layout.layout_metrics().size.width);
-                }
-                else {
+                    let width = layout.layout_metrics().size.width;
+                    if width > max_width {
+                        max_width = width;
+                    }
+                } else {
                     continue;
                 }
             }
             if nb_cols == 0 {
                 break;
+            } else {
+                self.columns_width.push(max_width);
             }
         }
- 
     }
 }
 
@@ -76,7 +79,7 @@ impl Widget<Arc<TableData>> for Table {
 
     fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &Arc<TableData>, env: &Env) -> Size {
         if self.cw_layout_pass {
-            self.set_columns_width(ctx, data);
+            self.set_columns_width(ctx, data, env);
             self.cw_layout_pass = false;
         }
 
