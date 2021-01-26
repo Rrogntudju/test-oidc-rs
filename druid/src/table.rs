@@ -1,5 +1,5 @@
 use std::boxed;
-
+use std::sync::Arc;
 use druid::piet::{FontFamily, ImageFormat, InterpolationMode, Text, TextLayoutBuilder};
 use druid::widget::{prelude::*, Label, LabelText};
 use druid::{
@@ -14,13 +14,13 @@ pub struct TableData {
     pub headers: TableHeaders,
     pub rows: TableRows,
 }
-pub struct Table<T> {
+pub struct Table {
     columns_width: Vec<f64>,
     cw_layout_pass: bool,
-    inner: WidgetPod<T, Box<dyn Widget<T>>>,
+    inner: WidgetPod<Arc<TableData>, Box<dyn Widget<Arc<TableData>>>>,
 }
 
-impl<T: Data> Table<T> {
+impl Table {
     pub fn new() -> Self {
         Table {
             columns_width: Vec::new(),
@@ -29,38 +29,38 @@ impl<T: Data> Table<T> {
         }
     }
 
-    fn build_table(&mut self, data: &T) {
+    fn build_table(&mut self, data:  &Arc<TableData>) {
 
     }
 
-    fn set_columns_width(&mut self, ctx: &mut LayoutCtx, Data: &T, ) {
-
+    fn set_columns_width(&mut self, ctx: &mut LayoutCtx, data: &Arc<TableData>) {
+        let table_data = data.headers
     }
 }
 
 // If this widget has any child widgets it should call its event, update and layout
 // (and lifecycle) methods as well to make sure it works. Some things can be filtered,
 // but a general rule is to just pass it through unless you really know you don't want it.
-impl<T: Data> Widget<T> for Table<T> {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
+impl  Widget<Arc<TableData>> for Table {
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Arc<TableData>, env: &Env) {
         self.inner.event(ctx, event, data, env);
     }
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, env: &Env) {
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Arc<TableData>, env: &Env) {
         self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &T, data: &T, _env: &Env) {
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, _env: &Env) {
         if !old_data.same(data) {
             self.cw_layout_pass = true;
-            ctx.request_layout();  // to build the table, we need the calculate the width of each column
-            self.build_table(data); // build the table widget
+            ctx.request_layout();   // to set the background of each row, we need the width of each column
+            self.build_table(data); // build the table widget using the width of each column
             ctx.request_layout();   
             ctx.request_paint();
         }
     }
 
-    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &T, env: &Env) -> Size {
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &Arc<TableData>, env: &Env) -> Size {
         if self.cw_layout_pass {
             self.set_columns_width(ctx, data);
             self.cw_layout_pass = false;
@@ -72,10 +72,8 @@ impl<T: Data> Widget<T> for Table<T> {
     // The paint method gets called last, after an event flow.
     // It goes event -> update -> layout -> paint, and each method can influence the next.
     // Basically, anything that changes the appearance of a widget causes a paint.
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &T, env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &Arc<TableData>, env: &Env) {
         self.inner.paint(ctx, data, env);
-
-        
     }
 }
 
