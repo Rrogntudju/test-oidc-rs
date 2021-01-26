@@ -2,16 +2,16 @@ use druid::im::Vector;
 use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, MainAxisAlignment, RadioGroup, Scroll, Spinner};
 use druid::Key;
 use druid::{
-    lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector,
-    Target, Widget, WidgetExt, WindowDesc,
+    lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector, Target, Widget,
+    WidgetExt, WindowDesc,
 };
 mod table;
-use table::{Table, TableColumns, TableRows, TableHeaders, TableData};
 use minreq;
 use serde_json::value::Value;
 use std::error::Error;
-use std::{fmt, thread};
 use std::sync::Arc;
+use std::{fmt, thread};
+use table::{Table, TableColumns, TableData, TableHeaders, TableRows};
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
@@ -68,7 +68,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
                     .as_array()
                     .unwrap_or(&Vec::<Value>::new())
                     .iter()
-                    .map(|value| { 
+                    .map(|value| {
                         let mut columns = TableColumns::new();
                         columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
                         columns.push(value["valeur"].to_string().trim_matches('"').to_owned());
@@ -93,8 +93,8 @@ impl AppDelegate<AppData> for Delegate {
             Some(Ok(infos)) => {
                 data.en_traitement = false;
                 data.infos = Arc::new(TableData {
-                    rows: infos.to_owned(), 
-                    headers: vec!("Propriété".to_owned(), "Valeur".to_owned()),
+                    rows: infos.to_owned(),
+                    headers: vec!["Propriété".to_owned(), "Valeur".to_owned()],
                 });
                 Handled::Yes
             }
@@ -148,7 +148,11 @@ fn ui_builder() -> impl Widget<AppData> {
                 .with_text_color(Color::from_hex_str("FFA500").unwrap()),
         )
         .with_default_spacer()
-        .with_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), Table::new().lens(AppData::infos)));
+        .with_child(Either::new(
+            |data, _env| data.en_traitement,
+            Spinner::new(),
+            Table::new().lens(AppData::infos),
+        ));
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
 
@@ -170,8 +174,11 @@ pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
     let mut rows = TableRows::new();
     rows.push(TableColumns::new());
-    let infos = TableData {rows, headers: TableHeaders::new()};
-    
+    let infos = TableData {
+        rows,
+        headers: TableHeaders::new(),
+    };
+
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),

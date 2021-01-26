@@ -1,9 +1,9 @@
 mod session;
 use lazy_static::lazy_static;
+use serde_json::{Map, Value};
 use session::{random_token, Session, SessionId};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use serde_json::{Value, Map};
 
 lazy_static! {
     static ref SESSIONS: Arc<RwLock<HashMap<SessionId, Session>>> = Arc::new(RwLock::new(HashMap::new()));
@@ -128,9 +128,11 @@ mod handlers {
                                         })
                                         .collect::<Vec<Value>>(),
                                 );
-                        
-                                Response::builder().status(StatusCode::OK).body(serde_json::to_string(&infos).unwrap_or_default())
-                            },
+
+                                Response::builder()
+                                    .status(StatusCode::OK)
+                                    .body(serde_json::to_string(&infos).unwrap_or_default())
+                            }
                             _ => {
                                 // Changement de fournisseur
                                 drop(lock);
@@ -241,7 +243,7 @@ mod handlers {
                         return Ok(reply_error(StatusCode::BAD_REQUEST));
                     }
                 };
-        
+
                 let token = match client.authenticate(code, Some(nonce), None) {
                     Ok(token) => token,
                     Err(e) => {
@@ -249,19 +251,19 @@ mod handlers {
                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
                     }
                 };
-        
+
                 let response = Response::builder()
                     .status(StatusCode::FOUND)
                     .header("Location", "/static/userinfos.htm")
                     // Après le redirect par OP, réécrire le cookie Session-Id avec Strict
                     .header("Set-Cookie", format!("Session-Id={0}; SameSite=Strict", id.as_ref()))
                     .body(String::default());
-        
+
                 sessions
                     .write()
                     .expect("Failed due to poisoned lock")
                     .insert(id, session.authentication_completed(token));
-                    
+
                 response
             }
             None => {

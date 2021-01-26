@@ -1,11 +1,8 @@
+use druid::{TextLayout, piet::{FontFamily, ImageFormat, InterpolationMode, Text, TextLayoutBuilder, dwrite::TextLayout}};
+use druid::widget::{prelude::*, Label, LabelText,};
+use druid::{theme, Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect, WidgetPod, WindowDesc,};
 use std::boxed;
 use std::sync::Arc;
-use druid::piet::{FontFamily, ImageFormat, InterpolationMode, Text, TextLayoutBuilder};
-use druid::widget::{prelude::*, Label, LabelText};
-use druid::{
-    Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect,
-    WindowDesc, WidgetPod, theme,
-};
 
 pub type TableColumns = Vec<String>;
 pub type TableRows = Vec<TableColumns>;
@@ -29,19 +26,36 @@ impl Table {
         }
     }
 
-    fn build_table(&mut self, data:  &Arc<TableData>) {
+    fn build_table(&mut self, data: &Arc<TableData>) {}
 
-    }
-
-    fn set_columns_width(&mut self, ctx: &mut LayoutCtx, data: &Arc<TableData>) {
-        let table_data = data.headers
+    fn set_columns_width(&mut self, ctx: &mut LayoutCtx, data: &Arc<TableData>, env: &Env) {
+        let mut cw = Vec::<f64>::new();
+        for col in 0.. {
+            cw.push(0.);
+            let mut nb_cols: usize = 0;
+            for row in data.rows.clone() {
+                if let Some(text) = row.get(col) {
+                    nb_cols+=1;
+                    let layout = TextLayout::<String>::from_text(text.to_owned());
+                    layout.rebuild_if_needed(ctx.text(), env);
+                    cw.push(layout.layout_metrics().size.width);
+                }
+                else {
+                    continue;
+                }
+            }
+            if nb_cols == 0 {
+                break;
+            }
+        }
+ 
     }
 }
 
 // If this widget has any child widgets it should call its event, update and layout
 // (and lifecycle) methods as well to make sure it works. Some things can be filtered,
 // but a general rule is to just pass it through unless you really know you don't want it.
-impl  Widget<Arc<TableData>> for Table {
+impl Widget<Arc<TableData>> for Table {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Arc<TableData>, env: &Env) {
         self.inner.event(ctx, event, data, env);
     }
@@ -53,9 +67,9 @@ impl  Widget<Arc<TableData>> for Table {
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, _env: &Env) {
         if !old_data.same(data) {
             self.cw_layout_pass = true;
-            ctx.request_layout();   // to set the background of each row, we need the width of each column
-            self.build_table(data); // build the table widget using the width of each column
-            ctx.request_layout();   
+            ctx.request_layout(); 
+            self.build_table(data); 
+            ctx.request_layout();
             ctx.request_paint();
         }
     }
@@ -65,7 +79,7 @@ impl  Widget<Arc<TableData>> for Table {
             self.set_columns_width(ctx, data);
             self.cw_layout_pass = false;
         }
-        
+
         self.inner.layout(ctx, bc, data, env)
     }
 
@@ -76,4 +90,3 @@ impl  Widget<Arc<TableData>> for Table {
         self.inner.paint(ctx, data, env);
     }
 }
-
