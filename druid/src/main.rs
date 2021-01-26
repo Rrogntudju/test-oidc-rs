@@ -11,7 +11,7 @@ use serde_json::value::Value;
 use std::error::Error;
 use std::sync::Arc;
 use std::{fmt, thread};
-use table::{Table, TableColumns, TableData, TableHeaders, TableRows};
+use table::{Table, TableColumns, TableData, TableHeader, TableRows};
 
 const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
@@ -94,7 +94,7 @@ impl AppDelegate<AppData> for Delegate {
                 data.en_traitement = false;
                 data.infos = Arc::new(TableData {
                     rows: infos.to_owned(),
-                    headers: vec!["Propriété".to_owned(), "Valeur".to_owned()],
+                    header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
                 });
                 Handled::Yes
             }
@@ -176,7 +176,7 @@ pub fn main() {
     rows.push(TableColumns::new());
     let infos = TableData {
         rows,
-        headers: TableHeaders::new(),
+        header: TableHeader::new(),
     };
 
     let data = AppData {

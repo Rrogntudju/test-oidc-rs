@@ -1,14 +1,14 @@
 use druid::TextLayout ;
-use druid::widget::{prelude::*, Label, LabelText,};
-use druid::{theme, Affine, AppLauncher, Color, FontDescriptor, LocalizedString, Point, Rect, WidgetPod, WindowDesc,};
-use std::boxed;
+use druid::widget::{prelude::*, Label, Flex};
+use druid::{WidgetPod, lens, WidgetExt};
+
 use std::sync::Arc;
 
 pub type TableColumns = Vec<String>;
 pub type TableRows = Vec<TableColumns>;
-pub type TableHeaders = Vec<String>;
+pub type TableHeader = Vec<String>;
 pub struct TableData {
-    pub headers: TableHeaders,
+    pub header: TableHeader,
     pub rows: TableRows,
 }
 pub struct Table {
@@ -26,17 +26,26 @@ impl Table {
         }
     }
 
-    fn build_table(&mut self, data: &Arc<TableData>) {}
+    fn build_table(&mut self, data: &Arc<TableData>) {
+        let mut header = Flex::<Arc<TableData>>::row();
+        let mut col = 0;
 
+        for col_name in &data.header {
+            header.add_child(Label::new(col_name.to_owned()).fix_width(self.columns_width[col]));
+            col+=1;
+        }
+    }
+
+    // This function take into account table rows of uneven length
     fn set_columns_width(&mut self, ctx: &mut LayoutCtx, data: &Arc<TableData>, env: &Env) {
         self.columns_width = Vec::new();
         for col in 0.. {
-            let mut nb_cols: usize = 0;
+            let mut end_of_cols = true;
             let mut max_width = 0.;
             
             for row in &data.rows {
                 if let Some(text) = row.get(col) {
-                    nb_cols+=1;
+                    end_of_cols = false;
                     let mut layout = TextLayout::<String>::from_text(text.to_owned());
                     layout.rebuild_if_needed(ctx.text(), env);
                     let width = layout.size().width;
@@ -48,8 +57,8 @@ impl Table {
                 }
             }
 
-            if let Some(text) = data.headers.get(col) {
-                nb_cols+=1;
+            if let Some(text) = data.header.get(col) {
+                end_of_cols = false;
                 let mut layout = TextLayout::<String>::from_text(text.to_owned());
                 layout.rebuild_if_needed(ctx.text(), env);
                 let width = layout.size().width;
@@ -58,7 +67,7 @@ impl Table {
                 }
             }
 
-            if nb_cols == 0 {
+            if end_of_cols {
                 break;
             } else {
                 self.columns_width.push(max_width);
