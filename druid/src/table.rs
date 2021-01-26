@@ -33,12 +33,13 @@ impl Table {
         for col in 0.. {
             let mut nb_cols: usize = 0;
             let mut max_width = 0.;
-            for row in data.rows.clone() {
+            
+            for row in &data.rows {
                 if let Some(text) = row.get(col) {
                     nb_cols+=1;
                     let mut layout = TextLayout::<String>::from_text(text.to_owned());
                     layout.rebuild_if_needed(ctx.text(), env);
-                    let width = layout.layout_metrics().size.width;
+                    let width = layout.size().width;
                     if width > max_width {
                         max_width = width;
                     }
@@ -46,6 +47,17 @@ impl Table {
                     continue;
                 }
             }
+
+            if let Some(text) = data.headers.get(col) {
+                nb_cols+=1;
+                let mut layout = TextLayout::<String>::from_text(text.to_owned());
+                layout.rebuild_if_needed(ctx.text(), env);
+                let width = layout.size().width;
+                if width > max_width {
+                    max_width = width;
+                }
+            }
+
             if nb_cols == 0 {
                 break;
             } else {
