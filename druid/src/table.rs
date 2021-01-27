@@ -1,8 +1,11 @@
-use druid::TextLayout ;
-use druid::widget::{prelude::*, Label, Flex};
-use druid::{WidgetPod, lens, WidgetExt};
-
+use druid::widget::{prelude::*, Flex, Label};
+use druid::TextLayout;
+use druid::{theme, Color, WidgetExt, WidgetPod};
 use std::sync::Arc;
+
+const SPACING: f64 = 6.0;
+const LAST_SPACING: f64 = SPACING / 3.0;
+const SHADING: f64 = 0.1;
 
 pub type TableColumns = Vec<String>;
 pub type TableRows = Vec<TableColumns>;
@@ -26,31 +29,64 @@ impl Table {
         }
     }
 
-    fn build_table(&mut self, data: &Arc<TableData>) {
-        let mut header = Flex::<Arc<TableData>>::row();
-        let mut col = 0;
+    fn build_table(&mut self, data: &Arc<TableData>, env: &Env) {
+        let last_col = self.columns_width.len() - 1;
+        let (r, g, b, a) = env.get(theme::WINDOW_BACKGROUND_COLOR).as_rgba();
+        let shade = if r + g + b > 1.5 {
+            Color::rgba(r - SHADING, g - SHADING, b - SHADING, a)
+        } else {
+            Color::rgba(r + SHADING, g + SHADING, b + SHADING, a)
+        };
 
+        let mut table = Flex::<Arc<TableData>>::column();
+
+        let mut header = Flex::<Arc<TableData>>::row();
+        let mut idx_col = 0_usize;
         for col_name in &data.header {
-            header.add_child(Label::new(col_name.to_owned()).fix_width(self.columns_width[col]));
-            col+=1;
+            header.add_child(
+                Label::new(col_name.to_owned()).fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
+            );
+            idx_col += 1;
         }
+        table.add_child(header);
+
+        let mut idx_row = 0_usize;
+        for row in &data.rows {
+            let mut idx_col = 0_usize;
+            for text in row {
+                let mut table_row = Flex::<Arc<TableData>>::row();
+                table_row.add_child(
+                    Label::new(text.to_owned()).fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
+                );
+                if idx_row % 2 == 0 {
+                    table.add_child(table_row.background(Color::from(shade.clone())))
+                } else {
+                    table.add_child(table_row)
+                };
+                idx_col += 1;
+            }
+            idx_row += 1;
+        }
+
+        self.inner = WidgetPod::new(Box::new(table));
     }
 
-    // This function take into account table rows of uneven length
     fn set_columns_width(&mut self, ctx: &mut LayoutCtx, data: &Arc<TableData>, env: &Env) {
         self.columns_width = Vec::new();
         for col in 0.. {
             let mut end_of_cols = true;
-            let mut max_width = 0.;
-            
+            let mut max_width = 0.0;
+
             for row in &data.rows {
                 if let Some(text) = row.get(col) {
                     end_of_cols = false;
-                    let mut layout = TextLayout::<String>::from_text(text.to_owned());
-                    layout.rebuild_if_needed(ctx.text(), env);
-                    let width = layout.size().width;
-                    if width > max_width {
-                        max_width = width;
+                    if !text.is_empty() {
+                        let mut layout = TextLayout::<String>::from_text(text.to_owned());
+                        layout.rebuild_if_needed(ctx.text(), env);
+                        let width = layout.size().width;
+                        if width > max_width {
+                            max_width = width;
+                        }
                     }
                 } else {
                     continue;
@@ -59,11 +95,13 @@ impl Table {
 
             if let Some(text) = data.header.get(col) {
                 end_of_cols = false;
-                let mut layout = TextLayout::<String>::from_text(text.to_owned());
-                layout.rebuild_if_needed(ctx.text(), env);
-                let width = layout.size().width;
-                if width > max_width {
-                    max_width = width;
+                if !text.is_empty() {
+                    let mut layout = TextLayout::<String>::from_text(text.to_owned());
+                    layout.rebuild_if_needed(ctx.text(), env);
+                    let width = layout.size().width;
+                    if width > max_width {
+                        max_width = width;
+                    }
                 }
             }
 
@@ -88,11 +126,11 @@ impl Widget<Arc<TableData>> for Table {
         self.inner.lifecycle(ctx, event, data, env);
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, _env: &Env) {
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, env: &Env) {
         if !old_data.same(data) {
             self.cw_layout_pass = true;
-            ctx.request_layout(); 
-            self.build_table(data); 
+            ctx.request_layout();
+            self.build_table(data, env);
             ctx.request_layout();
             ctx.request_paint();
         }

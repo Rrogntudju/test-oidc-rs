@@ -1,9 +1,8 @@
 use druid::im::Vector;
-use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, MainAxisAlignment, RadioGroup, Scroll, Spinner};
-use druid::Key;
+use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, MainAxisAlignment, RadioGroup, Spinner};
 use druid::{
-    lens, theme, AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector, Target, Widget,
-    WidgetExt, WindowDesc,
+    AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector, Target, Widget, WidgetExt,
+    WindowDesc,
 };
 mod table;
 use minreq;
@@ -13,7 +12,6 @@ use std::sync::Arc;
 use std::{fmt, thread};
 use table::{Table, TableColumns, TableData, TableHeader, TableRows};
 
-const LIST_TEXT_COLOR: Key<Color> = Key::new("rrogntudju.list-text-color");
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
 const SESSION: &str = "PjxOlr3ThjPm5oaKMToeWexWToie2LgJ";
