@@ -14,8 +14,8 @@ use table::{Table, TableColumns, TableData, TableHeader, TableRows};
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "PjxOlr3ThjPm5oaKMToeWexWToie2LgJ";
-const CSRF: &str = "3xXCi8p8zkZrlDMo8I7wsQYEzAUpEZfOSXuoJzmrEqF66MegZRTDdaB4SVOGtDj4";
+const SESSION: &str = "bTexCkYrUMtg0jrjP1vGMRaJtUzFOtHN";
+const CSRF: &str = "CWmKy26GIy18t2tNu2PJ0u6xdjDI3bA58Cf47GPsTUosg3d3qSDZPkpB2wLGE35L";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
