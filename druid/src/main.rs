@@ -14,8 +14,8 @@ use table::{Table, TableColumns, TableData, TableHeader, TableRows};
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "Vf87smKiBVpBgxP0Ixlti14agHKEmILM";
-const CSRF: &str = "kcQKs99UbWTLBuaAMbOMO3gLhw3Xy0qBZrIfewtfcGrm6TTqS9Yy2jc6I0eCNixe";
+const SESSION: &str = "RLHN65HGba2n3rvPwzvKekn60uPlgPs2";
+const CSRF: &str = "fTwSe5R4YRPzGIabK8z45ELMXPV9MuFCyDUJEaj2o3nmb00dFOdzohL67EIH9hf7";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -149,7 +149,7 @@ fn ui_builder() -> impl Widget<AppData> {
         .with_child(Either::new(
             |data, _env| data.en_traitement,
             Spinner::new(),
-            Table::new().lens(AppData::infos),
+            Table::new().with_header_text_color(Color::from_hex_str("FFA500").unwrap()).lens(AppData::infos),
         ));
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
@@ -165,7 +165,7 @@ fn ui_builder() -> impl Widget<AppData> {
                     .expand_width(),
             ),
         )
-//        .debug_paint_layout()
+    //        .debug_paint_layout()
 }
 
 pub fn main() {

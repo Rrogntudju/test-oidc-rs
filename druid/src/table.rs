@@ -1,6 +1,6 @@
-use druid::widget::{prelude::*, CrossAxisAlignment, Flex, Label};
-use druid::TextLayout;
+use druid::widget::{prelude::*, Flex, Label};
 use druid::{theme, Color, WidgetExt, WidgetPod};
+use druid::{Insets, KeyOrValue, TextLayout};
 use std::sync::Arc;
 
 const SPACING: f64 = 12.0;
@@ -17,6 +17,7 @@ pub struct TableData {
 
 pub struct Table {
     columns_width: Vec<f64>,
+    header_text_color: Option<KeyOrValue<Color>>,
     inner: WidgetPod<Arc<TableData>, Box<dyn Widget<Arc<TableData>>>>,
 }
 
@@ -24,6 +25,7 @@ impl Table {
     pub fn new() -> Self {
         Table {
             columns_width: Vec::new(),
+            header_text_color: None,
             inner: WidgetPod::new(Label::new("")).boxed(),
         }
     }
@@ -47,18 +49,19 @@ impl Table {
             )
         };
 
-        let mut table = Flex::<Arc<TableData>>::column().cross_axis_alignment(CrossAxisAlignment::Start);
+        let mut table = Flex::<Arc<TableData>>::column();
 
         let mut header = Flex::<Arc<TableData>>::row();
         let mut idx_col = 0_usize;
         for col_name in &data.header {
-            header.add_child(
-                Label::new(col_name.to_owned())
-                    .fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
-            );
+            let mut label = Label::new(col_name.to_owned());
+            if let Some(color) = &self.header_text_color {
+               label.set_text_color(color.to_owned());
+            }
+            header.add_child(label.fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
             idx_col += 1;
         }
-        table.add_child(header);
+        table.add_child(header.padding(Insets::new(0.0, 0.0, 0.0, 5.0)));
 
         let mut idx_row = 0_usize;
         for row in &data.rows {
@@ -66,8 +69,7 @@ impl Table {
             let mut idx_col = 0_usize;
             for text in row {
                 table_row.add_child(
-                    Label::new(text.to_owned())
-                        .fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
+                    Label::new(text.to_owned()).fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
                 );
                 idx_col += 1;
             }
@@ -122,6 +124,15 @@ impl Table {
             }
         }
         self.columns_width.len() > 0
+    }
+
+    pub fn set_header_text_color(&mut self, color: impl Into<KeyOrValue<Color>>) {
+        self.header_text_color = Some(color.into());
+    }
+
+    pub fn with_header_text_color(mut self, color: impl Into<KeyOrValue<Color>>) -> Self {
+        self.set_header_text_color(color);
+        self
     }
 }
 
