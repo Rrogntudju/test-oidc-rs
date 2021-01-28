@@ -1,10 +1,9 @@
 use druid::widget::{prelude::*, CrossAxisAlignment, Flex, Label};
 use druid::TextLayout;
-use druid::piet::PietText;
 use druid::{theme, Color, WidgetExt, WidgetPod};
 use std::sync::Arc;
 
-const SPACING: f64 = 6.0;
+const SPACING: f64 = 12.0;
 const LAST_SPACING: f64 = SPACING / 3.0;
 const SHADING: f64 = 0.1;
 
@@ -83,8 +82,8 @@ impl Table {
         self.inner = WidgetPod::new(Box::new(table));
     }
 
-    fn set_columns_width(&mut self, data: &Arc<TableData>, env: &Env) -> bool {
-    /*     self.columns_width = Vec::new();
+    fn set_columns_width(&mut self, ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -> bool {
+        self.columns_width = Vec::new();
         for idx_col in 0_usize.. {
             let mut end_of_cols = true;
             let mut max_width = 0.0;
@@ -94,7 +93,7 @@ impl Table {
                     end_of_cols = false;
                     if !text.is_empty() {
                         let mut layout = TextLayout::<String>::from_text(text.to_owned());
-                        layout.rebuild_if_needed(&mut self.test, env);
+                        layout.rebuild_if_needed(ctx.text(), env);
                         let width = layout.size().width;
                         if width > max_width {
                             max_width = width;
@@ -108,7 +107,7 @@ impl Table {
                 end_of_cols = false;
                 if !text.is_empty() {
                     let mut layout = TextLayout::<String>::from_text(text.to_owned());
-                    layout.rebuild_if_needed(&mut self.test, env);
+                    layout.rebuild_if_needed(ctx.text(), env);
                     let width = layout.size().width;
                     if width > max_width {
                         max_width = width;
@@ -121,8 +120,7 @@ impl Table {
             } else {
                 self.columns_width.push(max_width);
             }
-        } */
-        self.columns_width = vec!(200.0, 500.0);
+        }
         self.columns_width.len() > 0
     }
 }
@@ -141,7 +139,7 @@ impl Widget<Arc<TableData>> for Table {
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, env: &Env) {
         if !old_data.same(data) {
-            if self.set_columns_width(data, env) {
+            if self.set_columns_width(ctx, data, env) {
                 self.build(data, env);
                 ctx.children_changed();
             }
