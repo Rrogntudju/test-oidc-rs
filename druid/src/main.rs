@@ -14,8 +14,8 @@ use table::{Table, TableColumns, TableData, TableHeader, TableRows};
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "bTexCkYrUMtg0jrjP1vGMRaJtUzFOtHN";
-const CSRF: &str = "CWmKy26GIy18t2tNu2PJ0u6xdjDI3bA58Cf47GPsTUosg3d3qSDZPkpB2wLGE35L";
+const SESSION: &str = "dtXNjFb6ZBjl3icXy9iyN9TYVZOcbFi2";
+const CSRF: &str = "AXLuWeI8hDM8O09TZ2MaH8g0cgCmj35GhX3MUstrSpd9CBlhW8fd19uIPsuG0Skg";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -165,7 +165,7 @@ fn ui_builder() -> impl Widget<AppData> {
                     .expand_width(),
             ),
         )
-        .debug_paint_layout()
+//        .debug_paint_layout()
 }
 
 pub fn main() {
