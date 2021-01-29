@@ -4,7 +4,7 @@ use druid::{Insets, KeyOrValue, TextLayout};
 use std::sync::Arc;
 
 const SPACING: f64 = 12.0;
-const LAST_SPACING: f64 = SPACING / 3.0;
+const LAST_SPACING: f64 = SPACING / 2.0;
 const SHADING: f64 = 0.1;
 
 pub type TableColumns = Vec<String>;
