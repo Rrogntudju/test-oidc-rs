@@ -15,8 +15,56 @@ pub struct TableData {
     pub rows: TableRows,
 }
 
+// Find out the maximum layout width of each column
+fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -> Option<Vec<f64>> {
+    let mut columns_width = Vec::new();
+    for idx_col in 0_usize.. {
+        let mut end_of_cols = true;
+        let mut max_width = 0.0;
+
+        for row in &data.rows {
+            if let Some(text) = row.get(idx_col) {
+                end_of_cols = false;
+                if !text.is_empty() {
+                    let mut layout = TextLayout::<String>::from_text(text.clone());
+                    layout.rebuild_if_needed(ctx.text(), env);
+                    let width = layout.size().width;
+                    if width > max_width {
+                        max_width = width;
+                    }
+                }
+            } else {
+                continue;
+            }
+        }
+
+        if let Some(text) = data.header.get(idx_col) {
+            end_of_cols = false;
+            if !text.is_empty() {
+                let mut layout = TextLayout::<String>::from_text(text.clone());
+                layout.rebuild_if_needed(ctx.text(), env);
+                let width = layout.size().width;
+                if width > max_width {
+                    max_width = width;
+                }
+            }
+        }
+
+        if end_of_cols {
+            break;
+        } else {
+            columns_width.push(max_width);
+        }
+    }
+
+    if columns_width.len() > 0 {
+        Some(columns_width)
+    } else {
+        None
+    }
+}
+
 pub struct Table {
-    columns_width: Vec<f64>,
     header_text_color: Option<KeyOrValue<Color>>,
     inner: WidgetPod<Arc<TableData>, Box<dyn Widget<Arc<TableData>>>>,
 }
@@ -24,14 +72,13 @@ pub struct Table {
 impl Table {
     pub fn new() -> Self {
         Table {
-            columns_width: Vec::new(),
             header_text_color: None,
-            inner: WidgetPod::new(Label::new("")).boxed(),
+            inner: WidgetPod::new(Flex::row().boxed()),
         }
     }
 
-    fn build(&mut self, data: &Arc<TableData>, env: &Env) {
-        let last_col = self.columns_width.len() - 1;
+    fn build(&mut self, widths: Vec<f64>, data: &Arc<TableData>, env: &Env) {
+        let last_col = widths.len() - 1;
         let (r, g, b, a) = env.get(theme::WINDOW_BACKGROUND_COLOR).as_rgba();
         let shade = if r + g + b < 1.5 {
             Color::rgba(
@@ -54,11 +101,11 @@ impl Table {
         let mut header = Flex::<Arc<TableData>>::row();
         let mut idx_col = 0_usize;
         for col_name in &data.header {
-            let mut label = Label::new(col_name.to_owned());
+            let mut label = Label::new(col_name.clone());
             if let Some(color) = &self.header_text_color {
-               label.set_text_color(color.to_owned());
+               label.set_text_color(color.clone());
             }
-            header.add_child(label.fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
+            header.add_child(label.fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
             idx_col += 1;
         }
         table.add_child(header.padding(Insets::new(0.0, 0.0, 0.0, 5.0)));
@@ -69,7 +116,7 @@ impl Table {
             let mut idx_col = 0_usize;
             for text in row {
                 table_row.add_child(
-                    Label::new(text.to_owned()).fix_width(self.columns_width[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
+                    Label::new(text.clone()).fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
                 );
                 idx_col += 1;
             }
@@ -82,48 +129,6 @@ impl Table {
         }
 
         self.inner = WidgetPod::new(Box::new(table));
-    }
-
-    fn set_columns_width(&mut self, ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -> bool {
-        self.columns_width = Vec::new();
-        for idx_col in 0_usize.. {
-            let mut end_of_cols = true;
-            let mut max_width = 0.0;
-
-            for row in &data.rows {
-                if let Some(text) = row.get(idx_col) {
-                    end_of_cols = false;
-                    if !text.is_empty() {
-                        let mut layout = TextLayout::<String>::from_text(text.to_owned());
-                        layout.rebuild_if_needed(ctx.text(), env);
-                        let width = layout.size().width;
-                        if width > max_width {
-                            max_width = width;
-                        }
-                    }
-                } else {
-                    continue;
-                }
-            }
-            if let Some(text) = data.header.get(idx_col) {
-                end_of_cols = false;
-                if !text.is_empty() {
-                    let mut layout = TextLayout::<String>::from_text(text.to_owned());
-                    layout.rebuild_if_needed(ctx.text(), env);
-                    let width = layout.size().width;
-                    if width > max_width {
-                        max_width = width;
-                    }
-                }
-            }
-
-            if end_of_cols {
-                break;
-            } else {
-                self.columns_width.push(max_width);
-            }
-        }
-        self.columns_width.len() > 0
     }
 
     pub fn set_header_text_color(&mut self, color: impl Into<KeyOrValue<Color>>) {
@@ -150,8 +155,8 @@ impl Widget<Arc<TableData>> for Table {
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, env: &Env) {
         if !old_data.same(data) {
-            if self.set_columns_width(ctx, data, env) {
-                self.build(data, env);
+            if let Some(columns_width) = layout_columns_width(ctx, data, env) {
+                self.build(columns_width, data, env);
                 ctx.children_changed();
             }
         }
