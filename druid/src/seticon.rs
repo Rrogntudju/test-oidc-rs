@@ -7,7 +7,8 @@ use winapi::{
     um::winuser::{FindWindowW, LoadIconW, SendMessageW, ICON_BIG, ICON_SMALL, MAKEINTRESOURCEW, WM_SETICON},
 };
 
-pub fn set_window_icon(class_name: &'static str, window_name: &'static str) {
+// winres set_icon or set_icon_with_id must be used in the build for this to work
+pub fn set_window_icon(id: u16, class_name: &'static str, window_name: &'static str) {
     thread::spawn(move || {
         let mut c_name_utf16: Vec<u16> = class_name.encode_utf16().collect();
         c_name_utf16.push(0);
@@ -24,9 +25,9 @@ pub fn set_window_icon(class_name: &'static str, window_name: &'static str) {
                 continue;
             }
 
-            let hicon = unsafe { LoadIconW(GetModuleHandleW(0 as LPCWSTR), MAKEINTRESOURCEW(1)) };
+            let hicon = unsafe { LoadIconW(GetModuleHandleW(0 as LPCWSTR), MAKEINTRESOURCEW(id)) };
             if hicon == 0 as HICON {
-                panic!("No Icon #1 in resource. Build with winres.");
+                panic!("No Icon #{} in resource", id);
             }
 
             unsafe { SendMessageW(hwnd, WM_SETICON, ICON_SMALL as WPARAM, hicon as LPARAM) };
