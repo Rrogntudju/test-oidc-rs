@@ -26,11 +26,12 @@ pub fn set_window_icon(class_name: &'static str, window_name: &'static str) {
 
             let hicon = unsafe { LoadIconW(GetModuleHandleW(0 as LPCWSTR), MAKEINTRESOURCEW(1)) };
             if hicon == 0 as HICON {
-                panic!("No Icon #1 in resource");
+                panic!("No Icon #1 in resource. Build with winres.");
             }
 
             unsafe { SendMessageW(hwnd, WM_SETICON, ICON_SMALL as WPARAM, hicon as LPARAM) };
             unsafe { SendMessageW(hwnd, WM_SETICON, ICON_BIG as WPARAM, hicon as LPARAM) };
+            break;
         }
     });
 }

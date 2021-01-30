@@ -188,7 +188,7 @@ pub fn main() {
         erreur: String::new(),
     };
 
-    seticon::set_window_icon("druid", "Userinfos");  // Temporary workaround
+    seticon::set_window_icon("druid", "Userinfos");  // Temporary workaround for title bar icon issue
 
     AppLauncher::with_window(main_window)
         .delegate(Delegate {})
