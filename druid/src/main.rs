@@ -11,6 +11,7 @@ use std::error::Error;
 use std::sync::Arc;
 use std::{fmt, thread};
 use table::{Table, TableColumns, TableData, TableHeader, TableRows};
+mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
@@ -149,7 +150,9 @@ fn ui_builder() -> impl Widget<AppData> {
         .with_child(Either::new(
             |data, _env| data.en_traitement,
             Spinner::new(),
-            Table::new().with_header_text_color(Color::from_hex_str("FFA500").unwrap()).lens(AppData::infos),
+            Table::new()
+                .with_header_text_color(Color::from_hex_str("FFA500").unwrap())
+                .lens(AppData::infos),
         ));
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
@@ -184,6 +187,9 @@ pub fn main() {
         en_traitement: false,
         erreur: String::new(),
     };
+
+    seticon::set_window_icon("druid", "Userinfos");
+
     AppLauncher::with_window(main_window)
         .delegate(Delegate {})
         .launch(data)

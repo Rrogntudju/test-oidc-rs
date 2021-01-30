@@ -103,7 +103,7 @@ impl Table {
         for col_name in &data.header {
             let mut label = Label::new(col_name.clone());
             if let Some(color) = &self.header_text_color {
-               label.set_text_color(color.clone());
+                label.set_text_color(color.clone());
             }
             header.add_child(label.fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
             idx_col += 1;
@@ -115,9 +115,7 @@ impl Table {
             let mut table_row = Flex::<Arc<TableData>>::row();
             let mut idx_col = 0_usize;
             for text in row {
-                table_row.add_child(
-                    Label::new(text.clone()).fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })),
-                );
+                table_row.add_child(Label::new(text.clone()).fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
                 idx_col += 1;
             }
             if idx_row % 2 == 0 {
