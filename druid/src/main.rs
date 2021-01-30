@@ -188,7 +188,7 @@ pub fn main() {
         erreur: String::new(),
     };
 
-    seticon::set_window_icon("druid", "Userinfos");
+    seticon::set_window_icon("druid", "Userinfos");  // Temporary workaround
 
     AppLauncher::with_window(main_window)
         .delegate(Delegate {})
