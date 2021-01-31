@@ -77,53 +77,56 @@ impl Table {
         }
     }
 
-    fn build(&mut self, widths: Vec<f64>, data: &Arc<TableData>, env: &Env) {
-        let last_col = widths.len() - 1;
-        let (r, g, b, a) = env.get(theme::WINDOW_BACKGROUND_COLOR).as_rgba();
-        let shade = if r + g + b < 1.5 {
-            Color::rgba(
-                (r + SHADING).clamp(0.0, 1.0),
-                (g + SHADING).clamp(0.0, 1.0),
-                (b + SHADING).clamp(0.0, 1.0),
-                a,
-            )
-        } else {
-            Color::rgba(
-                (r - SHADING).clamp(0.0, 1.0),
-                (g - SHADING).clamp(0.0, 1.0),
-                (b - SHADING).clamp(0.0, 1.0),
-                a,
-            )
-        };
-
+    fn build(&mut self, ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) {
         let mut table = Flex::<Arc<TableData>>::column();
+        
+        if let Some(widths) = layout_columns_width(ctx, data, env) {
+            let last_col = widths.len() - 1;
+            let (r, g, b, a) = env.get(theme::WINDOW_BACKGROUND_COLOR).as_rgba();
+            let shade = if r + g + b < 1.5 {
+                Color::rgba(
+                    (r + SHADING).clamp(0.0, 1.0),
+                    (g + SHADING).clamp(0.0, 1.0),
+                    (b + SHADING).clamp(0.0, 1.0),
+                    a,
+                )
+            } else {
+                Color::rgba(
+                    (r - SHADING).clamp(0.0, 1.0),
+                    (g - SHADING).clamp(0.0, 1.0),
+                    (b - SHADING).clamp(0.0, 1.0),
+                    a,
+                )
+            };
 
-        let mut header = Flex::<Arc<TableData>>::row();
-        let mut idx_col = 0_usize;
-        for col_name in &data.header {
-            let mut label = Label::new(col_name.clone());
-            if let Some(color) = &self.header_text_color {
-                label.set_text_color(color.clone());
-            }
-            header.add_child(label.fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
-            idx_col += 1;
-        }
-        table.add_child(header.padding(Insets::new(0.0, 0.0, 0.0, 5.0)));
-
-        let mut idx_row = 0_usize;
-        for row in &data.rows {
-            let mut table_row = Flex::<Arc<TableData>>::row();
+            let mut header = Flex::<Arc<TableData>>::row();
             let mut idx_col = 0_usize;
-            for text in row {
-                table_row.add_child(Label::new(text.clone()).fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
+            for col_name in &data.header {
+                let mut label = Label::new(col_name.clone());
+                if let Some(color) = &self.header_text_color {
+                    label.set_text_color(color.clone());
+                }
+                header.add_child(label.fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
                 idx_col += 1;
             }
-            if idx_row % 2 == 0 {
-                table.add_child(table_row.background(Color::from(shade.clone())))
-            } else {
-                table.add_child(table_row)
-            };
-            idx_row += 1;
+            table.add_child(header.padding(Insets::new(0.0, 0.0, 0.0, 5.0)));
+
+            let mut idx_row = 0_usize;
+            for row in &data.rows {
+                let mut table_row = Flex::<Arc<TableData>>::row();
+                let mut idx_col = 0_usize;
+                for text in row {
+                    table_row
+                        .add_child(Label::new(text.clone()).fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
+                    idx_col += 1;
+                }
+                if idx_row % 2 == 0 {
+                    table.add_child(table_row.background(Color::from(shade.clone())))
+                } else {
+                    table.add_child(table_row)
+                };
+                idx_row += 1;
+            }
         }
 
         self.inner = WidgetPod::new(Box::new(table));
@@ -153,10 +156,8 @@ impl Widget<Arc<TableData>> for Table {
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, env: &Env) {
         if !old_data.same(data) {
-            if let Some(columns_width) = layout_columns_width(ctx, data, env) {
-                self.build(columns_width, data, env);
-                ctx.children_changed();
-            }
+            self.build(ctx, data, env);
+            ctx.children_changed();
         }
     }
 

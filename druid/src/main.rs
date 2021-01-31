@@ -15,8 +15,8 @@ mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "ardt0kyeiIyLx4ZNR52MN3uMkdhr1zH8";
-const CSRF: &str = "Hbts76gUQkyxVZHR2lCTcm23608K8qoI8EO6WQYJStVLQaNBr5zhWXyn4VCpwRqs";
+const SESSION: &str = "D2Itbe8WsOGnPZU1ClHL7vGA061ZlEes";
+const CSRF: &str = "cBOWFEOxEhCfrWU3TxM4pBkR3N80grxdcNvVMSv68D72EGRzx8betqFHJfVL2UTc";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -188,7 +188,7 @@ pub fn main() {
         erreur: String::new(),
     };
 
-    seticon::set_window_icon(1, "druid", "Userinfos");  // Temporary workaround for title bar icon issue
+    seticon::set_window_icon(1, "druid", "Userinfos"); // Temporary workaround for title bar icon issue
 
     AppLauncher::with_window(main_window)
         .delegate(Delegate {})
