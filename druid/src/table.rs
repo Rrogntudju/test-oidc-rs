@@ -2,6 +2,7 @@ use druid::widget::{prelude::*, Flex, Label};
 use druid::{theme, Color, WidgetExt, WidgetPod};
 use druid::{Insets, KeyOrValue, TextLayout};
 use std::sync::Arc;
+use std::iter;
 
 const SPACING: f64 = 12.0;
 const LAST_SPACING: f64 = SPACING / 2.0;
@@ -22,7 +23,7 @@ fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -
         let mut end_of_cols = true;
         let mut max_width = 0.0;
 
-        data.rows.iter().for_each(|row| {
+        data.rows.iter().chain(iter::once(&data.header)).for_each(|row| {
             if let Some(text) = row.get(j) {
                 end_of_cols = false;
                 if !text.is_empty() {
@@ -35,18 +36,6 @@ fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -
                 }
             }
         });
-
-        if let Some(text) = data.header.get(j) {
-            end_of_cols = false;
-            if !text.is_empty() {
-                let mut layout = TextLayout::<String>::from_text(text.clone());
-                layout.rebuild_if_needed(ctx.text(), env);
-                let width = layout.size().width;
-                if width > max_width {
-                    max_width = width;
-                }
-            }
-        }
 
         if end_of_cols {
             break;
