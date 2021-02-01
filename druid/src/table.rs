@@ -92,14 +92,14 @@ impl Table {
                 if let Some(color) = &self.header_text_color {
                     label.set_text_color(color.clone());
                 }
-                header.add_child(label.fix_width(widths[j] + (if j == last_col { LAST_SPACING } else { SPACING })));
+                header.add_child(label.fix_width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
             });
             table.add_child(header.padding(Insets::new(0.0, 0.0, 0.0, 5.0)));
 
             data.rows.iter().enumerate().for_each(|(i, row)| {
                 let mut table_row = Flex::<Arc<TableData>>::row();
                 row.iter().enumerate().for_each(|(j, text)| {
-                    table_row.add_child(Label::new(text.clone()).fix_width(widths[j] + (if j == last_col { LAST_SPACING } else { SPACING })));
+                    table_row.add_child(Label::new(text.clone()).fix_width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
                 });
                 if i % 2 == 0 {
                     table.add_child(table_row.background(Color::from(shade.clone())))
