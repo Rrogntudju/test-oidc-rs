@@ -18,12 +18,12 @@ pub struct TableData {
 // Find out the maximum layout width of each column
 fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -> Option<Vec<f64>> {
     let mut columns_width = Vec::new();
-    for idx_col in 0_usize.. {
+    for j in 0_usize.. {
         let mut end_of_cols = true;
         let mut max_width = 0.0;
 
-        for row in &data.rows {
-            if let Some(text) = row.get(idx_col) {
+        data.rows.iter().for_each(|row| {
+            if let Some(text) = row.get(j) {
                 end_of_cols = false;
                 if !text.is_empty() {
                     let mut layout = TextLayout::<String>::from_text(text.clone());
@@ -33,12 +33,10 @@ fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -
                         max_width = width;
                     }
                 }
-            } else {
-                continue;
             }
-        }
+        });
 
-        if let Some(text) = data.header.get(idx_col) {
+        if let Some(text) = data.header.get(j) {
             end_of_cols = false;
             if !text.is_empty() {
                 let mut layout = TextLayout::<String>::from_text(text.clone());
@@ -79,7 +77,7 @@ impl Table {
 
     fn build(&mut self, ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) {
         let mut table = Flex::<Arc<TableData>>::column();
-        
+
         if let Some(widths) = layout_columns_width(ctx, data, env) {
             let last_col = widths.len() - 1;
             let (r, g, b, a) = env.get(theme::WINDOW_BACKGROUND_COLOR).as_rgba();
@@ -100,33 +98,26 @@ impl Table {
             };
 
             let mut header = Flex::<Arc<TableData>>::row();
-            let mut idx_col = 0_usize;
-            for col_name in &data.header {
+            data.header.iter().enumerate().for_each(|(j, col_name)| {
                 let mut label = Label::new(col_name.clone());
                 if let Some(color) = &self.header_text_color {
                     label.set_text_color(color.clone());
                 }
-                header.add_child(label.fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
-                idx_col += 1;
-            }
+                header.add_child(label.fix_width(widths[j] + (if j == last_col { LAST_SPACING } else { SPACING })));
+            });
             table.add_child(header.padding(Insets::new(0.0, 0.0, 0.0, 5.0)));
 
-            let mut idx_row = 0_usize;
-            for row in &data.rows {
+            data.rows.iter().enumerate().for_each(|(i, row)| {
                 let mut table_row = Flex::<Arc<TableData>>::row();
-                let mut idx_col = 0_usize;
-                for text in row {
-                    table_row
-                        .add_child(Label::new(text.clone()).fix_width(widths[idx_col] + (if idx_col == last_col { LAST_SPACING } else { SPACING })));
-                    idx_col += 1;
-                }
-                if idx_row % 2 == 0 {
+                row.iter().enumerate().for_each(|(j, text)| {
+                    table_row.add_child(Label::new(text.clone()).fix_width(widths[j] + (if j == last_col { LAST_SPACING } else { SPACING })));
+                });
+                if i % 2 == 0 {
                     table.add_child(table_row.background(Color::from(shade.clone())))
                 } else {
                     table.add_child(table_row)
                 };
-                idx_row += 1;
-            }
+            });
         }
 
         self.inner = WidgetPod::new(Box::new(table));

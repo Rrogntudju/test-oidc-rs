@@ -15,8 +15,8 @@ mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "D2Itbe8WsOGnPZU1ClHL7vGA061ZlEes";
-const CSRF: &str = "cBOWFEOxEhCfrWU3TxM4pBkR3N80grxdcNvVMSv68D72EGRzx8betqFHJfVL2UTc";
+const SESSION: &str = "4wyU996QyJD7kqLBgycfnK6Wepx4OH88";
+const CSRF: &str = "1iSeQtGBPzRefuEzmTG7DaX5V8Q91i2jFFdN9nPJH3t944G5Kr41DXTmPG9zbLAs";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
