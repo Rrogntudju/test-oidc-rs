@@ -10,7 +10,7 @@ use serde_json::value::Value;
 use std::error::Error;
 use std::sync::Arc;
 use std::{fmt, thread};
-use table::{Table, TableColumns, TableData, TableHeader, TableRows};
+use table::{Table, TableColumns, TableData, TableRows};
 mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
@@ -173,17 +173,10 @@ fn ui_builder() -> impl Widget<AppData> {
 
 pub fn main() {
     let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
-    let mut rows = TableRows::new();
-    rows.push(TableColumns::new());
-    let infos = TableData {
-        rows,
-        header: TableHeader::new(),
-    };
-
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),
-        infos: Arc::new(infos),
+        infos: Arc::new(TableData::default()),
         en_traitement: false,
         erreur: String::new(),
     };

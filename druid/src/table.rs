@@ -16,6 +16,17 @@ pub struct TableData {
     pub rows: TableRows,
 }
 
+impl Default for TableData {
+    fn default() -> Self {
+        let mut rows = TableRows::new();
+        rows.push(TableColumns::new());
+        TableData {
+            rows,
+            header: TableHeader::new(), 
+        }
+    }
+}
+
 // Find out the maximum layout width of each column
 fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -> Option<Vec<f64>> {
     let mut columns_width = Vec::new();
