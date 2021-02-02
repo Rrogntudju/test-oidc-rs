@@ -1,4 +1,4 @@
-use druid::widget::{prelude::*, Flex, Label};
+use druid::widget::{prelude::*, CrossAxisAlignment, Flex, Label};
 use druid::{theme, Color, WidgetExt, WidgetPod};
 use druid::{Insets, KeyOrValue, TextLayout};
 use std::sync::Arc;
@@ -76,7 +76,7 @@ impl Table {
     }
 
     fn build(&mut self, ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) {
-        let mut table = Flex::<Arc<TableData>>::column();
+        let mut table = Flex::<Arc<TableData>>::column().cross_axis_alignment(CrossAxisAlignment::Start);
 
         if let Some(widths) = layout_columns_width(ctx, data, env) {
             let last_col = widths.len() - 1;
