@@ -27,7 +27,8 @@ pub fn set_window_icon(id: u16, class_name: &'static str, window_name: &'static 
 
             let hicon = unsafe { LoadIconW(GetModuleHandleW(0 as LPCWSTR), MAKEINTRESOURCEW(id)) };
             if hicon == 0 as HICON {
-                panic!("No Icon #{} in resource", id);
+                eprintln!("No Icon #{} in resource", id);
+                break;
             }
 
             unsafe { SendMessageW(hwnd, WM_SETICON, ICON_SMALL as WPARAM, hicon as LPARAM) };
