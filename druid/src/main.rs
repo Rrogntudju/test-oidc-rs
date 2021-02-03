@@ -59,6 +59,7 @@ fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Box<dyn Error>>
         .send()?
         .json()?)
 }
+
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur) {

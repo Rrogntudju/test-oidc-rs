@@ -21,8 +21,8 @@ impl Default for TableData {
         let mut rows = TableRows::new();
         rows.push(TableColumns::new());
         TableData {
-            rows,
             header: TableHeader::new(), 
+            rows,
         }
     }
 }
