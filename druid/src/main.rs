@@ -15,8 +15,8 @@ mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "u1S1nVKxoewhGlMiVW27SGXcnVtOLYT9";
-const CSRF: &str = "PXMdaF38u4wlJkSXzyUCxPxV6f7DREqACZmnCWOeD2KlgexgmBO9QUr210cAp73l";
+const SESSION: &str = "oduZ9fWEYSfTzOUZLLs0j21FAB5VAej4";
+const CSRF: &str = "NFJXZYLAzODa1qGJlPMN5axFgtM7FbwAXfZrhFTxQheFGgSGtJc4JTAHODINU6sv";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -169,7 +169,7 @@ fn ui_builder() -> impl Widget<AppData> {
                     .expand_width(),
             ),
         )
-        .debug_paint_layout()
+    //    .debug_paint_layout()
 }
 
 pub fn main() {
