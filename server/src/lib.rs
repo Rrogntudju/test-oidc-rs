@@ -49,6 +49,15 @@ pub mod filters {
             .and_then(handlers::auth)
     }
 
+    pub fn hack() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path("hack")
+            .and(warp::path::end())
+            .and(warp::get())
+            .and(warp::query::<HashMap<String, String>>())
+            .and(clone_sessions())
+            .and_then(handlers::hack)
+    }
+
     fn clone_sessions() -> impl Filter<Extract = (Arc<RwLock<HashMap<SessionId, Session>>>,), Error = Infallible> + Clone {
         warp::any().map(move || SESSIONS.clone())
     }
@@ -271,6 +280,20 @@ mod handlers {
                 reply_error(StatusCode::BAD_REQUEST)
             }
         };
+
+        Ok(response)
+    }
+
+    pub async fn hack(
+        params: HashMap<String, String>,
+        sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
+    ) -> Result<impl warp::Reply, Infallible> {
+        let response = Response::builder()
+            .status(StatusCode::OK)
+            // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
+            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.as_ref()))
+            .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
+            .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
 
         Ok(response)
     }
