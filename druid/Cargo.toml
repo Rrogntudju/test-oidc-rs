@@ -11,6 +11,7 @@ druid = { version = "0.7", features = [ "png", "im" ] }
 minreq = { version = "2", features = ["https", "json-using-serde"] }
 serde_json = "1"
 winapi = { version = "0.3", features = ["winuser", "winnt"] }
+urlencoding = "1"
 
 [build-dependencies]
 winres = "0.1"

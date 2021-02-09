@@ -54,7 +54,6 @@ pub mod filters {
             .and(warp::path::end())
             .and(warp::get())
             .and(warp::query::<HashMap<String, String>>())
-            .and(clone_sessions())
             .and_then(handlers::hack)
     }
 
@@ -286,14 +285,46 @@ mod handlers {
 
     pub async fn hack(
         params: HashMap<String, String>,
-        sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<impl warp::Reply, Infallible> {
+        
+        let id = match params.get("id") {
+            Some(id) => id,
+            None => {
+                eprintln!("hack: id manquant");
+                return Ok(reply_error(StatusCode::BAD_REQUEST));
+            }
+        };
+
+        let csrf = match params.get("csrf") {
+            Some(csrf) => csrf,
+            None => {
+                eprintln!("hack: csrf manquant");
+                return Ok(reply_error(StatusCode::BAD_REQUEST));
+            }
+        };
+
+        let url = match params.get("url") {
+            Some(url) => {
+                match urlencoding::decode(url) {
+                    Ok(url) => url,
+                    Err(e) => {
+                        eprintln!("hack: {}", e);
+                        return Ok(reply_error(StatusCode::BAD_REQUEST));
+                    }
+                }},
+            None => {
+                eprintln!("hack: url manquant");
+                return Ok(reply_error(StatusCode::BAD_REQUEST));
+            }
+        };
+
         let response = Response::builder()
-            .status(StatusCode::OK)
+            .status(StatusCode::FOUND)
+            .header("Location", url)
             // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
-            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.as_ref()))
-            .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
-            .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
+            .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", id))
+            .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", csrf))
+            .body(String::default());
 
         Ok(response)
     }
