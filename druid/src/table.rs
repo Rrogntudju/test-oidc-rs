@@ -1,8 +1,8 @@
 use druid::widget::{prelude::*, CrossAxisAlignment, Flex, Label};
 use druid::{theme, Color, WidgetExt, WidgetPod};
 use druid::{Insets, KeyOrValue, TextLayout};
-use std::sync::Arc;
 use std::iter;
+use std::sync::Arc;
 
 const SPACING: f64 = 12.0;
 const LAST_SPACING: f64 = SPACING / 2.0;
@@ -21,7 +21,7 @@ impl Default for TableData {
         let mut rows = TableRows::new();
         rows.push(TableColumns::new());
         TableData {
-            header: TableHeader::new(), 
+            header: TableHeader::new(),
             rows,
         }
     }

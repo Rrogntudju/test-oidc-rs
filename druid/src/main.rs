@@ -13,7 +13,7 @@ use std::{fmt, thread};
 use table::{Table, TableColumns, TableData, TableRows};
 mod seticon;
 
-const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
+const FINISH_GET_USERINFOS: Selector<Result<(TableRows, String, String), String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
 
 #[derive(Clone, Data, Lens)]
@@ -24,9 +24,9 @@ struct AppData {
     en_traitement: bool,
     erreur: String,
     #[data(ignore)]
-    session: Option<String>,
+    session: String,
     #[data(ignore)]
-    csrf: Option<String>,
+    csrf: String,
 }
 
 #[derive(Clone, PartialEq, Data)]
@@ -51,36 +51,42 @@ struct Info {
     valeur: String,
 }
 
-fn request_userinfos(fournisseur: &Fournisseur, session: Option<String>, csrf: Option<String>) -> Result<Value, Box<dyn Error>> {
-    let mut req = minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
+fn request_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str) -> Result<Value, Box<dyn Error>> {
+    Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
         .with_header("Content-Type", "application/json")
+        .with_header("Cookie", format!("Session-Id={}; Csrf-Token={}", session, csrf))
+        .with_header("X-Csrf-Token", csrf)
         .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
-        .with_timeout(10);
-    if session.is_some() && csrf.is_some() {
-        req = req        
-            .with_header("Cookie", format!("Session-Id={}; Csrf-Token={}", session.unwrap(), csrf.as_ref().unwrap()))
-            .with_header("X-Csrf-Token", csrf.unwrap());
-    }
-
-    Ok(req.send()?.json()?)
+        .with_timeout(10)
+        .send()?
+        .json()?
+    )
 }
 
-fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: Option<String>, csrf: Option<String>) {
+fn redirect_hack(fournisseur: Fournisseur, session: String, csrf: String, url: String) -> Result<(TableRows, String, String), Box<dyn Error>> {
+}
+
+fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, csrf: String) {
     thread::spawn(move || {
-        let result = match request_userinfos(&fournisseur, session, csrf) {
+        let result = match request_userinfos(&fournisseur, &session, &csrf) {
             Ok(value) => {
-                let infos = value
-                    .as_array()
-                    .unwrap_or(&Vec::<Value>::new())
-                    .iter()
-                    .map(|value| {
-                        let mut columns = TableColumns::new();
-                        columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
-                        columns.push(value["valeur"].to_string().trim_matches('"').to_owned());
-                        columns
-                    })
-                    .collect::<TableRows>();
-                Ok(infos)
+                if value.is_object() {
+                    let auth_url = urlencoding::encode(value["RedirectOP"].as_str().expect("RedirectOP invalide"));
+                    redirect_hack(fournisseur, session, csrf, auth_url)
+                } else {
+                    let infos = value
+                        .as_array()
+                        .unwrap_or(&Vec::<Value>::new())
+                        .iter()
+                        .map(|value| {
+                            let mut columns = TableColumns::new();
+                            columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
+                            columns.push(value["valeur"].to_string().trim_matches('"').to_owned());
+                            columns
+                        })
+                        .collect::<TableRows>();
+                    Ok((infos, session, csrf))
+                }
             }
             Err(e) => Err(e.to_string()),
         };
@@ -137,7 +143,12 @@ fn ui_builder() -> impl Widget<AppData> {
             data.erreur = String::new();
             data.label_fournisseur = data.radio_fournisseur.to_string();
             data.en_traitement = true;
-            get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone(), data.session.clone(), data.csrf.clone());
+            get_userinfos(
+                ctx.get_external_handle(),
+                data.radio_fournisseur.clone(),
+                data.session.clone(),
+                data.csrf.clone(),
+            );
         })
         .fix_height(30.0);
 
@@ -185,8 +196,8 @@ pub fn main() {
         infos: Arc::new(TableData::default()),
         en_traitement: false,
         erreur: String::new(),
-        session: None,
-        csrf: None,
+        session: String::default(),
+        csrf: String::default(),
     };
 
     seticon::set_window_icon(1, "druid", "Userinfos"); // Temporary workaround for title bar icon issue
