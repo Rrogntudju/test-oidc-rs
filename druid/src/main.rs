@@ -63,7 +63,7 @@ fn request_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str) -> Re
     )
 }
 
-fn redirect_hack(fournisseur: Fournisseur, session: String, csrf: String, url: String) -> Result<(TableRows, String, String), Box<dyn Error>> {
+fn hack_userinfos(fournisseur: Fournisseur, session: String, csrf: String, url: String) -> Result<(TableRows, String, String), String> {
 }
 
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, csrf: String) {
@@ -72,7 +72,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, 
             Ok(value) => {
                 if value.is_object() {
                     let auth_url = urlencoding::encode(value["RedirectOP"].as_str().expect("RedirectOP invalide"));
-                    redirect_hack(fournisseur, session, csrf, auth_url)
+                    hack_userinfos(fournisseur, session, csrf, auth_url)
                 } else {
                     let infos = value
                         .as_array()
@@ -81,7 +81,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, 
                         .map(|value| {
                             let mut columns = TableColumns::new();
                             columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
-                            columns.push(value["valeur"].to_string().trim_matches('"').to_owned());
+                            columns.push(value["valeur"].as_str().unwrap_or_default().trim_matches('"').to_owned());
                             columns
                         })
                         .collect::<TableRows>();
@@ -101,12 +101,14 @@ struct Delegate;
 impl AppDelegate<AppData> for Delegate {
     fn command(&mut self, _ctx: &mut DelegateCtx, _target: Target, cmd: &Command, data: &mut AppData, _env: &Env) -> Handled {
         match cmd.get(FINISH_GET_USERINFOS) {
-            Some(Ok(infos)) => {
+            Some(Ok((infos, session, csrf))) => {
                 data.en_traitement = false;
                 data.infos = Arc::new(TableData {
                     rows: infos.to_owned(),
                     header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
                 });
+                data.session = session.to_owned();
+                data.csrf = csrf.to_owned();
                 Handled::Yes
             }
             Some(Err(e)) => {
