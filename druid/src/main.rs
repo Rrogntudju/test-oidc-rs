@@ -71,12 +71,12 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, 
         let result = match request_userinfos(&fournisseur, &session, &csrf) {
             Ok(value) => {
                 let value = if value.is_object() {
-                    let auth_url = urlencoding::encode(value["RedirectOP"].as_str().expect("RedirectOP invalide"));
+                    let auth_url = urlencoding::encode(value["redirectOP"].as_str().expect("redirectOP invalide"));
                     let session = value["session"].as_str().expect("Session invalide").to_owned();
                     let csrf = value["csrf"].as_str().expect("Csrf invalide").to_owned();
                     hack_userinfos(&fournisseur, &session, &csrf, &auth_url).unwrap_or_default()
                 } else {
-                    Value::default()
+                    value
                 };
 
                 let infos = value

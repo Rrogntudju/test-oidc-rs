@@ -207,12 +207,14 @@ mod handlers {
         let auth_url = client.auth_url(&options);
 
         let sessionid = SessionId::new();
+        let csrf = random_token(64);
         let response = Response::builder()
             .status(StatusCode::OK)
             // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
             .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.as_ref()))
-            .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
-            .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
+            .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", &csrf))
+            // This is an unsecure hack: never do this in a real web server.
+            .body(format!(r#"{{ "redirectOP": "{0}", "session": "{1}", "csrf": "{2}" }}"#, auth_url.to_string(), sessionid.as_ref(), &csrf));
 
         let session = Session::new(client, fournisseur.into(), nonce);
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
