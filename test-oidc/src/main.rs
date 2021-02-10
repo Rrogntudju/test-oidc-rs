@@ -37,7 +37,7 @@ fn parse_args(args: &mut Args) -> Result<(SocketAddr, PathBuf, Option<PathBuf>),
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let (addr, path_static, path_tls) = parse_args(&mut args())?;
-    let routes = static_file(path_static).or(userinfos()).or(auth().or(hack()));
+    let routes = static_file(path_static).or(userinfos()).or(auth()).or(hack());
 
     let server = warp::serve(routes);
     if let Some(p) = path_tls {

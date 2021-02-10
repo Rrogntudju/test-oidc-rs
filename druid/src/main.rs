@@ -15,8 +15,6 @@ mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "oduZ9fWEYSfTzOUZLLs0j21FAB5VAej4";
-const CSRF: &str = "NFJXZYLAzODa1qGJlPMN5axFgtM7FbwAXfZrhFTxQheFGgSGtJc4JTAHODINU6sv";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -25,6 +23,10 @@ struct AppData {
     infos: Arc<TableData>,
     en_traitement: bool,
     erreur: String,
+    #[data(ignore)]
+    session: Option<String>,
+    #[data(ignore)]
+    csrf: Option<String>,
 }
 
 #[derive(Clone, PartialEq, Data)]
@@ -49,20 +51,23 @@ struct Info {
     valeur: String,
 }
 
-fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Box<dyn Error>> {
-    Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
+fn request_userinfos(fournisseur: &Fournisseur, session: Option<String>, csrf: Option<String>) -> Result<Value, Box<dyn Error>> {
+    let mut req = minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
         .with_header("Content-Type", "application/json")
-        .with_header("Cookie", format!("Session-Id={}; Csrf-Token={}", SESSION, CSRF))
-        .with_header("X-Csrf-Token", CSRF)
         .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
-        .with_timeout(10)
-        .send()?
-        .json()?)
+        .with_timeout(10);
+    if session.is_some() && csrf.is_some() {
+        req = req        
+            .with_header("Cookie", format!("Session-Id={}; Csrf-Token={}", session.unwrap(), csrf.as_ref().unwrap()))
+            .with_header("X-Csrf-Token", csrf.unwrap());
+    }
+
+    Ok(req.send()?.json()?)
 }
 
-fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
+fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: Option<String>, csrf: Option<String>) {
     thread::spawn(move || {
-        let result = match request_userinfos(&fournisseur) {
+        let result = match request_userinfos(&fournisseur, session, csrf) {
             Ok(value) => {
                 let infos = value
                     .as_array()
@@ -132,7 +137,7 @@ fn ui_builder() -> impl Widget<AppData> {
             data.erreur = String::new();
             data.label_fournisseur = data.radio_fournisseur.to_string();
             data.en_traitement = true;
-            get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone());
+            get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone(), data.session.clone(), data.csrf.clone());
         })
         .fix_height(30.0);
 
@@ -180,6 +185,8 @@ pub fn main() {
         infos: Arc::new(TableData::default()),
         en_traitement: false,
         erreur: String::new(),
+        session: None,
+        csrf: None,
     };
 
     seticon::set_window_icon(1, "druid", "Userinfos"); // Temporary workaround for title bar icon issue

@@ -318,15 +318,14 @@ mod handlers {
             }
         };
 
-        let response = Response::builder()
+        Ok(Response::builder()
             .status(StatusCode::FOUND)
             .header("Location", url)
             // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
             .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", id))
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", csrf))
-            .body(String::default());
-
-        Ok(response)
+            .body(String::default())
+        )
     }
 }
 
