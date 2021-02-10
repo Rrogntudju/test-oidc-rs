@@ -63,30 +63,34 @@ fn request_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str) -> Re
     )
 }
 
-fn hack_userinfos(fournisseur: Fournisseur, session: String, csrf: String, url: String) -> Result<(TableRows, String, String), String> {
+fn hack_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str, url: &str) -> Result<Value, String> {
 }
 
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, csrf: String) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur, &session, &csrf) {
             Ok(value) => {
-                if value.is_object() {
+                let value = if value.is_object() {
                     let auth_url = urlencoding::encode(value["RedirectOP"].as_str().expect("RedirectOP invalide"));
-                    hack_userinfos(fournisseur, session, csrf, auth_url)
+                    let session = value["session"].as_str().expect("Session invalide").to_owned();
+                    let csrf = value["csrf"].as_str().expect("Csrf invalide").to_owned();
+                    hack_userinfos(&fournisseur, &session, &csrf, &auth_url).unwrap_or_default()
                 } else {
-                    let infos = value
-                        .as_array()
-                        .unwrap_or(&Vec::<Value>::new())
-                        .iter()
-                        .map(|value| {
-                            let mut columns = TableColumns::new();
-                            columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
-                            columns.push(value["valeur"].as_str().unwrap_or_default().trim_matches('"').to_owned());
-                            columns
-                        })
-                        .collect::<TableRows>();
-                    Ok((infos, session, csrf))
-                }
+                    Value::default()
+                };
+
+                let infos = value
+                    .as_array()
+                    .unwrap_or(&Vec::<Value>::new())
+                    .iter()
+                    .map(|value| {
+                        let mut columns = TableColumns::new();
+                        columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
+                        columns.push(value["valeur"].as_str().unwrap_or_default().trim_matches('"').to_owned());
+                        columns
+                    })
+                    .collect::<TableRows>();
+                Ok((infos, session, csrf))
             }
             Err(e) => Err(e.to_string()),
         };
