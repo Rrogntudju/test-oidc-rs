@@ -289,7 +289,7 @@ mod handlers {
         params: HashMap<String, String>,
     ) -> Result<impl warp::Reply, Infallible> {
         
-        let id = match params.get("id") {
+        let id = match params.get("session") {
             Some(id) => id,
             None => {
                 eprintln!("hack: id manquant");
