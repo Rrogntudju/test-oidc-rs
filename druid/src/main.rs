@@ -64,8 +64,10 @@ fn request_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str) -> Re
 
 fn hack_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str, url: &str) -> Result<Value, Box<dyn Error>> {
     use std::process::Command as Exec;
+    use std::env;
 
-    let mut child = Exec::new(r#"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"#)
+    let pf = env::var("ProgramFiles(x86)")?;
+    let mut child = Exec::new(format!(r#"{}\Microsoft\Edge\Application\msedge.exe"#, pf))
         .arg(format!("{0}/hack?session={1}&csrf={2}&url={3}", ORIGINE, session, csrf, url))
         .spawn()?;
     child.wait()?;
