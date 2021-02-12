@@ -292,7 +292,7 @@ mod handlers {
         let id = match params.get("session") {
             Some(id) => id,
             None => {
-                eprintln!("hack: id manquant");
+                eprintln!("hack: session manquante");
                 return Ok(reply_error(StatusCode::BAD_REQUEST));
             }
         };

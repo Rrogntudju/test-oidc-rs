@@ -59,16 +59,15 @@ fn request_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str) -> Re
         .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
         .with_timeout(10)
         .send()?
-        .json()?
-    )
+        .json()?)
 }
 
 fn hack_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str, url: &str) -> Result<Value, Box<dyn Error>> {
     use std::process::Command as Exec;
 
-    let mut child = Exec::new("start msedge")
-                        .arg(format!("{0}/hack?session={1}&csrf={2}&url={3}", ORIGINE, session, csrf, url))
-                        .spawn()?;
+    let mut child = Exec::new(r#"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"#)
+        .arg(format!("{0}/hack?session={1}&csrf={2}&url={3}", ORIGINE, session, csrf, url))
+        .spawn()?;
     child.wait()?;
     request_userinfos(&fournisseur, &session, &csrf)
 }
@@ -81,7 +80,10 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, 
                     let auth_url = urlencoding::encode(value["redirectOP"].as_str().expect("redirectOP invalide"));
                     let session = value["session"].as_str().expect("Session invalide").to_owned();
                     let csrf = value["csrf"].as_str().expect("Csrf invalide").to_owned();
-                    hack_userinfos(&fournisseur, &session, &csrf, &auth_url).unwrap_or_default()
+                    hack_userinfos(&fournisseur, &session, &csrf, &auth_url).unwrap_or_else(|e| {
+                        eprintln!("hack: {}", e);
+                        Value::default()
+                    })
                 } else {
                     value
                 };
