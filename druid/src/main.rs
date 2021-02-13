@@ -96,8 +96,8 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, 
                     .iter()
                     .map(|value| {
                         let mut columns = TableColumns::new();
-                        columns.push(value["propriété"].as_str().unwrap_or_default().to_owned());
-                        columns.push(value["valeur"].as_str().unwrap_or_default().trim_matches('"').to_owned());
+                        columns.push(format!("{}", value["propriété"]).trim_matches('"').to_owned());
+                        columns.push(format!("{}", value["valeur"]).trim_matches('"').to_owned());
                         columns
                     })
                     .collect::<TableRows>();
