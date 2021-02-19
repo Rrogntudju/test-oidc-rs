@@ -59,8 +59,7 @@ fn request_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str) -> Re
         .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
         .with_timeout(10)
         .send()?
-        .json()?
-    )
+        .json()?)
 }
 
 fn hack_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str, url: &str) -> Result<Value, Box<dyn Error>> {
