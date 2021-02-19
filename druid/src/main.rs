@@ -59,12 +59,13 @@ fn request_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str) -> Re
         .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
         .with_timeout(10)
         .send()?
-        .json()?)
+        .json()?
+    )
 }
 
 fn hack_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str, url: &str) -> Result<Value, Box<dyn Error>> {
-    use std::process::Command as Exec;
     use std::env;
+    use std::process::Command as Exec;
 
     let pf = env::var("ProgramFiles(x86)")?;
     let mut child = Exec::new(format!(r#"{}\Microsoft\Edge\Application\msedge.exe"#, pf))
