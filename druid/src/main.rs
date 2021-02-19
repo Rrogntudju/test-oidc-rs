@@ -74,14 +74,14 @@ fn hack_userinfos(fournisseur: &Fournisseur, session: &str, csrf: &str, url: &st
     request_userinfos(&fournisseur, &session, &csrf)
 }
 
-fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, session: String, csrf: String) {
+fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur, mut session: String, mut csrf: String) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur, &session, &csrf) {
             Ok(value) => {
                 let value = if value.is_object() {
                     let auth_url = urlencoding::encode(value["redirectOP"].as_str().expect("redirectOP invalide"));
-                    let session = value["session"].as_str().expect("Session invalide").to_owned();
-                    let csrf = value["csrf"].as_str().expect("Csrf invalide").to_owned();
+                    session = value["session"].as_str().expect("Session invalide").to_owned();
+                    csrf = value["csrf"].as_str().expect("Csrf invalide").to_owned();
                     hack_userinfos(&fournisseur, &session, &csrf, &auth_url).unwrap_or_else(|e| {
                         eprintln!("hack: {}", e);
                         Value::default()
