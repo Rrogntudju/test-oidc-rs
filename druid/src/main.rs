@@ -5,7 +5,6 @@ use druid::{
     WindowDesc,
 };
 mod table;
-use minreq;
 use serde_json::value::Value;
 use std::error::Error;
 use std::sync::Arc;
