@@ -4,11 +4,12 @@ use druid::{
     AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector, Target, Widget, WidgetExt,
     WindowDesc,
 };
-mod table;
 use serde_json::value::Value;
 use std::error::Error;
 use std::sync::Arc;
 use std::{fmt, thread};
+
+mod table;
 use table::{Table, TableColumns, TableData, TableRows};
 mod seticon;
 
