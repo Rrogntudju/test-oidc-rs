@@ -17,17 +17,18 @@ const ID_GG: &str = include_str!("clientid.google");
 const SECRET_GG: &str = include_str!("secret.google");
 
 pub mod filters {
+     
     use super::*;
     use std::convert::Infallible;
     use std::path::PathBuf;
     use warp::filters::{cookie, header};
     use warp::Filter;
 
-    pub fn static_file(path: PathBuf) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    pub fn static_file(path: PathBuf) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path("static").and(warp::fs::dir(path))
     }
 
-    pub fn userinfos() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    pub fn userinfos() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path("userinfos")
             .and(warp::path::end())
             .and(warp::post())
@@ -39,7 +40,7 @@ pub mod filters {
             .and_then(handlers::userinfos)
     }
 
-    pub fn auth() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    pub fn auth() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path("auth")
             .and(warp::path::end())
             .and(warp::get())

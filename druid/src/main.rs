@@ -124,7 +124,7 @@ fn ui_builder() -> impl Widget<AppData> {
     let mut fournisseurs = Vector::new();
     fournisseurs.push_back((Fournisseur::Microsoft.to_string(), Fournisseur::Microsoft));
     fournisseurs.push_back((Fournisseur::Google.to_string(), Fournisseur::Google));
-    oidc.add_child(RadioGroup::new(fournisseurs).lens(AppData::radio_fournisseur));
+    oidc.add_child(RadioGroup::row(fournisseurs).lens(AppData::radio_fournisseur));
     oidc.add_default_spacer();
 
     let bouton = Button::new("UserInfos")
@@ -173,7 +173,7 @@ fn ui_builder() -> impl Widget<AppData> {
 }
 
 pub fn main() {
-    let main_window = WindowDesc::new(ui_builder).title("UserInfos").window_size((1100., 200.));
+    let main_window = WindowDesc::new(ui_builder()).title("UserInfos").window_size((1100., 200.));
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),

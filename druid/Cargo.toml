@@ -7,7 +7,7 @@ build = "build/build.rs"
 
 
 [dependencies]
-druid = { version = "0.7", features = [ "png", "im" ] }
+druid = { version = "0.8", features = [ "png", "im" ] }
 minreq = { version = "2", features = ["https", "json-using-serde"] }
 serde_json = "1"
 winapi = { version = "0.3", features = ["winuser", "winnt"] }
