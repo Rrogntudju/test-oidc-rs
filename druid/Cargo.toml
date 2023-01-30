@@ -10,7 +10,7 @@ build = "build/build.rs"
 druid = { version = "0.8", features = [ "png", "im" ] }
 minreq = { version = "2", features = ["https", "json-using-serde"] }
 serde_json = "1"
-winapi = { version = "0.3", features = ["winuser", "winnt"] }
+windows = { version = "0.44", features = ["Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader", "Win32_Foundation"] }
 
 [build-dependencies]
 winres = "0.1"

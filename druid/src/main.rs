@@ -5,7 +5,6 @@ use druid::{
     WindowDesc,
 };
 mod table;
-use minreq;
 use serde_json::value::Value;
 use std::error::Error;
 use std::sync::Arc;
@@ -52,9 +51,9 @@ struct Info {
 fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Box<dyn Error>> {
     Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
         .with_header("Content-Type", "application/json")
-        .with_header("Cookie", format!("Session-Id={}; Csrf-Token={}", SESSION, CSRF))
+        .with_header("Cookie", format!("Session-Id={SESSION}; Csrf-Token={CSRF}"))
         .with_header("X-Csrf-Token", CSRF)
-        .with_body(format!(r#"{{ "fournisseur": "{}", "origine": "{}" }}"#, fournisseur, ORIGINE))
+        .with_body(format!(r#"{{ "fournisseur": "{fournisseur}", "origine": "{ORIGINE}" }}"#))
         .with_timeout(10)
         .send()?
         .json()?)
@@ -115,7 +114,7 @@ fn ui_builder() -> impl Widget<AppData> {
         .main_axis_alignment(MainAxisAlignment::Center);
 
     let png_data = ImageBuf::from_data(include_bytes!("openid-icon-100x100.png")).unwrap();
-    oidc.add_child(Image::new(png_data.clone()));
+    oidc.add_child(Image::new(png_data));
     oidc.add_child(Label::new("OpenID Connect").with_text_size(25.));
     oidc.add_default_spacer();
 

@@ -1,8 +1,8 @@
 use druid::widget::{prelude::*, CrossAxisAlignment, Flex, Label};
 use druid::{theme, Color, WidgetExt, WidgetPod};
 use druid::{Insets, KeyOrValue, TextLayout};
-use std::sync::Arc;
 use std::iter;
+use std::sync::Arc;
 
 const SPACING: f64 = 12.0;
 const LAST_SPACING: f64 = SPACING / 2.0;
@@ -18,11 +18,9 @@ pub struct TableData {
 
 impl Default for TableData {
     fn default() -> Self {
-        let mut rows = TableRows::new();
-        rows.push(TableColumns::new());
         TableData {
-            header: TableHeader::new(), 
-            rows,
+            header: vec![],
+            rows: vec![vec![]]
         }
     }
 }
@@ -55,7 +53,7 @@ fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -
         }
     }
 
-    if columns_width.len() > 0 {
+    if !columns_width.is_empty() {
         Some(columns_width)
     } else {
         None
@@ -113,7 +111,7 @@ impl Table {
                     table_row.add_child(Label::new(text.clone()).fix_width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
                 });
                 if i % 2 == 0 {
-                    table.add_child(table_row.background(Color::from(shade.clone())))
+                    table.add_child(table_row.background(shade))
                 } else {
                     table.add_child(table_row)
                 };

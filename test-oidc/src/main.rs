@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use warp::Filter;
 
 fn parse_args(args: &mut Args) -> Result<(SocketAddr, PathBuf, Option<PathBuf>), Box<dyn Error>> {
-    let addr = match args.skip(1).next() {
+    let addr = match args.nth(1) {
         Some(arg) => arg.parse::<SocketAddr>()?,
         None => return Err("IP:Port est manquant".into()),
     };

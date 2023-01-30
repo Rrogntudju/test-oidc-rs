@@ -17,7 +17,7 @@ const ID_GG: &str = include_str!("clientid.google");
 const SECRET_GG: &str = include_str!("secret.google");
 
 pub mod filters {
-     
+
     use super::*;
     use std::convert::Infallible;
     use std::path::PathBuf;
@@ -76,7 +76,7 @@ mod handlers {
             match csrf_header {
                 Some(htoken) if htoken == ctoken => (),
                 Some(htoken) if htoken != ctoken => {
-                    eprintln!("{0} != {1}", htoken, ctoken);
+                    eprintln!("{htoken} != {ctoken}");
                     return Ok(reply_error(StatusCode::FORBIDDEN));
                 }
                 _ => {
@@ -108,13 +108,13 @@ mod handlers {
                                 let userinfo = match client.request_userinfo(&http, token) {
                                     Ok(userinfo) => userinfo,
                                     Err(e) => {
-                                        eprintln!("{0}", e.to_string());
+                                        eprintln!("{e}");
                                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
                                     }
                                 };
                                 drop(lock);
 
-                                let value = serde_json::to_value(&userinfo).unwrap_or_default();
+                                let value = serde_json::to_value(userinfo).unwrap_or_default();
                                 let map = value.as_object().unwrap_or(&LOL_MAP);
                                 let infos = Value::Array(
                                     map.into_iter()
@@ -171,7 +171,7 @@ mod handlers {
             "Google" => (ID_GG, SECRET_GG, issuer::google()),
             "Microsoft" => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers/v2.0")),
             _ => {
-                eprintln!("{0}", "Fournisseur invalide");
+                eprintln!("Fournisseur invalide");
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
             }
         };
@@ -180,7 +180,7 @@ mod handlers {
         let redirect = match Url::parse(&url_redirect) {
             Ok(redirect) => redirect,
             Err(e) => {
-                eprintln!("{0}", e.to_string());
+                eprintln!("{e}");
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
             }
         };
@@ -188,7 +188,7 @@ mod handlers {
         let client = match Client::discover(id.into(), secret.into(), redirect, issuer) {
             Ok(client) => client,
             Err(e) => {
-                eprintln!("{0}", e.to_string());
+                eprintln!("{e}");
                 return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
             }
         };
@@ -205,7 +205,7 @@ mod handlers {
             // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
             .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.as_ref()))
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
-            .body(format!(r#"{{ "redirectOP": "{0}" }}"#, auth_url.to_string()));
+            .body(format!(r#"{{ "redirectOP": "{auth_url}" }}"#));
 
         let session = Session::new(client, fournisseur.into(), nonce);
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
@@ -248,7 +248,7 @@ mod handlers {
                 let token = match client.authenticate(code, Some(nonce), None) {
                     Ok(token) => token,
                     Err(e) => {
-                        eprintln!("{0}", e.to_string());
+                        eprintln!("{e}");
                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
                     }
                 };
