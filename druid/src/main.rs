@@ -99,7 +99,7 @@ impl AppDelegate<AppData> for Delegate {
             }
             Some(Err(e)) => {
                 data.en_traitement = false;
-                data.erreur = e.to_string();
+                data.erreur = e.to_owned();
                 Handled::Yes
             }
             None => Handled::No,
