@@ -32,13 +32,13 @@ type Fournisseur = String;
 type Nonce = String;
 
 pub enum Session {
-    AuthenticationRequested(Client, Fournisseur, Nonce),
-    Authenticated(Client, Fournisseur, Token),
+    AuthenticationRequested(Box<Client>, Fournisseur, Nonce),
+    Authenticated(Box<Client>, Fournisseur, Token),
 }
 
 impl Session {
     pub fn new(c: Client, f: Fournisseur, n: Nonce) -> Self {
-        Session::AuthenticationRequested(c, f, n)
+        Session::AuthenticationRequested(Box::new(c), f, n)
     }
 
     pub fn authentication_completed(self, t: Token) -> Self {
