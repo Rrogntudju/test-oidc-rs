@@ -172,7 +172,7 @@ fn ui_builder() -> impl Widget<AppData> {
 }
 
 pub fn main() {
-    let main_window = WindowDesc::new(ui_builder()).title("UserInfos").window_size((1100., 200.));
+    let main_window = WindowDesc::new(ui_builder()).title("UserInfos").window_size((1100., 600.));
     let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),
