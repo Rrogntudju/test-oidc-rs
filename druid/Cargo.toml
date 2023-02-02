@@ -1,16 +1,19 @@
 [package]
 name = "userinfos"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Rrogntudju"]
-edition = "2018"
+edition = "2021"
 build = "build/build.rs"
 
 
 [dependencies]
 druid = { version = "0.8", features = [ "png", "im" ] }
-minreq = { version = "2", features = ["https", "json-using-serde"] }
 serde_json = "1"
 windows = { version = "0.44", features = ["Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader", "Win32_Foundation"] }
+oauth2 = { version = "4", features = ["reqwest"]}
+webbrowser = "0.8"
+httparse = "1"
+anyhow = "1"
 
 [build-dependencies]
 winres = "0.1"

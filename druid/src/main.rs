@@ -6,16 +6,20 @@ use druid::{
 };
 mod table;
 use serde_json::value::Value;
-use std::error::Error;
 use std::sync::Arc;
 use std::{fmt, thread};
 use table::{Table, TableColumns, TableData, TableRows};
 mod seticon;
+use anyhow::Error;
+use std::net::{TcpStream, TcpListener};
+use std::io::Read;
+
+const ID_MS: &str = include_str!("clientid.microsoft");
+const SECRET_MS: &str = include_str!("secret.microsoft");
+const ID_GG: &str = include_str!("clientid.google");
+const SECRET_GG: &str = include_str!("secret.google");
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
-const ORIGINE: &str = "http://localhost";
-const SESSION: &str = "oduZ9fWEYSfTzOUZLLs0j21FAB5VAej4";
-const CSRF: &str = "NFJXZYLAzODa1qGJlPMN5axFgtM7FbwAXfZrhFTxQheFGgSGtJc4JTAHODINU6sv";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -48,15 +52,21 @@ struct Info {
     valeur: String,
 }
 
-fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Box<dyn Error>> {
-    Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
-        .with_header("Content-Type", "application/json")
-        .with_header("Cookie", format!("Session-Id={SESSION}; Csrf-Token={CSRF}"))
-        .with_header("X-Csrf-Token", CSRF)
-        .with_body(format!(r#"{{ "fournisseur": "{fournisseur}", "origine": "{ORIGINE}" }}"#))
-        .with_timeout(10)
-        .send()?
-        .json()?)
+fn lire_http() -> Result<String, Error> {
+    let listener = TcpListener::bind("[::1]:6666")?;
+    let mut buf = [0u8 ;4096];
+
+    for stream in listener.incoming() {
+        if let Ok(stream) = stream {
+            stream.read(&mut buf)?;
+        break;
+        }
+    }
+    String::from_utf8_lossy(&buf)
+}
+
+fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {
+
 }
 
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
