@@ -10,14 +10,8 @@ use std::sync::Arc;
 use std::{fmt, thread};
 use table::{Table, TableColumns, TableData, TableRows};
 mod seticon;
-use anyhow::Error;
-use std::net::{TcpStream, TcpListener};
-use std::io::Read;
+mod pkce;
 
-const ID_MS: &str = include_str!("clientid.microsoft");
-const SECRET_MS: &str = include_str!("secret.microsoft");
-const ID_GG: &str = include_str!("clientid.google");
-const SECRET_GG: &str = include_str!("secret.google");
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 
@@ -46,23 +40,12 @@ impl fmt::Display for Fournisseur {
     }
 }
 
+
+
 #[derive(Clone, PartialEq, Data)]
 struct Info {
     propriete: String,
     valeur: String,
-}
-
-fn lire_http() -> Result<String, Error> {
-    let listener = TcpListener::bind("[::1]:6666")?;
-    let mut buf = [0u8 ;4096];
-
-    for stream in listener.incoming() {
-        if let Ok(stream) = stream {
-            stream.read(&mut buf)?;
-        break;
-        }
-    }
-    String::from_utf8_lossy(&buf)
 }
 
 fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {
