@@ -2,13 +2,13 @@ use crate::Fournisseur;
 use anyhow::{anyhow, Error};
 use oauth2::basic::BasicClient;
 use oauth2::reqwest::http_client;
-pub use oauth2::AccessToken;
 use oauth2::{
-    AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl, AccessToken,
 };
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use url::Url;
+use std::time::{Duration, Instant};
 
 const ID_MS: &str = include_str!("clientid.microsoft");
 const SECRET_MS: &str = include_str!("secret.microsoft");
@@ -37,7 +37,11 @@ impl Fournisseur {
     }
 }
 
-struct Pkce(AccessToken);
+struct Pkce {
+    token: AccessToken,
+    creation: Instant,
+    expired_in: Duration
+}
 
 impl Pkce {
     pub fn new(f: Fournisseur) -> Result<Self, Error> {
@@ -109,8 +113,15 @@ impl Pkce {
             };
         }
 
+        let creation = Instant::now();
         let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(http_client)?;
-        Ok(Self(token.access_token().to_owned()))
+        let expired_in = token.expires_in().unwrap_or(Duration::from_secs(3600));
+        let token = token.access_token().to_owned();
+        Ok(Self { token, creation, expired_in })
+    }
+
+    pub fn is_expired(&self) -> bool {
+        self.creation.elapsed() >= self.expired_in
     }
 
     pub fn userinfos(&self) {
