@@ -1,10 +1,11 @@
 use crate::Fournisseur;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use oauth2::basic::BasicClient;
 use oauth2::reqwest::http_client;
 use oauth2::{AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenUrl};
 use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpListener;
+use url::Url;
 
 const ID_MS: &str = include_str!("clientid.microsoft");
 const SECRET_MS: &str = include_str!("secret.microsoft");
@@ -49,21 +50,52 @@ fn get_authorization_token(f: Fournisseur) -> Result<String, Error> {
     let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
 
     let (authorize_url, csrf_state) = client
-    .authorize_url(CsrfToken::new_random)
-    .add_scope(Scope::new("openid".to_owned()))
-    .add_scope(Scope::new("profile".to_owned()))
-    .set_pkce_challenge(pkce_code_challenge)
-    .url();
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new("openid".to_owned()))
+        .add_scope(Scope::new("profile".to_owned()))
+        .set_pkce_challenge(pkce_code_challenge)
+        .url();
 
     let listener = TcpListener::bind("[::1]:6666")?;
-    let mut request_line = String::new();
+    webbrowser::open(authorize_url.as_ref())?;
 
+    let mut request_line = String::new();
+    let code;
+    let state;
     for stream in listener.incoming() {
-        if let Ok(stream) = stream {
-            let reader = BufReader::new(&stream);
-            reader.read_line(&mut request_line)?;
-            break;
-        }
+        match stream {
+            Ok(stream) => {
+                let reader = BufReader::new(&stream);
+                reader.read_line(&mut request_line)?;
+
+                let redirect_url = request_line.split_whitespace().nth(1).unwrap();
+                let url = Url::parse(&(format!("http://localhost{redirect_url}")))?;
+
+                let code_pair = url
+                    .query_pairs()
+                    .find(|pair| {
+                        let &(ref key, _) = pair;
+                        key == "code"
+                    })
+                    .expect("Le code d'autorisation doit être présent");
+
+                let (_, value) = code_pair;
+                code = AuthorizationCode::new(value.into_owned());
+
+                let state_pair = url
+                    .query_pairs()
+                    .find(|pair| {
+                        let &(ref key, _) = pair;
+                        key == "state"
+                    })
+                    .expect("le jeton csrf doit être présent");
+
+                let (_, value) = state_pair;
+                state = CsrfToken::new(value.into_owned());
+                break;
+            }
+            _ => return Err(anyhow!("La requête d'autorisation a échouée")),
+        };
     }
 
     Ok(String::new())

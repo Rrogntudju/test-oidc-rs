@@ -12,6 +12,7 @@ serde_json = "1"
 windows = { version = "0.44", features = ["Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader", "Win32_Foundation"] }
 oauth2 = { version = "4", features = ["reqwest"]}
 webbrowser = "0.8"
+url = "2"
 anyhow = "1"
 
 [build-dependencies]
