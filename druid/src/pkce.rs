@@ -37,7 +37,7 @@ impl Fournisseur {
     }
 }
 
-pub fn get_authorization_token(f: Fournisseur) -> Result<AccessToken, Error> {
+pub fn get_access_token(f: Fournisseur) -> Result<AccessToken, Error> {
     let (id, secret) = f.secrets();
     let id = ClientId::new(id.to_owned());
     let secret = ClientSecret::new(secret.to_owned());
