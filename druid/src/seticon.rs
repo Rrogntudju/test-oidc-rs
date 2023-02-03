@@ -1,9 +1,9 @@
+use std::ptr::null;
 use std::{thread, time};
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{FindWindowW, LoadIconW, SendMessageW, ICON_BIG, ICON_SMALL, WM_SETICON};
-use std::ptr::null;
 
 // winres set_icon or set_icon_with_id must be used in the build for this to work
 pub fn set_window_icon(id: u16, class_name: &'static str, window_name: &'static str) {

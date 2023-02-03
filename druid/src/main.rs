@@ -9,9 +9,8 @@ use serde_json::value::Value;
 use std::sync::Arc;
 use std::{fmt, thread};
 use table::{Table, TableColumns, TableData, TableRows};
-mod seticon;
 mod pkce;
-
+mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 
@@ -40,17 +39,13 @@ impl fmt::Display for Fournisseur {
     }
 }
 
-
-
 #[derive(Clone, PartialEq, Data)]
 struct Info {
     propriete: String,
     valeur: String,
 }
 
-fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {
-
-}
+fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {}
 
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {

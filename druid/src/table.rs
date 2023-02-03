@@ -20,7 +20,7 @@ impl Default for TableData {
     fn default() -> Self {
         TableData {
             header: vec![],
-            rows: vec![vec![]]
+            rows: vec![vec![]],
         }
     }
 }
