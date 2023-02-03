@@ -2,7 +2,10 @@ use crate::Fournisseur;
 use anyhow::{anyhow, Error};
 use oauth2::basic::BasicClient;
 use oauth2::reqwest::http_client;
-use oauth2::{AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenUrl};
+pub use oauth2::AccessToken;
+use oauth2::{
+    AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl,
+};
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use url::Url;
@@ -19,14 +22,14 @@ const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 impl Fournisseur {
-    fn get_endpoints(&self) -> (&str, &str, &str) {
+    pub fn endpoints(&self) -> (&str, &str, &str) {
         match &self {
             Self::Microsoft => (AUTH_MS, TOKEN_MS, INFOS_MS),
             Self::Google => (AUTH_GG, TOKEN_GG, INFOS_GG),
         }
     }
 
-    fn get_secrets(&self) -> (&str, &str) {
+    fn secrets(&self) -> (&str, &str) {
         match &self {
             Self::Microsoft => (ID_MS, SECRET_MS),
             Self::Google => (ID_GG, SECRET_GG),
@@ -34,12 +37,12 @@ impl Fournisseur {
     }
 }
 
-fn get_authorization_token(f: Fournisseur) -> Result<String, Error> {
-    let (id, secret) = f.get_secrets();
+pub fn get_authorization_token(f: Fournisseur) -> Result<AccessToken, Error> {
+    let (id, secret) = f.secrets();
     let id = ClientId::new(id.to_owned());
     let secret = ClientSecret::new(secret.to_owned());
 
-    let (url_auth, url_token, url_infos) = f.get_endpoints();
+    let (url_auth, url_token, ..) = f.endpoints();
     let url_auth = AuthUrl::new(url_auth.to_owned())?;
     let url_token = TokenUrl::new(url_token.to_owned())?;
 
@@ -88,15 +91,21 @@ fn get_authorization_token(f: Fournisseur) -> Result<String, Error> {
                         let &(ref key, _) = pair;
                         key == "state"
                     })
-                    .expect("le jeton csrf doit être présent");
+                    .expect("Le jeton csrf doit être présent");
 
                 let (_, value) = state_pair;
                 state = CsrfToken::new(value.into_owned());
+
+                let message = "Retournez dans l'application 😎";
+                let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
+                stream.write_all(response.as_bytes())?;
+
                 break;
             }
             _ => return Err(anyhow!("La requête d'autorisation a échouée")),
         };
     }
 
-    Ok(String::new())
+    let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(http_client)?;
+    Ok(token.access_token().to_owned())
 }
