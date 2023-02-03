@@ -22,7 +22,7 @@ const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 impl Fournisseur {
-    pub fn endpoints(&self) -> (&str, &str, &str) {
+    fn endpoints(&self) -> (&str, &str, &str) {
         match &self {
             Self::Microsoft => (AUTH_MS, TOKEN_MS, INFOS_MS),
             Self::Google => (AUTH_GG, TOKEN_GG, INFOS_GG),
@@ -37,75 +37,83 @@ impl Fournisseur {
     }
 }
 
-pub fn get_access_token(f: Fournisseur) -> Result<AccessToken, Error> {
-    let (id, secret) = f.secrets();
-    let id = ClientId::new(id.to_owned());
-    let secret = ClientSecret::new(secret.to_owned());
+struct Pkce(AccessToken);
 
-    let (url_auth, url_token, ..) = f.endpoints();
-    let url_auth = AuthUrl::new(url_auth.to_owned())?;
-    let url_token = TokenUrl::new(url_token.to_owned())?;
+impl Pkce {
+    pub fn new(f: Fournisseur) -> Result<Self, Error> {
+        let (id, secret) = f.secrets();
+        let id = ClientId::new(id.to_owned());
+        let secret = ClientSecret::new(secret.to_owned());
 
-    let client = BasicClient::new(id, Some(secret), url_auth, Some(url_token))
-        .set_auth_type(AuthType::RequestBody)
-        .set_redirect_uri(RedirectUrl::new("http://localhost:6666".to_owned())?);
+        let (url_auth, url_token, ..) = f.endpoints();
+        let url_auth = AuthUrl::new(url_auth.to_owned())?;
+        let url_token = TokenUrl::new(url_token.to_owned())?;
 
-    let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
+        let client = BasicClient::new(id, Some(secret), url_auth, Some(url_token))
+            .set_auth_type(AuthType::RequestBody)
+            .set_redirect_uri(RedirectUrl::new("http://localhost:6666".to_owned())?);
 
-    let (authorize_url, csrf_state) = client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new("openid".to_owned()))
-        .add_scope(Scope::new("profile".to_owned()))
-        .set_pkce_challenge(pkce_code_challenge)
-        .url();
+        let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
 
-    let listener = TcpListener::bind("[::1]:6666")?;
-    webbrowser::open(authorize_url.as_ref())?;
+        let (authorize_url, csrf_state) = client
+            .authorize_url(CsrfToken::new_random)
+            .add_scope(Scope::new("openid".to_owned()))
+            .add_scope(Scope::new("profile".to_owned()))
+            .set_pkce_challenge(pkce_code_challenge)
+            .url();
 
-    let mut request_line = String::new();
-    let code;
-    let state;
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                let reader = BufReader::new(&stream);
-                reader.read_line(&mut request_line)?;
+        let listener = TcpListener::bind("[::1]:6666")?;
+        webbrowser::open(authorize_url.as_ref())?;
 
-                let redirect_url = request_line.split_whitespace().nth(1).unwrap();
-                let url = Url::parse(&(format!("http://localhost{redirect_url}")))?;
+        let mut request_line = String::new();
+        let code;
+        let state;
+        for stream in listener.incoming() {
+            match stream {
+                Ok(stream) => {
+                    let reader = BufReader::new(&stream);
+                    reader.read_line(&mut request_line)?;
 
-                let code_pair = url
-                    .query_pairs()
-                    .find(|pair| {
-                        let &(ref key, _) = pair;
-                        key == "code"
-                    })
-                    .expect("Le code d'autorisation doit être présent");
+                    let redirect_url = request_line.split_whitespace().nth(1).unwrap();
+                    let url = Url::parse(&(format!("http://localhost{redirect_url}")))?;
 
-                let (_, value) = code_pair;
-                code = AuthorizationCode::new(value.into_owned());
+                    let code_pair = url
+                        .query_pairs()
+                        .find(|pair| {
+                            let &(ref key, _) = pair;
+                            key == "code"
+                        })
+                        .expect("Le code d'autorisation doit être présent");
 
-                let state_pair = url
-                    .query_pairs()
-                    .find(|pair| {
-                        let &(ref key, _) = pair;
-                        key == "state"
-                    })
-                    .expect("Le jeton csrf doit être présent");
+                    let (_, value) = code_pair;
+                    code = AuthorizationCode::new(value.into_owned());
 
-                let (_, value) = state_pair;
-                state = CsrfToken::new(value.into_owned());
+                    let state_pair = url
+                        .query_pairs()
+                        .find(|pair| {
+                            let &(ref key, _) = pair;
+                            key == "state"
+                        })
+                        .expect("Le jeton csrf doit être présent");
 
-                let message = "Retournez dans l'application 😎";
-                let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
-                stream.write_all(response.as_bytes())?;
+                    let (_, value) = state_pair;
+                    state = CsrfToken::new(value.into_owned());
 
-                break;
-            }
-            _ => return Err(anyhow!("La requête d'autorisation a échouée")),
-        };
+                    let message = "Retournez dans l'application 😎";
+                    let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
+                    stream.write_all(response.as_bytes())?;
+
+                    break;
+                }
+                _ => return Err(anyhow!("La requête d'autorisation a échouée")),
+            };
+        }
+
+        let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(http_client)?;
+        Ok(Self(token.access_token().to_owned()))
     }
 
-    let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(http_client)?;
-    Ok(token.access_token().to_owned())
+    pub fn userinfos(&self) {
+
+    }
 }

@@ -45,7 +45,16 @@ struct Info {
     valeur: String,
 }
 
-fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {}
+fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {
+    Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
+    .with_header("Content-Type", "application/json")
+    .with_header("Cookie", format!("Session-Id={SESSION}; Csrf-Token={CSRF}"))
+    .with_header("X-Csrf-Token", CSRF)
+    .with_body(format!(r#"{{ "fournisseur": "{fournisseur}", "origine": "{ORIGINE}" }}"#))
+    .with_timeout(10)
+    .send()?
+    .json()?)
+}
 
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
