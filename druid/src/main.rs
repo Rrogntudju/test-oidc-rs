@@ -13,6 +13,7 @@ use table::{Table, TableColumns, TableData, TableRows};
 
 mod pkce;
 use pkce::Pkce;
+
 mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
@@ -29,7 +30,7 @@ struct AppData {
 }
 
 #[derive(Clone, PartialEq, Data)]
-enum Fournisseur {
+pub enum Fournisseur {
     Microsoft,
     Google,
 }
@@ -78,7 +79,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
                     .collect::<TableRows>();
                 Ok(infos)
             }
-            Err(e) => Err(e),
+            Err(e) => Err(e.to_string()),
         };
 
         sink.submit_command(FINISH_GET_USERINFOS, result, Target::Auto)
