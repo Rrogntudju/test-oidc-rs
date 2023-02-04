@@ -61,6 +61,7 @@ impl Pkce {
         let (authorize_url, csrf_state) = client
             .authorize_url(CsrfToken::new_random)
             .add_scope(Scope::new("openid".to_owned()))
+            .add_scope(Scope::new("email".to_owned()))
             .add_scope(Scope::new("profile".to_owned()))
             .set_pkce_challenge(pkce_code_challenge)
             .url();

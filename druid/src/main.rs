@@ -57,7 +57,7 @@ impl Fournisseur {
 fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
     let token = Pkce::new(f)?;
     Ok(ureq::post(f.userinfos())
-        .set("Authorization", token.secret())
+        .set("Authorization", &format!("Bearer {}", token.secret()))
         .call()?
         .into_json::<Value>()?)
 }
@@ -66,18 +66,19 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur) {
             Ok(value) => {
-                let infos = value
-                    .as_array()
-                    .unwrap_or(&Vec::<Value>::new())
-                    .iter()
-                    .map(|value| {
-                        let mut columns = TableColumns::new();
-                        columns.push(format!("{}", value["propriété"]).trim_matches('"').to_owned());
-                        columns.push(format!("{}", value["valeur"]).trim_matches('"').to_owned());
-                        columns
-                    })
-                    .collect::<TableRows>();
-                Ok(infos)
+                match value {
+                    Value::Object(map) => {
+                        let table = map.iter().map(|(k, v)| {
+                            let mut columns = TableColumns::new();
+                            columns.push(k.to_owned());
+                            columns.push(v.to_string());
+                            columns
+                        })
+                        .collect::<TableRows>();
+                        Ok(table)
+                    }
+                    _ => Err("La valeur doit être un objet JSON".to_string())
+                }
             }
             Err(e) => Err(e.to_string()),
         };
