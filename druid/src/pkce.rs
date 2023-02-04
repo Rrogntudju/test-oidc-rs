@@ -3,12 +3,13 @@ use anyhow::{anyhow, Error};
 use oauth2::basic::BasicClient;
 use oauth2::reqwest::http_client;
 use oauth2::{
-    AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl, AccessToken,
+    AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse,
+    TokenUrl,
 };
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
-use url::Url;
 use std::time::{Duration, Instant};
+use url::Url;
 
 const ID_MS: &str = include_str!("clientid.microsoft");
 const SECRET_MS: &str = include_str!("secret.microsoft");
@@ -18,19 +19,17 @@ const AUTH_MS: &str = "https://login.microsoftonline.com/common/oauth2/v2.0/auth
 const AUTH_GG: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_MS: &str = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
-const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
-const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 impl Fournisseur {
-    fn endpoints(&self) -> (&str, &str, &str) {
-        match &self {
-            Self::Microsoft => (AUTH_MS, TOKEN_MS, INFOS_MS),
-            Self::Google => (AUTH_GG, TOKEN_GG, INFOS_GG),
+    fn endpoints(&self) -> (&str, &str) {
+        match self {
+            Self::Microsoft => (AUTH_MS, TOKEN_MS),
+            Self::Google => (AUTH_GG, TOKEN_GG),
         }
     }
 
     fn secrets(&self) -> (&str, &str) {
-        match &self {
+        match self {
             Self::Microsoft => (ID_MS, SECRET_MS),
             Self::Google => (ID_GG, SECRET_GG),
         }
@@ -40,7 +39,7 @@ impl Fournisseur {
 struct Pkce {
     token: AccessToken,
     creation: Instant,
-    expired_in: Duration
+    expired_in: Duration,
 }
 
 impl Pkce {
@@ -49,7 +48,7 @@ impl Pkce {
         let id = ClientId::new(id.to_owned());
         let secret = ClientSecret::new(secret.to_owned());
 
-        let (url_auth, url_token, ..) = f.endpoints();
+        let (url_auth, url_token) = f.endpoints();
         let url_auth = AuthUrl::new(url_auth.to_owned())?;
         let url_token = TokenUrl::new(url_token.to_owned())?;
 
@@ -124,7 +123,7 @@ impl Pkce {
         self.creation.elapsed() >= self.expired_in
     }
 
-    pub fn userinfos(&self) {
-
+    pub fn secret(&self) -> &AccessToken {
+        &self.token
     }
 }

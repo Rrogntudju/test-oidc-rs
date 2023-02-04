@@ -13,6 +13,8 @@ mod pkce;
 mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
+const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
+const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -31,13 +33,23 @@ enum Fournisseur {
 
 impl fmt::Display for Fournisseur {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let fournisseur = match &self {
+        let fournisseur = match self {
             Fournisseur::Microsoft => "Microsoft",
             Fournisseur::Google => "Google",
         };
         f.write_str(fournisseur)
     }
 }
+
+impl Fournisseur {
+    fn userinfos(&self) -> &str {
+        match self {
+            Self::Microsoft => INFOS_MS,
+            Self::Google => INFOS_GG
+        }
+    }
+}
+
 
 #[derive(Clone, PartialEq, Data)]
 struct Info {
@@ -47,13 +59,13 @@ struct Info {
 
 fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {
     Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
-    .with_header("Content-Type", "application/json")
-    .with_header("Cookie", format!("Session-Id={SESSION}; Csrf-Token={CSRF}"))
-    .with_header("X-Csrf-Token", CSRF)
-    .with_body(format!(r#"{{ "fournisseur": "{fournisseur}", "origine": "{ORIGINE}" }}"#))
-    .with_timeout(10)
-    .send()?
-    .json()?)
+        .with_header("Content-Type", "application/json")
+        .with_header("Cookie", format!("Session-Id={SESSION}; Csrf-Token={CSRF}"))
+        .with_header("X-Csrf-Token", CSRF)
+        .with_body(format!(r#"{{ "fournisseur": "{fournisseur}", "origine": "{ORIGINE}" }}"#))
+        .with_timeout(10)
+        .send()?
+        .json()?)
 }
 
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
