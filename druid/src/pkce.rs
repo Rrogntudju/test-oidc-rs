@@ -36,14 +36,14 @@ impl Fournisseur {
     }
 }
 
-struct Pkce {
+pub struct Pkce {
     token: AccessToken,
     creation: Instant,
     expired_in: Duration,
 }
 
 impl Pkce {
-    pub fn new(f: Fournisseur) -> Result<Self, Error> {
+    pub fn new(f: &Fournisseur) -> Result<Self, Error> {
         let (id, secret) = f.secrets();
         let id = ClientId::new(id.to_owned());
         let secret = ClientSecret::new(secret.to_owned());
@@ -123,7 +123,7 @@ impl Pkce {
         self.creation.elapsed() >= self.expired_in
     }
 
-    pub fn secret(&self) -> &AccessToken {
-        &self.token
+    pub fn secret(&self) -> &String {
+        &self.token.secret()
     }
 }

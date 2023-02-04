@@ -13,6 +13,7 @@ windows = { version = "0.44", features = ["Win32_UI_WindowsAndMessaging", "Win32
 oauth2 = { version = "4", features = ["reqwest"]}
 webbrowser = "0.8"
 url = "2"
+ureq = { version = "2", features = ["json"] }
 anyhow = "1"
 
 [build-dependencies]

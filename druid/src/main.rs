@@ -4,12 +4,15 @@ use druid::{
     AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector, Target, Widget, WidgetExt,
     WindowDesc,
 };
+
 mod table;
 use serde_json::value::Value;
 use std::sync::Arc;
 use std::{fmt, thread};
 use table::{Table, TableColumns, TableData, TableRows};
+
 mod pkce;
+use pkce::Pkce;
 mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
@@ -45,27 +48,17 @@ impl Fournisseur {
     fn userinfos(&self) -> &str {
         match self {
             Self::Microsoft => INFOS_MS,
-            Self::Google => INFOS_GG
+            Self::Google => INFOS_GG,
         }
     }
 }
 
-
-#[derive(Clone, PartialEq, Data)]
-struct Info {
-    propriete: String,
-    valeur: String,
-}
-
-fn request_userinfos(fournisseur: &Fournisseur) -> Result<Value, Error> {
-    Ok(minreq::post(format!("{}{}", ORIGINE, "/userinfos"))
-        .with_header("Content-Type", "application/json")
-        .with_header("Cookie", format!("Session-Id={SESSION}; Csrf-Token={CSRF}"))
-        .with_header("X-Csrf-Token", CSRF)
-        .with_body(format!(r#"{{ "fournisseur": "{fournisseur}", "origine": "{ORIGINE}" }}"#))
-        .with_timeout(10)
-        .send()?
-        .json()?)
+fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
+    let token = Pkce::new(f)?;
+    Ok(ureq::post(f.userinfos())
+        .set("Authorization", token.secret())
+        .call()?
+        .into_json::<Value>()?)
 }
 
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
@@ -85,7 +78,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
                     .collect::<TableRows>();
                 Ok(infos)
             }
-            Err(e) => Err(e.to_string()),
+            Err(e) => Err(e),
         };
 
         sink.submit_command(FINISH_GET_USERINFOS, result, Target::Auto)
