@@ -67,7 +67,7 @@ fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
         TOKEN.write().replace(Pkce::new(f)?);
     }
 
-    Ok(ureq::post(f.userinfos())
+    Ok(ureq::get(f.userinfos())
         .set("Authorization", &format!("Bearer {}", TOKEN.read().as_ref().unwrap().secret()))
         .call()?
         .into_json::<Value>()?)
@@ -80,7 +80,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
                 Value::Object(map) => {
                     let table = map
                         .iter()
-                        .map(|(k, v)| vec![k.to_owned(), v.to_string()])
+                        .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
                         .collect::<TableRows>();
                     Ok(table)
                 }

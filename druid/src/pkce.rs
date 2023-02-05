@@ -15,9 +15,9 @@ const ID_MS: &str = include_str!("clientid.microsoft");
 const SECRET_MS: &str = include_str!("secret.microsoft");
 const ID_GG: &str = include_str!("clientid.google");
 const SECRET_GG: &str = include_str!("secret.google");
-const AUTH_MS: &str = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
+const AUTH_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
 const AUTH_GG: &str = "https://accounts.google.com/o/oauth2/v2/auth";
-const TOKEN_MS: &str = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 
 impl Fournisseur {
@@ -77,7 +77,6 @@ impl Pkce {
 
             let redirect_url = request_line.split_whitespace().nth(1).unwrap();
             let url = Url::parse(&(format!("http://localhost{redirect_url}")))?;
-
             let code_pair = url
                 .query_pairs()
                 .find(|pair| {
@@ -100,7 +99,7 @@ impl Pkce {
             let (_, value) = state_pair;
             assert_eq!(csrf_state.secret(), value.as_ref());
 
-            let message = "Retournez dans l'application 😎";
+            let message = "<p>Retournez dans l'application &#128526;</p>";
             let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
             stream.write_all(response.as_bytes())?;
         }
