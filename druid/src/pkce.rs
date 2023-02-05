@@ -54,7 +54,7 @@ impl Pkce {
 
         let client = BasicClient::new(id, Some(secret), url_auth, Some(url_token))
             .set_auth_type(AuthType::RequestBody)
-            .set_redirect_uri(RedirectUrl::new("http://localhost:6666".to_owned())?);
+            .set_redirect_uri(RedirectUrl::new("http://localhost:86".to_owned())?);
 
         let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -66,7 +66,7 @@ impl Pkce {
             .set_pkce_challenge(pkce_code_challenge)
             .url();
 
-        let listener = TcpListener::bind("[::1]:6666")?;
+        let listener = TcpListener::bind("[::1]:86")?;
         webbrowser::open(authorize_url.as_ref())?;
 
         let mut code = AuthorizationCode::new(String::new());
