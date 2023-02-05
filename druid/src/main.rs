@@ -84,7 +84,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
                         .collect::<TableRows>();
                     Ok(table)
                 }
-                _ => Err("La valeur doit être un objet JSON".to_string()),
+                _ => Err("La valeur doit être un map".to_string()),
             },
             Err(e) => Err(e.to_string()),
         };
