@@ -4,12 +4,13 @@ use druid::{
     AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, ExtEventSink, Handled, ImageBuf, Lens, Selector, Target, Widget, WidgetExt,
     WindowDesc,
 };
+use static_init::dynamic;
 
 mod table;
 use serde_json::value::Value;
 use std::sync::Arc;
 use std::{fmt, thread};
-use table::{Table, TableColumns, TableData, TableRows};
+use table::{Table, TableData, TableRows};
 
 mod pkce;
 use pkce::Pkce;
@@ -19,6 +20,9 @@ mod seticon;
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
+
+#[dynamic]
+static mut TOKEN: Option<Pkce> = None;
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -55,9 +59,16 @@ impl Fournisseur {
 }
 
 fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
-    let token = Pkce::new(f)?;
+    if TOKEN.read().is_some() {
+        if TOKEN.read().as_ref().unwrap().is_expired() {
+            TOKEN.write().replace(Pkce::new(f)?);
+        }
+    } else {
+        TOKEN.write().replace(Pkce::new(f)?);
+    }
+
     Ok(ureq::post(f.userinfos())
-        .set("Authorization", &format!("Bearer {}", token.secret()))
+        .set("Authorization", &format!("Bearer {}", TOKEN.read().as_ref().unwrap().secret()))
         .call()?
         .into_json::<Value>()?)
 }
@@ -65,21 +76,16 @@ fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
 fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
     thread::spawn(move || {
         let result = match request_userinfos(&fournisseur) {
-            Ok(value) => {
-                match value {
-                    Value::Object(map) => {
-                        let table = map.iter().map(|(k, v)| {
-                            let mut columns = TableColumns::new();
-                            columns.push(k.to_owned());
-                            columns.push(v.to_string());
-                            columns
-                        })
+            Ok(value) => match value {
+                Value::Object(map) => {
+                    let table = map
+                        .iter()
+                        .map(|(k, v)| vec![k.to_owned(), v.to_string()])
                         .collect::<TableRows>();
-                        Ok(table)
-                    }
-                    _ => Err("La valeur doit être un objet JSON".to_string())
+                    Ok(table)
                 }
-            }
+                _ => Err("La valeur doit être un objet JSON".to_string()),
+            },
             Err(e) => Err(e.to_string()),
         };
 

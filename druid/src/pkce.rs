@@ -1,5 +1,5 @@
 use crate::Fournisseur;
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use oauth2::basic::BasicClient;
 use oauth2::reqwest::http_client;
 use oauth2::{
@@ -69,49 +69,40 @@ impl Pkce {
         let listener = TcpListener::bind("[::1]:6666")?;
         webbrowser::open(authorize_url.as_ref())?;
 
-        let mut request_line = String::new();
         let mut code = AuthorizationCode::new(String::new());
-        for stream in listener.incoming() {
-            match stream {
-                Ok(mut stream) => {
-                    {
-                        let mut reader = BufReader::new(&stream);
-                        reader.read_line(&mut request_line)?;
+        if let Some(mut stream) = listener.incoming().flatten().next() {
+            let mut request_line = String::new();
+            let mut reader = BufReader::new(&stream);
+            reader.read_line(&mut request_line)?;
 
-                        let redirect_url = request_line.split_whitespace().nth(1).unwrap();
-                        let url = Url::parse(&(format!("http://localhost{redirect_url}")))?;
+            let redirect_url = request_line.split_whitespace().nth(1).unwrap();
+            let url = Url::parse(&(format!("http://localhost{redirect_url}")))?;
 
-                        let code_pair = url
-                            .query_pairs()
-                            .find(|pair| {
-                                let &(ref key, _) = pair;
-                                key == "code"
-                            })
-                            .expect("Le code d'autorisation doit être présent");
+            let code_pair = url
+                .query_pairs()
+                .find(|pair| {
+                    let (key, _) = pair;
+                    key == "code"
+                })
+                .expect("Le code d'autorisation doit être présent");
 
-                        let (_, value) = code_pair;
-                        code = AuthorizationCode::new(value.into_owned());
+            let (_, value) = code_pair;
+            code = AuthorizationCode::new(value.into_owned());
 
-                        let state_pair = url
-                            .query_pairs()
-                            .find(|pair| {
-                                let &(ref key, _) = pair;
-                                key == "state"
-                            })
-                            .expect("Le jeton csrf doit être présent");
+            let state_pair = url
+                .query_pairs()
+                .find(|pair| {
+                    let (key, _) = pair;
+                    key == "state"
+                })
+                .expect("Le jeton csrf doit être présent");
 
-                        let (_, value) = state_pair;
-                        assert_eq!(csrf_state.secret(), value.as_ref());
-                    }
+            let (_, value) = state_pair;
+            assert_eq!(csrf_state.secret(), value.as_ref());
 
-                    let message = "Retournez dans l'application 😎";
-                    let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
-                    stream.write_all(response.as_bytes())?;
-
-                    break;
-                }
-                _ => return Err(anyhow!("La requête d'autorisation a échouée")),
-            };
+            let message = "Retournez dans l'application 😎";
+            let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
+            stream.write_all(response.as_bytes())?;
         }
 
         let creation = Instant::now();
@@ -126,6 +117,6 @@ impl Pkce {
     }
 
     pub fn secret(&self) -> &String {
-        &self.token.secret()
+        self.token.secret()
     }
 }
