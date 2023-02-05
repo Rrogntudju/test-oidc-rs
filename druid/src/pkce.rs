@@ -11,30 +11,6 @@ use std::net::TcpListener;
 use std::time::{Duration, Instant};
 use url::Url;
 
-const ID_MS: &str = include_str!("clientid.microsoft");
-const SECRET_MS: &str = include_str!("secret.microsoft");
-const ID_GG: &str = include_str!("clientid.google");
-const SECRET_GG: &str = include_str!("secret.google");
-const AUTH_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
-const AUTH_GG: &str = "https://accounts.google.com/o/oauth2/v2/auth";
-const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
-const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
-
-impl Fournisseur {
-    fn endpoints(&self) -> (&str, &str) {
-        match self {
-            Self::Microsoft => (AUTH_MS, TOKEN_MS),
-            Self::Google => (AUTH_GG, TOKEN_GG),
-        }
-    }
-
-    fn secrets(&self) -> (&str, &str) {
-        match self {
-            Self::Microsoft => (ID_MS, SECRET_MS),
-            Self::Google => (ID_GG, SECRET_GG),
-        }
-    }
-}
 
 pub struct Pkce {
     token: AccessToken,

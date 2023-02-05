@@ -18,11 +18,19 @@ use pkce::Pkce;
 mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
+const ID_MS: &str = include_str!("clientid.microsoft");
+const SECRET_MS: &str = include_str!("secret.microsoft");
+const ID_GG: &str = include_str!("clientid.google");
+const SECRET_GG: &str = include_str!("secret.google");
+const AUTH_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
+const AUTH_GG: &str = "https://accounts.google.com/o/oauth2/v2/auth";
+const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 #[dynamic]
-static mut TOKEN: Option<Pkce> = None;
+static mut TOKEN: Option<(Fournisseur, Pkce)> = None;
 
 #[derive(Clone, Data, Lens)]
 struct AppData {
@@ -50,6 +58,20 @@ impl fmt::Display for Fournisseur {
 }
 
 impl Fournisseur {
+    fn endpoints(&self) -> (&str, &str) {
+        match self {
+            Self::Microsoft => (AUTH_MS, TOKEN_MS),
+            Self::Google => (AUTH_GG, TOKEN_GG),
+        }
+    }
+
+    fn secrets(&self) -> (&str, &str) {
+        match self {
+            Self::Microsoft => (ID_MS, SECRET_MS),
+            Self::Google => (ID_GG, SECRET_GG),
+        }
+    }
+
     fn userinfos(&self) -> &str {
         match self {
             Self::Microsoft => INFOS_MS,
@@ -59,16 +81,20 @@ impl Fournisseur {
 }
 
 fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
-    if TOKEN.read().is_some() {
-        if TOKEN.read().as_ref().unwrap().is_expired() {
-            TOKEN.write().replace(Pkce::new(f)?);
+    let token = TOKEN.read();
+    if token.is_some() {
+        let (fournisseur, secret) = token.as_ref().unwrap();
+        if  f != fournisseur || secret.is_expired() {
+            drop(token);
+            TOKEN.write().replace((f.to_owned(), Pkce::new(f)?));
         }
     } else {
-        TOKEN.write().replace(Pkce::new(f)?);
+        drop(token);
+        TOKEN.write().replace((f.to_owned(), Pkce::new(f)?));
     }
 
     Ok(ureq::get(f.userinfos())
-        .set("Authorization", &format!("Bearer {}", TOKEN.read().as_ref().unwrap().secret()))
+        .set("Authorization", &format!("Bearer {}", TOKEN.read().as_ref().unwrap().1.secret()))
         .call()?
         .into_json::<Value>()?)
 }
