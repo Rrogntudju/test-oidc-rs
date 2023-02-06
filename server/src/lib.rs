@@ -11,11 +11,6 @@ lazy_static! {
     static ref LOL_MAP: Map<String, Value> = Map::default();
 }
 
-const ID_MS: &str = include_str!("clientid.microsoft");
-const SECRET_MS: &str = include_str!("secret.microsoft");
-const ID_GG: &str = include_str!("clientid.google");
-const SECRET_GG: &str = include_str!("secret.google");
-
 pub mod filters {
 
     use super::*;
@@ -103,7 +98,7 @@ mod handlers {
                     }
                     Some(session) => {
                         match session {
-                            Session::Authenticated(client, f, token) if f == fournisseur => {
+                            Session::Authenticated(f, token) if f == fournisseur => {
                                 let http = reqwest::Client::new();
                                 let userinfo = match client.request_userinfo(&http, token) {
                                     Ok(userinfo) => userinfo,
@@ -164,40 +159,24 @@ mod handlers {
         origine: &str,
         sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<Response<String>, Error> {
-        use oidc::{issuer, Client, Options};
-        use reqwest::Url;
+        let (id, secret) = f.secrets();
+        let id = ClientId::new(id.to_owned());
+        let secret = ClientSecret::new(secret.to_owned());
 
-        let (id, secret, issuer) = match fournisseur {
-            "Google" => (ID_GG, SECRET_GG, issuer::google()),
-            "Microsoft" => (ID_MS, SECRET_MS, issuer::microsoft_tenant("consumers/v2.0")),
-            _ => {
-                eprintln!("Fournisseur invalide");
-                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
+        let (url_auth, url_token) = f.endpoints();
+        let url_auth = AuthUrl::new(url_auth.to_owned())?;
+        let url_token = TokenUrl::new(url_token.to_owned())?;
 
-        let url_redirect = origine.to_string() + "/auth";
-        let redirect = match Url::parse(&url_redirect) {
-            Ok(redirect) => redirect,
-            Err(e) => {
-                eprintln!("{e}");
-                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
+        let client = BasicClient::new(id, Some(secret), url_auth, Some(url_token))
+            .set_auth_type(AuthType::RequestBody)
+            .set_redirect_uri(RedirectUrl::new(origine.to_string() + "/auth")?);
 
-        let client = match Client::discover(id.into(), secret.into(), redirect, issuer) {
-            Ok(client) => client,
-            Err(e) => {
-                eprintln!("{e}");
-                return reply_error(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
-
-        let mut options = Options::default();
-        let nonce = random_token(64);
-        options.nonce = Some(nonce.clone());
-        options.scope = Some("email profile".into());
-        let auth_url = client.auth_url(&options);
+        let (authorize_url, csrf_state) = client
+            .authorize_url(CsrfToken::new_random)
+            .add_scope(Scope::new("openid".to_owned()))
+            .add_scope(Scope::new("email".to_owned()))
+            .add_scope(Scope::new("profile".to_owned()))
+            .url();
 
         let sessionid = SessionId::new();
         let response = Response::builder()
@@ -205,7 +184,7 @@ mod handlers {
             // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
             .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.as_ref()))
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
-            .body(format!(r#"{{ "redirectOP": "{auth_url}" }}"#));
+            .body(format!(r#"{{ "redirectOP": "{url_auth}" }}"#));
 
         let session = Session::new(client, fournisseur.into(), nonce);
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
