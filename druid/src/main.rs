@@ -183,13 +183,11 @@ fn ui_builder() -> impl Widget<AppData> {
                 .with_text_color(Color::from_hex_str("FFA500").unwrap()),
         )
         .with_default_spacer()
-        .with_child(Either::new(
-            |data, _env| data.en_traitement,
-            Spinner::new(),
+        .with_child(
             Table::new()
                 .with_header_text_color(Color::from_hex_str("FFA500").unwrap())
                 .lens(AppData::infos),
-        ));
+        );
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
 
