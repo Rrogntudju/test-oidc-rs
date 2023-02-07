@@ -56,6 +56,11 @@ pub mod filters {
 
 mod handlers {
     use crate::session::Fournisseur;
+    use oauth2::{ClientId, ClientSecret, AuthUrl, basic::BasicClient, TokenUrl, CsrfToken, Scope, RedirectUrl, AuthType};
+    use::oauth2::{TokenResponse, AuthorizationCode};
+    use oauth2::reqwest::http_client;
+    use std::time::Duration;
+    use session::Token;
 
     use super::*;
     use std::convert::Infallible;
@@ -84,6 +89,7 @@ mod handlers {
         };
 
         let fournisseur = body.get("fournisseur").unwrap_or(&LOL);
+        let fournisseur: Fournisseur = fournisseur.into();
         let origine = body.get("origine").unwrap_or(&LOL);
 
         let response = match session_cookie {
@@ -99,6 +105,7 @@ mod handlers {
                         reply_redirect_fournisseur(fournisseur, origine, sessions)
                     }
                     Some(session) => {
+
                         match session {
                             Session::Authenticated(f, token) if f == fournisseur => {
                                 let http = reqwest::Client::new();
@@ -161,8 +168,6 @@ mod handlers {
         origine: &str,
         sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<Response<String>, Error> {
-        use oauth2::{ClientId, ClientSecret, AuthUrl, basic::BasicClient, TokenUrl, CsrfToken, Scope, RedirectUrl, AuthType};
-
         let f: Fournisseur = fournisseur.into();
         let (id, secret) = f.secrets();
         let id = ClientId::new(id.to_owned());
@@ -192,7 +197,7 @@ mod handlers {
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
             .body(format!(r#"{{ "redirectOP": "{url_auth}" }}"#));
 
-        let session = Session::new(fournisseur.into(), client);
+        let session = Session::new(f, client);
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
 
         response
@@ -203,11 +208,6 @@ mod handlers {
         params: HashMap<String, String>,
         sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<impl warp::Reply, Infallible> {
-        use::oauth2::{TokenResponse, AuthorizationCode};
-        use oauth2::reqwest::http_client;
-        use std::time::Duration;
-        use session::Token;
-
         let response = match session_cookie {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
@@ -228,15 +228,21 @@ mod handlers {
                 };
 
                 let (fournisseur, client)= match session {
-                    Session::AuthenticationRequested(f, c) => (f, c),
+                    Session::AuthenticationRequested(ref f, ref c) => (f, c),
                     _ => {
                         eprintln!("auth: session déjà authentifiée");
                         return Ok(reply_error(StatusCode::BAD_REQUEST));
                     }
                 };
 
-                let token = client.exchange_code(AuthorizationCode::new(*code)).request(http_client)?;
-                let expired_in = token.expires_in().unwrap_or(Duration::from_secs(3600));
+                let token = match client.exchange_code(AuthorizationCode::new(code.to_owned())).request(http_client) {
+                    Ok(token) => token,
+                    Err(e)  => {
+                        eprintln!("{e}");
+                        return Ok(reply_error(StatusCode::BAD_REQUEST));
+                    }
+                };
+                let expired_in = token.expires_in().unwrap_or(Duration::from_secs(60));
                 let token = Token::new(token.access_token().to_owned(), expired_in);
 
                 let response = Response::builder()

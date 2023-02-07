@@ -96,7 +96,8 @@ impl From<&str> for Fournisseur {
     fn from(value: &str) -> Self {
         match value {
             "Microsoft" => Fournisseur::Microsoft,
-            "Google" => Fournisseur::Google
+            "Google" => Fournisseur::Google,
+            _ => Fournisseur::Microsoft,
         }
     }
 }
