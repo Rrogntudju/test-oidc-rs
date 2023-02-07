@@ -1,9 +1,9 @@
-use std::time::{Duration, Instant};
 use oauth2::basic::BasicClient;
+use oauth2::{AccessToken, CsrfToken};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use oauth2::{AccessToken, CsrfToken};
 use std::fmt;
+use std::time::{Duration, Instant};
 
 const ID_MS: &str = include_str!("clientid.microsoft");
 const SECRET_MS: &str = include_str!("secret.microsoft");
@@ -17,7 +17,7 @@ const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 pub fn random_token(len: usize) -> String {
-    rand::thread_rng().sample_iter(&Alphanumeric).take(len).collect::<String>()
+    rand::thread_rng().sample_iter(&Alphanumeric).take(len).map(| b | b as char).collect::<String>()
 }
 
 #[derive(PartialEq, Eq, Hash)]

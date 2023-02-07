@@ -56,11 +56,11 @@ pub mod filters {
 
 mod handlers {
     use crate::session::Fournisseur;
-    use oauth2::{ClientId, ClientSecret, AuthUrl, basic::BasicClient, TokenUrl, CsrfToken, Scope, RedirectUrl, AuthType};
-    use oauth2::{TokenResponse, AuthorizationCode};
     use oauth2::reqwest::http_client;
-    use std::time::Duration;
+    use oauth2::{basic::BasicClient, AuthType, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};
+    use oauth2::{AuthorizationCode, TokenResponse};
     use session::Token;
+    use std::time::Duration;
 
     use super::*;
     use std::convert::Infallible;
@@ -109,7 +109,7 @@ mod handlers {
                                 let result = ureq::get(f.userinfos())
                                     .set("Authorization", &format!("Bearer {}", token.secret()))
                                     .call();
-                               let userinfo = match result {
+                                let userinfo = match result {
                                     Ok(response) => response.into_json::<Value>().unwrap_or_default(),
                                     Err(e) => {
                                         eprintln!("{e}");
@@ -225,7 +225,15 @@ mod handlers {
                     }
                 };
 
-                let (client, csrf)= match session {
+                let state = match params.get("state") {
+                    Some(code) => code,
+                    None => {
+                        eprintln!("auth: auth code manquant");
+                        return Ok(reply_error(StatusCode::BAD_REQUEST));
+                    }
+                };
+
+                let (client, csrf) = match session {
                     Session::AuthenticationRequested(_, ref c, ref csrf) => (c, csrf),
                     _ => {
                         eprintln!("auth: session déjà authentifiée");
@@ -233,9 +241,14 @@ mod handlers {
                     }
                 };
 
+                if state != csrf.secret() {
+                    eprintln!("auth: csrf invalide");
+                    return Ok(reply_error(StatusCode::BAD_REQUEST));
+                }
+
                 let token = match client.exchange_code(AuthorizationCode::new(code.to_owned())).request(http_client) {
                     Ok(token) => token,
-                    Err(e)  => {
+                    Err(e) => {
                         eprintln!("{e}");
                         return Ok(reply_error(StatusCode::BAD_REQUEST));
                     }

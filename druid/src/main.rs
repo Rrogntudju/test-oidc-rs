@@ -84,7 +84,7 @@ fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
     let token = TOKEN.read();
     if token.is_some() {
         let (fournisseur, secret) = token.as_ref().unwrap();
-        if  f != fournisseur || secret.is_expired() {
+        if f != fournisseur || secret.is_expired() {
             drop(token);
             TOKEN.write().replace((f.to_owned(), Pkce::new(f)?));
         }

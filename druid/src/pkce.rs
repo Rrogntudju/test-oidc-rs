@@ -11,7 +11,6 @@ use std::net::TcpListener;
 use std::time::{Duration, Instant};
 use url::Url;
 
-
 pub struct Pkce {
     token: AccessToken,
     creation: Instant,
