@@ -55,6 +55,8 @@ pub mod filters {
 }
 
 mod handlers {
+    use crate::session::Fournisseur;
+
     use super::*;
     use std::convert::Infallible;
     use warp::http::{Error, Response, StatusCode};
@@ -159,6 +161,9 @@ mod handlers {
         origine: &str,
         sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<Response<String>, Error> {
+        use oauth2::{ClientId, ClientSecret, AuthUrl, basic::BasicClient, TokenUrl, CsrfToken, Scope, RedirectUrl};
+
+        let f: Fournisseur = fournisseur.into();
         let (id, secret) = f.secrets();
         let id = ClientId::new(id.to_owned());
         let secret = ClientSecret::new(secret.to_owned());
@@ -168,7 +173,6 @@ mod handlers {
         let url_token = TokenUrl::new(url_token.to_owned())?;
 
         let client = BasicClient::new(id, Some(secret), url_auth, Some(url_token))
-            .set_auth_type(AuthType::RequestBody)
             .set_redirect_uri(RedirectUrl::new(origine.to_string() + "/auth")?);
 
         let (authorize_url, csrf_state) = client
@@ -176,6 +180,7 @@ mod handlers {
             .add_scope(Scope::new("openid".to_owned()))
             .add_scope(Scope::new("email".to_owned()))
             .add_scope(Scope::new("profile".to_owned()))
+            .use_implicit_flow()
             .url();
 
         let sessionid = SessionId::new();
