@@ -57,7 +57,7 @@ pub mod filters {
 mod handlers {
     use crate::session::Fournisseur;
     use oauth2::{ClientId, ClientSecret, AuthUrl, basic::BasicClient, TokenUrl, CsrfToken, Scope, RedirectUrl, AuthType};
-    use::oauth2::{TokenResponse, AuthorizationCode};
+    use oauth2::{TokenResponse, AuthorizationCode};
     use oauth2::reqwest::http_client;
     use std::time::Duration;
     use session::Token;
@@ -104,12 +104,13 @@ mod handlers {
                         reply_redirect_fournisseur(fournisseur, origine, sessions)
                     }
                     Some(session) => {
-
                         match session {
                             Session::Authenticated(f, token) if f == fournisseur.into() => {
-                                let http = reqwest::Client::new();
-                                let userinfo = match client.request_userinfo(&http, token) {
-                                    Ok(userinfo) => userinfo,
+                                let result = ureq::get(f.userinfos())
+                                    .set("Authorization", &format!("Bearer {}", token.secret()))
+                                    .call();
+                               let userinfo = match result {
+                                    Ok(response) => response.into_json::<Value>().unwrap_or_default(),
                                     Err(e) => {
                                         eprintln!("{e}");
                                         return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
@@ -117,8 +118,7 @@ mod handlers {
                                 };
                                 drop(lock);
 
-                                let value = serde_json::to_value(userinfo).unwrap_or_default();
-                                let map = value.as_object().unwrap_or(&LOL_MAP);
+                                let map = userinfo.as_object().unwrap_or(&LOL_MAP);
                                 let infos = Value::Array(
                                     map.into_iter()
                                         .filter_map(|(k, v)| match v.is_null() {

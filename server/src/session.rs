@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};;
+use std::time::{Duration, Instant};
 use oauth2::basic::BasicClient;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
