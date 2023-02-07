@@ -87,6 +87,7 @@ impl Token {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum Fournisseur {
     Microsoft,
     Google,

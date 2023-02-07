@@ -89,7 +89,6 @@ mod handlers {
         };
 
         let fournisseur = body.get("fournisseur").unwrap_or(&LOL);
-        let fournisseur: Fournisseur = fournisseur.into();
         let origine = body.get("origine").unwrap_or(&LOL);
 
         let response = match session_cookie {
@@ -107,7 +106,7 @@ mod handlers {
                     Some(session) => {
 
                         match session {
-                            Session::Authenticated(f, token) if f == fournisseur => {
+                            Session::Authenticated(f, token) if f == fournisseur.into() => {
                                 let http = reqwest::Client::new();
                                 let userinfo = match client.request_userinfo(&http, token) {
                                     Ok(userinfo) => userinfo,
