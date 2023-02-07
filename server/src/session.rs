@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 use oauth2::basic::BasicClient;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use oauth2::AccessToken;
+use oauth2::{AccessToken, CsrfToken};
 use std::fmt;
 
 const ID_MS: &str = include_str!("clientid.microsoft");
@@ -42,18 +42,18 @@ impl AsRef<str> for SessionId {
 }
 
 pub enum Session {
-    AuthenticationRequested(Fournisseur, Box<BasicClient>),
+    AuthenticationRequested(Fournisseur, Box<BasicClient>, CsrfToken),
     Authenticated(Fournisseur, Token),
 }
 
 impl Session {
-    pub fn new(f: Fournisseur, c: BasicClient) -> Self {
-        Session::AuthenticationRequested(f, Box::new(c))
+    pub fn new(f: Fournisseur, c: BasicClient, csrf: CsrfToken) -> Self {
+        Session::AuthenticationRequested(f, Box::new(c), csrf)
     }
 
     pub fn authentication_completed(self, t: Token) -> Self {
         match self {
-            Session::AuthenticationRequested(f, _) => Session::Authenticated(f, t),
+            Session::AuthenticationRequested(f, ..) => Session::Authenticated(f, t),
             _ => self,
         }
     }

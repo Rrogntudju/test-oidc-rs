@@ -173,19 +173,18 @@ mod handlers {
         let secret = ClientSecret::new(secret.to_owned());
 
         let (url_auth, url_token) = f.endpoints();
-        let auth_url = AuthUrl::new(url_auth.to_owned())?;
-        let token_url = TokenUrl::new(url_token.to_owned())?;
+        let auth_url = AuthUrl::new(url_auth.to_owned()).unwrap();
+        let token_url = TokenUrl::new(url_token.to_owned()).unwrap();
 
         let client = BasicClient::new(id, Some(secret), auth_url, Some(token_url))
             .set_auth_type(AuthType::RequestBody)
-            .set_redirect_uri(RedirectUrl::new(origine.to_string() + "/auth")?);
+            .set_redirect_uri(RedirectUrl::new(origine.to_string() + "/auth").unwrap());
 
         let (authorize_url, csrf_state) = client
             .authorize_url(CsrfToken::new_random)
             .add_scope(Scope::new("openid".to_owned()))
             .add_scope(Scope::new("email".to_owned()))
             .add_scope(Scope::new("profile".to_owned()))
-            .use_implicit_flow()
             .url();
 
         let sessionid = SessionId::new();
@@ -194,9 +193,9 @@ mod handlers {
             // Lax temporairement nécessaire pour l'envoi du cookie Session-Id avec le redirect par OP
             .header("Set-Cookie", format!("Session-Id={0}; SameSite=Lax", sessionid.as_ref()))
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
-            .body(format!(r#"{{ "redirectOP": "{url_auth}" }}"#));
+            .body(format!(r#"{{ "redirectOP": "{}" }}"#, authorize_url.as_str()));
 
-        let session = Session::new(f, client);
+        let session = Session::new(f, client, csrf_state);
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
 
         response
@@ -226,8 +225,8 @@ mod handlers {
                     }
                 };
 
-                let (fournisseur, client)= match session {
-                    Session::AuthenticationRequested(ref f, ref c) => (f, c),
+                let (client, csrf)= match session {
+                    Session::AuthenticationRequested(_, ref c, ref csrf) => (c, csrf),
                     _ => {
                         eprintln!("auth: session déjà authentifiée");
                         return Ok(reply_error(StatusCode::BAD_REQUEST));
