@@ -17,7 +17,11 @@ const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 pub fn random_token(len: usize) -> String {
-    rand::thread_rng().sample_iter(&Alphanumeric).take(len).map(| b | b as char).collect::<String>()
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .map(|b| b as char)
+        .collect::<String>()
 }
 
 #[derive(PartialEq, Eq, Hash)]

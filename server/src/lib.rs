@@ -209,28 +209,25 @@ mod handlers {
         let response = match session_cookie {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
-                let session = match sessions.write().expect("Failed due to poisoned lock").remove(&id) {
-                    Some(session) => session,
-                    None => {
-                        eprintln!("auth: session inexistante");
-                        return Ok(reply_error(StatusCode::BAD_REQUEST));
-                    }
+                let session = if let Some(session) = sessions.write().expect("Failed due to poisoned lock").remove(&id) {
+                    session
+                } else {
+                    eprintln!("auth: session inexistante");
+                    return Ok(reply_error(StatusCode::BAD_REQUEST));
                 };
 
-                let code = match params.get("code") {
-                    Some(code) => code,
-                    None => {
-                        eprintln!("auth: auth code manquant");
-                        return Ok(reply_error(StatusCode::BAD_REQUEST));
-                    }
+                let code = if let Some(code) = params.get("code") {
+                    code
+                } else {
+                    eprintln!("auth: auth code manquant");
+                    return Ok(reply_error(StatusCode::BAD_REQUEST));
                 };
 
-                let state = match params.get("state") {
-                    Some(code) => code,
-                    None => {
-                        eprintln!("auth: auth code manquant");
-                        return Ok(reply_error(StatusCode::BAD_REQUEST));
-                    }
+                let state = if let Some(state) = params.get("state") {
+                    state
+                } else {
+                    eprintln!("auth: csrf manquant");
+                    return Ok(reply_error(StatusCode::BAD_REQUEST));
                 };
 
                 let (client, csrf) = match session {
@@ -253,6 +250,7 @@ mod handlers {
                         return Ok(reply_error(StatusCode::BAD_REQUEST));
                     }
                 };
+
                 let expired_in = token.expires_in().unwrap_or(Duration::from_secs(60));
                 let token = Token::new(token.access_token().to_owned(), expired_in);
 
