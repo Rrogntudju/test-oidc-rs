@@ -203,6 +203,11 @@ mod handlers {
         params: HashMap<String, String>,
         sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<impl warp::Reply, Infallible> {
+        use::oauth2::{TokenResponse, AuthorizationCode};
+        use oauth2::reqwest::http_client;
+        use std::time::Duration;
+        use session::Token;
+
         let response = match session_cookie {
             Some(stoken) => {
                 let id = SessionId::from(stoken);
@@ -222,21 +227,17 @@ mod handlers {
                     }
                 };
 
-                let (client, nonce) = match session {
-                    Session::AuthenticationRequested(ref c, _, ref n) => (c, n),
+                let (fournisseur, client)= match session {
+                    Session::AuthenticationRequested(f, c) => (f, c),
                     _ => {
                         eprintln!("auth: session déjà authentifiée");
                         return Ok(reply_error(StatusCode::BAD_REQUEST));
                     }
                 };
 
-                let token = match client.authenticate(code, Some(nonce), None) {
-                    Ok(token) => token,
-                    Err(e) => {
-                        eprintln!("{e}");
-                        return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
-                    }
-                };
+                let token = client.exchange_code(AuthorizationCode::new(*code)).request(http_client)?;
+                let expired_in = token.expires_in().unwrap_or(Duration::from_secs(3600));
+                let token = Token::new(token.access_token().to_owned(), expired_in);
 
                 let response = Response::builder()
                     .status(StatusCode::FOUND)

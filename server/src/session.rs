@@ -1,3 +1,4 @@
+use std::time::{Duration, Instant};;
 use oauth2::basic::BasicClient;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
@@ -73,8 +74,8 @@ pub struct Token {
 
 impl Token {
     pub fn new(token: AccessToken, expired_in: Duration) -> Self {
-
-        Ok(Self { token, creation, expired_in })
+        let creation = Instant::now();
+        Self { token, creation, expired_in }
     }
 
     pub fn is_expired(&self) -> bool {
