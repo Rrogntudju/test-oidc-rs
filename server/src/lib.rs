@@ -105,7 +105,7 @@ mod handlers {
                     }
                     Some(session) => {
                         match session {
-                            Session::Authenticated(f, token) if f == fournisseur.into() => {
+                            Session::Authenticated(f, token) if &f.to_string() == fournisseur => {
                                 let result = ureq::get(f.userinfos())
                                     .set("Authorization", &format!("Bearer {}", token.secret()))
                                     .call();

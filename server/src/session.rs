@@ -3,6 +3,7 @@ use oauth2::basic::BasicClient;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use oauth2::AccessToken;
+use std::fmt;
 
 const ID_MS: &str = include_str!("clientid.microsoft");
 const SECRET_MS: &str = include_str!("secret.microsoft");
@@ -87,10 +88,19 @@ impl Token {
     }
 }
 
-#[derive(PartialEq, Eq)]
 pub enum Fournisseur {
     Microsoft,
     Google,
+}
+
+impl fmt::Display for Fournisseur {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fournisseur = match self {
+            Fournisseur::Microsoft => "Microsoft",
+            Fournisseur::Google => "Google",
+        };
+        f.write_str(fournisseur)
+    }
 }
 
 impl From<&str> for Fournisseur {
