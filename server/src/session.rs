@@ -1,3 +1,4 @@
+use oauth2::basic::BasicClient;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use oauth2::AccessToken;
@@ -39,18 +40,18 @@ impl AsRef<str> for SessionId {
 }
 
 pub enum Session {
-    AuthenticationRequested(Fournisseur),
+    AuthenticationRequested(Fournisseur, Box<BasicClient>),
     Authenticated(Fournisseur, Token),
 }
 
 impl Session {
-    pub fn new(f: Fournisseur) -> Self {
-        Session::AuthenticationRequested(f)
+    pub fn new(f: Fournisseur, c: BasicClient) -> Self {
+        Session::AuthenticationRequested(f, Box::new(c))
     }
 
     pub fn authentication_completed(self, t: Token) -> Self {
         match self {
-            Session::AuthenticationRequested(f) => Session::Authenticated(f, t),
+            Session::AuthenticationRequested(f, _) => Session::Authenticated(f, t),
             _ => self,
         }
     }

@@ -161,7 +161,7 @@ mod handlers {
         origine: &str,
         sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     ) -> Result<Response<String>, Error> {
-        use oauth2::{ClientId, ClientSecret, AuthUrl, basic::BasicClient, TokenUrl, CsrfToken, Scope, RedirectUrl};
+        use oauth2::{ClientId, ClientSecret, AuthUrl, basic::BasicClient, TokenUrl, CsrfToken, Scope, RedirectUrl, AuthType};
 
         let f: Fournisseur = fournisseur.into();
         let (id, secret) = f.secrets();
@@ -169,10 +169,11 @@ mod handlers {
         let secret = ClientSecret::new(secret.to_owned());
 
         let (url_auth, url_token) = f.endpoints();
-        let url_auth = AuthUrl::new(url_auth.to_owned())?;
-        let url_token = TokenUrl::new(url_token.to_owned())?;
+        let auth_url = AuthUrl::new(url_auth.to_owned())?;
+        let token_url = TokenUrl::new(url_token.to_owned())?;
 
-        let client = BasicClient::new(id, Some(secret), url_auth, Some(url_token))
+        let client = BasicClient::new(id, Some(secret), auth_url, Some(token_url))
+            .set_auth_type(AuthType::RequestBody)
             .set_redirect_uri(RedirectUrl::new(origine.to_string() + "/auth")?);
 
         let (authorize_url, csrf_state) = client
@@ -191,7 +192,7 @@ mod handlers {
             .header("Set-Cookie", format!("Csrf-Token={0}; SameSite=Strict", random_token(64)))
             .body(format!(r#"{{ "redirectOP": "{url_auth}" }}"#));
 
-        let session = Session::new(client, fournisseur.into(), nonce);
+        let session = Session::new(fournisseur.into(), client);
         sessions.write().expect("Failed due to poisoned lock").insert(sessionid, session);
 
         response
