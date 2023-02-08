@@ -23,7 +23,7 @@ pub mod filters {
         warp::path("static").and(warp::fs::dir(path))
     }
 
-    pub fn userinfos() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    pub fn userinfos() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone{
         warp::path("userinfos")
             .and(warp::path::end())
             .and(warp::post())
@@ -56,7 +56,7 @@ pub mod filters {
 
 mod handlers {
     use crate::session::Fournisseur;
-    use oauth2::reqwest::http_client;
+    use oauth2::reqwest::async_http_client;
     use oauth2::{basic::BasicClient, AuthType, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};
     use oauth2::{AuthorizationCode, TokenResponse};
     use session::Token;
@@ -94,60 +94,46 @@ mod handlers {
         let response = match session_cookie {
             Some(stoken) => {
                 let id: SessionId = stoken.into();
-                let lock = sessions.read().expect("Failed due to poisoned lock");
+                let session = sessions.read().expect("Failed due to poisoned lock").get(&id).unwrap().clone();
 
-                match lock.get(&id) {
-                    Some(session) if session.is_expired() => {
-                        drop(lock);
+                match session {
+                    session if session.is_expired() => {
                         eprintln!("userinfos: Session expirée ou pas authentifiée");
                         sessions.write().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, origine, sessions)
                     }
-                    Some(session) => {
-                        match session {
-                            Session::Authenticated(f, token) if &f.to_string() == fournisseur => {
-                                let result = ureq::get(f.userinfos())
-                                    .set("Authorization", &format!("Bearer {}", token.secret()))
-                                    .call();
-                                let userinfo = match result {
-                                    Ok(response) => response.into_json::<Value>().unwrap_or_default(),
-                                    Err(e) => {
-                                        eprintln!("{e}");
-                                        return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
+                    Session::Authenticated(f, token) if &f.to_string() == fournisseur => {
+                        let client = reqwest::Client::new();
+                        let response = match client.get(f.userinfos()).bearer_auth(token.secret()).send().await {
+                            Ok(response) => response,
+                            Err(e) => {
+                                eprintln!("{e}");
+                                return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
+                            }
+                        };
+                        let userinfo = response.json::<Value>().await.unwrap_or_default();
+                        let map = userinfo.as_object().unwrap_or(&LOL_MAP);
+                        let infos = Value::Array(
+                            map.into_iter()
+                                .filter_map(|(k, v)| match v.is_null() {
+                                    true => None,
+                                    false => {
+                                        let mut map = serde_json::Map::new();
+                                        map.insert("propriété".into(), Value::String(k.to_owned()));
+                                        map.insert("valeur".into(), v.to_owned());
+                                        Some(Value::Object(map))
                                     }
-                                };
-                                drop(lock);
+                                })
+                                .collect::<Vec<Value>>(),
+                        );
 
-                                let map = userinfo.as_object().unwrap_or(&LOL_MAP);
-                                let infos = Value::Array(
-                                    map.into_iter()
-                                        .filter_map(|(k, v)| match v.is_null() {
-                                            true => None,
-                                            false => {
-                                                let mut map = serde_json::Map::new();
-                                                map.insert("propriété".into(), Value::String(k.to_owned()));
-                                                map.insert("valeur".into(), v.to_owned());
-                                                Some(Value::Object(map))
-                                            }
-                                        })
-                                        .collect::<Vec<Value>>(),
-                                );
-
-                                Response::builder()
-                                    .status(StatusCode::OK)
-                                    .body(serde_json::to_string(&infos).unwrap_or_default())
-                            }
-                            _ => {
-                                // Changement de fournisseur
-                                drop(lock);
-                                sessions.write().expect("Failed due to poisoned lock").remove(&id);
-                                reply_redirect_fournisseur(fournisseur, origine, sessions)
-                            }
-                        }
+                        Response::builder()
+                            .status(StatusCode::OK)
+                            .body(serde_json::to_string(&infos).unwrap_or_default())
                     }
-                    None => {
-                        drop(lock);
-                        eprintln!("userinfos: Pas de session");
+                    _ => {
+                        // Changement de fournisseur
+                        sessions.write().expect("Failed due to poisoned lock").remove(&id);
                         reply_redirect_fournisseur(fournisseur, origine, sessions)
                     }
                 }
@@ -243,7 +229,11 @@ mod handlers {
                     return Ok(reply_error(StatusCode::BAD_REQUEST));
                 }
 
-                let token = match client.exchange_code(AuthorizationCode::new(code.to_owned())).request(http_client) {
+                let token = match client
+                    .exchange_code(AuthorizationCode::new(code.to_owned()))
+                    .request_async(async_http_client)
+                    .await
+                {
                     Ok(token) => token,
                     Err(e) => {
                         eprintln!("{e}");

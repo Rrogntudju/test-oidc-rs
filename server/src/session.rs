@@ -45,6 +45,7 @@ impl AsRef<str> for SessionId {
     }
 }
 
+#[derive(Clone)]
 pub enum Session {
     AuthenticationRequested(Fournisseur, Box<BasicClient>, CsrfToken),
     Authenticated(Fournisseur, Token),
@@ -71,6 +72,7 @@ impl Session {
     }
 }
 
+#[derive(Clone)]
 pub struct Token {
     token: AccessToken,
     creation: Instant,
@@ -92,6 +94,7 @@ impl Token {
     }
 }
 
+#[derive(Clone)]
 pub enum Fournisseur {
     Microsoft,
     Google,
