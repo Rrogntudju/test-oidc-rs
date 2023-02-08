@@ -23,7 +23,7 @@ pub mod filters {
         warp::path("static").and(warp::fs::dir(path))
     }
 
-    pub fn userinfos() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone{
+    pub fn userinfos() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
         warp::path("userinfos")
             .and(warp::path::end())
             .and(warp::post())
@@ -94,7 +94,7 @@ mod handlers {
         let response = match session_cookie {
             Some(stoken) => {
                 let id: SessionId = stoken.into();
-                // sessions n'est pas Send
+                // MutexGuard n'est pas Send
                 let session = match sessions.read().expect("Failed due to poisoned lock").get(&id) {
                     Some(session) => Some(session.clone()),
                     None => None,
