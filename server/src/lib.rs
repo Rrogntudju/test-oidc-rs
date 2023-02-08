@@ -94,48 +94,57 @@ mod handlers {
         let response = match session_cookie {
             Some(stoken) => {
                 let id: SessionId = stoken.into();
-                let session = sessions.read().expect("Failed due to poisoned lock").get(&id).unwrap().clone();
+                // sessions n'est pas Send
+                let session = match sessions.read().expect("Failed due to poisoned lock").get(&id) {
+                    Some(session) => Some(session.clone()),
+                    None => None,
+                };
 
                 match session {
-                    session if session.is_expired() => {
-                        eprintln!("userinfos: Session expirée ou pas authentifiée");
-                        sessions.write().expect("Failed due to poisoned lock").remove(&id);
-                        reply_redirect_fournisseur(fournisseur, origine, sessions)
-                    }
-                    Session::Authenticated(f, token) if &f.to_string() == fournisseur => {
-                        let client = reqwest::Client::new();
-                        let response = match client.get(f.userinfos()).bearer_auth(token.secret()).send().await {
-                            Ok(response) => response,
-                            Err(e) => {
-                                eprintln!("{e}");
-                                return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
+                    Some(session) => {
+                        match session {
+                            session if session.is_expired() => {
+                                eprintln!("userinfos: Session expirée ou pas authentifiée");
+                                sessions.write().expect("Failed due to poisoned lock").remove(&id);
+                                reply_redirect_fournisseur(fournisseur, origine, sessions)
                             }
-                        };
-                        let userinfo = response.json::<Value>().await.unwrap_or_default();
-                        let map = userinfo.as_object().unwrap_or(&LOL_MAP);
-                        let infos = Value::Array(
-                            map.into_iter()
-                                .filter_map(|(k, v)| match v.is_null() {
-                                    true => None,
-                                    false => {
-                                        let mut map = serde_json::Map::new();
-                                        map.insert("propriété".into(), Value::String(k.to_owned()));
-                                        map.insert("valeur".into(), v.to_owned());
-                                        Some(Value::Object(map))
+                            Session::Authenticated(f, token) if &f.to_string() == fournisseur => {
+                                let client = reqwest::Client::new();
+                                let response = match client.get(f.userinfos()).bearer_auth(token.secret()).send().await {
+                                    Ok(response) => response,
+                                    Err(e) => {
+                                        eprintln!("{e}");
+                                        return Ok(reply_error(StatusCode::INTERNAL_SERVER_ERROR));
                                     }
-                                })
-                                .collect::<Vec<Value>>(),
-                        );
+                                };
+                                let userinfo = response.json::<Value>().await.unwrap_or_default();
+                                let map = userinfo.as_object().unwrap_or(&LOL_MAP);
+                                let infos = Value::Array(
+                                    map.into_iter()
+                                        .filter_map(|(k, v)| match v.is_null() {
+                                            true => None,
+                                            false => {
+                                                let mut map = serde_json::Map::new();
+                                                map.insert("propriété".into(), Value::String(k.to_owned()));
+                                                map.insert("valeur".into(), v.to_owned());
+                                                Some(Value::Object(map))
+                                            }
+                                        })
+                                        .collect::<Vec<Value>>(),
+                                );
 
-                        Response::builder()
-                            .status(StatusCode::OK)
-                            .body(serde_json::to_string(&infos).unwrap_or_default())
+                                Response::builder()
+                                    .status(StatusCode::OK)
+                                    .body(serde_json::to_string(&infos).unwrap_or_default())
+                            }
+                            _ => {
+                                // Changement de fournisseur
+                                sessions.write().expect("Failed due to poisoned lock").remove(&id);
+                                reply_redirect_fournisseur(fournisseur, origine, sessions)
+                            }
+                        }
                     }
-                    _ => {
-                        // Changement de fournisseur
-                        sessions.write().expect("Failed due to poisoned lock").remove(&id);
-                        reply_redirect_fournisseur(fournisseur, origine, sessions)
-                    }
+                    None => reply_redirect_fournisseur(fournisseur, origine, sessions),
                 }
             }
             None => reply_redirect_fournisseur(fournisseur, origine, sessions),
