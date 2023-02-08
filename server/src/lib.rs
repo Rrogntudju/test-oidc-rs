@@ -104,7 +104,7 @@ mod handlers {
                     Some(session) => {
                         match session {
                             session if session.is_expired() => {
-                                eprintln!("userinfos: Session expirée ou pas authentifiée");
+                                eprintln!("userinfos: Session expirée");
                                 sessions.write().expect("Failed due to poisoned lock").remove(&id);
                                 reply_redirect_fournisseur(fournisseur, origine, sessions)
                             }
