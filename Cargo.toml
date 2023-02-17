@@ -1,8 +1,9 @@
 [workspace]
 
 members = [
-    "server", "test-oidc", "druid"
-]
+    "server", "test-oidc", "druid", "iced"
+    ]
+resolver = "2"
 
 [profile.release]
 opt-level = 3
