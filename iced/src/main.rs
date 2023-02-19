@@ -1,5 +1,6 @@
 use iced::widget::container;
-use iced::{Element, Length, Sandbox, Settings};
+use iced::{executor, Renderer};
+use iced::{Element, Length, Application, Settings, Theme, Command};
 
 use numeric_input::numeric_input;
 
@@ -17,26 +18,31 @@ enum Message {
     NumericInputChanged(Option<u32>),
 }
 
-impl Sandbox for Component {
+impl Application for Component {
     type Message = Message;
+    type Executor = executor::Default;
+    type Flags = ();
+    type Theme = Theme;
 
-    fn new() -> Self {
-        Self::default()
+    fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
+        (Self { value: None }, Command::none())
     }
 
     fn title(&self) -> String {
         String::from("Component - Iced")
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::NumericInputChanged(value) => {
                 self.value = value;
             }
-        }
+        };
+
+        Command::none()
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         container(numeric_input(self.value, Message::NumericInputChanged))
             .padding(20)
             .height(Length::Fill)
@@ -127,7 +133,7 @@ mod numeric_input {
                         .horizontal_alignment(alignment::Horizontal::Center)
                         .vertical_alignment(alignment::Vertical::Center),
                 )
-                .width(Length::Units(50))
+                .width(Length::Fixed(50.0))
                 .on_press(on_press)
             };
 
