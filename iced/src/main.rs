@@ -4,13 +4,74 @@ use iced::{Element, Length, Application, Settings, Theme, Command};
 
 use numeric_input::numeric_input;
 
+mod pkce;
+use pkce::Pkce;
+
+const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
+const ID_MS: &str = include_str!("clientid.microsoft");
+const SECRET_MS: &str = include_str!("secret.microsoft");
+const ID_GG: &str = include_str!("clientid.google");
+const SECRET_GG: &str = include_str!("secret.google");
+const AUTH_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
+const AUTH_GG: &str = "https://accounts.google.com/o/oauth2/v2/auth";
+const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
+const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
+const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
+
+#[dynamic]
+static mut TOKEN: Option<(Fournisseur, Pkce)> = None;
+
+#[derive(Clone, PartialEq, Data)]
+pub enum Fournisseur {
+    Microsoft,
+    Google,
+}
+
+impl fmt::Display for Fournisseur {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fournisseur = match self {
+            Fournisseur::Microsoft => "Microsoft",
+            Fournisseur::Google => "Google",
+        };
+        f.write_str(fournisseur)
+    }
+}
+
+impl Fournisseur {
+    fn endpoints(&self) -> (&str, &str) {
+        match self {
+            Self::Microsoft => (AUTH_MS, TOKEN_MS),
+            Self::Google => (AUTH_GG, TOKEN_GG),
+        }
+    }
+
+    fn secrets(&self) -> (&str, &str) {
+        match self {
+            Self::Microsoft => (ID_MS, SECRET_MS),
+            Self::Google => (ID_GG, SECRET_GG),
+        }
+    }
+
+    fn userinfos(&self) -> &str {
+        match self {
+            Self::Microsoft => INFOS_MS,
+            Self::Google => INFOS_GG,
+        }
+    }
+}
+
 pub fn main() -> iced::Result {
-    Component::run(Settings::default())
+    App::run(Settings::default())
 }
 
 #[derive(Default)]
-struct Component {
-    value: Option<u32>,
+struct App {
+    radio_fournisseur: Fournisseur,
+    label_fournisseur: String,
+    infos: Arc<TableData>,
+    en_traitement: bool,
+    erreur: String,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -18,7 +79,7 @@ enum Message {
     NumericInputChanged(Option<u32>),
 }
 
-impl Application for Component {
+impl Application for App {
     type Message = Message;
     type Executor = executor::Default;
     type Flags = ();
@@ -29,7 +90,7 @@ impl Application for Component {
     }
 
     fn title(&self) -> String {
-        String::from("Component - Iced")
+        String::from("Userinfos")
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
