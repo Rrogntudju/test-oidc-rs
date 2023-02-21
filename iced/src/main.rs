@@ -82,7 +82,6 @@ pub fn main() -> iced::Result {
 #[derive(Default)]
 struct App {
     radio_fournisseur: Fournisseur,
-    label_fournisseur: String,
     infos: TableData,
     en_traitement: bool,
     erreur: String,
@@ -134,7 +133,7 @@ impl Application for App {
                                     format!("{fournisseur}"),
                                     fournisseur,
                                     Some(fournisseur),
-                                    StepMessage::LanguageSelected,
+                                    |f: &Fournisseur| f,
                                 )
                             })
                             .map(Element::from)
@@ -144,6 +143,13 @@ impl Application for App {
                 ]
                 .padding(20)
                 .spacing(10);
+        let infos = column![
+            text(self.radio_fournisseur).size(24),
+            column
+        ]
+        let erreur = text(self.erreur)
+                .width(Length::Fill)
+                .size(100);
 
         container(numeric_input(self.value, Message::NumericInputChanged))
             .padding(20)
@@ -153,22 +159,23 @@ impl Application for App {
     }
 }
 
-mod numeric_input {
+mod table {
     use iced::alignment::{self, Alignment};
     use iced::widget::{self, button, row, text, text_input};
     use iced::{Element, Length};
     use iced_lazy::{self, Component};
+    use super::TableData;
 
-    pub struct NumericInput<Message> {
-        value: Option<u32>,
-        on_change: Box<dyn Fn(Option<u32>) -> Message>,
+    pub struct Table<Message> {
+        data: Option<TableData>,
+        on_change: Box<dyn Fn(Option<TableData>) -> Message>,
     }
 
-    pub fn numeric_input<Message>(
-        value: Option<u32>,
-        on_change: impl Fn(Option<u32>) -> Message + 'static,
-    ) -> NumericInput<Message> {
-        NumericInput::new(value, on_change)
+    pub fn table<Message>(
+        value: Option<TableData>,
+        on_change: impl Fn(Option<TableData>) -> Message + 'static,
+    ) -> Table<Message> {
+        Table::new(value, on_change)
     }
 
     #[derive(Debug, Clone)]
@@ -178,19 +185,19 @@ mod numeric_input {
         DecrementPressed,
     }
 
-    impl<Message> NumericInput<Message> {
+    impl<Message> Table<Message> {
         pub fn new(
-            value: Option<u32>,
-            on_change: impl Fn(Option<u32>) -> Message + 'static,
+            data: Option<TableData>,
+            on_change: impl Fn(Option<TableData>) -> Message + 'static,
         ) -> Self {
             Self {
-                value,
+                data,
                 on_change: Box::new(on_change),
             }
         }
     }
 
-    impl<Message, Renderer> Component<Message, Renderer> for NumericInput<Message>
+    impl<Message, Renderer> Component<Message, Renderer> for Table<Message>
     where
         Renderer: iced_native::text::Renderer + 'static,
         Renderer::Theme: widget::button::StyleSheet
