@@ -1,12 +1,11 @@
 use std::fmt;
+use std::sync::Arc;
 use iced::widget::{container, button, radio, text, column};
 use iced::{executor, Renderer};
 use iced::{Color, Element, Length, Application, Settings, Theme, Command, alignment};
 use iced_native::widget::image::Image;
 use iced_native::image::Handle;
 use static_init::dynamic;
-
-use numeric_input::numeric_input;
 
 mod pkce;
 use pkce::Pkce;
@@ -29,15 +28,24 @@ type TableColumns = Vec<String>;
 type TableRows = Vec<TableColumns>;
 type TableHeader = Vec<String>;
 
-#[derive(Default)]
+#[derive(Debug, Clone)]
 struct TableData {
-    pub header: TableHeader,
-    pub rows: TableRows,
+    header: TableHeader,
+    rows: TableRows,
 }
 
-#[derive(Default, Clone, PartialEq, Eq)]
+use table::Table;
+
+fn infos<Message>(
+    table: Option<TableData>,
+    on_change: impl Fn(Option<TableData>) -> Message + 'static,
+) -> Table<Message> {
+    Table::new(table, on_change)
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum Fournisseur {
-    #[default]
     Microsoft,
     Google,
 }
@@ -79,17 +87,17 @@ pub fn main() -> iced::Result {
     App::run(Settings::default())
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone)]
 struct App {
     radio_fournisseur: Fournisseur,
-    infos: TableData,
     en_traitement: bool,
     erreur: String,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum Message {
-    NumericInputChanged(Option<u32>),
+    FournisseurChanged(Fournisseur),
+    TableChanged(Option<TableData>),
 }
 
 impl Application for App {
@@ -99,7 +107,7 @@ impl Application for App {
     type Theme = Theme;
 
     fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Self { value: None }, Command::none())
+        (Self { radio_fournisseur: Fournisseur::Microsoft, en_traitement: false, erreur: String::new()}, Command::none())
     }
 
     fn title(&self) -> String {
@@ -108,8 +116,11 @@ impl Application for App {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::NumericInputChanged(value) => {
-                self.value = value;
+            Message::FournisseurChanged(fournisseur) => {
+                self.radio_fournisseur = fournisseur;
+            }
+            Message::TableChanged(table) => {
+
             }
         };
 
@@ -133,7 +144,7 @@ impl Application for App {
                                     format!("{fournisseur}"),
                                     fournisseur,
                                     Some(fournisseur),
-                                    |f: &Fournisseur| f,
+                                    |f: &Fournisseur| Message::FournisseurChanged(*f),
                                 )
                             })
                             .map(Element::from)
@@ -143,10 +154,13 @@ impl Application for App {
                 ]
                 .padding(20)
                 .spacing(10);
+
+        let bouton = button("Userinfos").on_press(msg)
         let infos = column![
             text(self.radio_fournisseur).size(24),
-            column
+            column(table::new(Some(self.infos), Message::)
         ]
+
         let erreur = text(self.erreur)
                 .width(Length::Fill)
                 .size(100);
@@ -169,13 +183,6 @@ mod table {
     pub struct Table<Message> {
         data: Option<TableData>,
         on_change: Box<dyn Fn(Option<TableData>) -> Message>,
-    }
-
-    pub fn table<Message>(
-        value: Option<TableData>,
-        on_change: impl Fn(Option<TableData>) -> Message + 'static,
-    ) -> Table<Message> {
-        Table::new(value, on_change)
     }
 
     #[derive(Debug, Clone)]
@@ -266,7 +273,7 @@ mod table {
         }
     }
 
-    impl<'a, Message, Renderer> From<NumericInput<Message>>
+    impl<'a, Message, Renderer> From<Table<Message>>
         for Element<'a, Message, Renderer>
     where
         Message: 'a,
@@ -275,8 +282,8 @@ mod table {
             + widget::text_input::StyleSheet
             + widget::text::StyleSheet,
     {
-        fn from(numeric_input: NumericInput<Message>) -> Self {
-            iced_lazy::component(numeric_input)
+        fn from(table: Table<Message>) -> Self {
+            iced_lazy::component(table)
         }
     }
 }
