@@ -1,6 +1,5 @@
 use std::fmt;
-use iced::theme;
-use iced::widget::{container, button, radio, text, column};
+use iced::widget::{container, button, radio, text, column, row};
 use iced::{executor, Renderer};
 use iced::{Color, Element, Length, Application, Settings, Theme, Command, alignment};
 use iced_native::widget::image::Image;
@@ -113,7 +112,7 @@ impl Application for App {
     }
 
     fn title(&self) -> String {
-        String::from("Userinfos")
+        "Userinfos".to_owned()
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -122,7 +121,7 @@ impl Application for App {
                 self.radio_fournisseur = fournisseur;
             }
             Message::TableChanged(table) => {
-
+                self.infos = table;
             }
         };
 
@@ -173,7 +172,7 @@ impl Application for App {
                 .width(Length::Fill)
                 .size(100);
 
-        container(numeric_input(self.value, Message::NumericInputChanged))
+        container(row![ column![image, titre, fournisseur, bouton], column![infos], erreur])
             .padding(20)
             .height(Length::Fill)
             .center_y()
