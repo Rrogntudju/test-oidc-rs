@@ -1,9 +1,11 @@
 use std::fmt;
+use std::sync::Arc;
 use iced::widget::{container, button, radio, text, column, row};
 use iced::{executor, Renderer};
 use iced::{Color, Element, Length, Application, Settings, Theme, Command, alignment};
 use iced_native::widget::image::Image;
 use iced_native::image::Handle;
+use iced_native::widget::Column;
 use static_init::dynamic;
 
 mod pkce;
@@ -27,7 +29,7 @@ type TableColumns = Vec<String>;
 type TableRows = Vec<TableColumns>;
 type TableHeader = Vec<String>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct TableData {
     header: TableHeader,
     rows: TableRows,
@@ -43,7 +45,7 @@ fn infos<Message>(
 }
 
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Fournisseur {
     Microsoft,
     Google,
@@ -89,7 +91,7 @@ pub fn main() -> iced::Result {
 #[derive(Debug, Clone)]
 struct App {
     radio_fournisseur: Fournisseur,
-    infos: Option<TableData>,
+    infos: Arc<Option<TableData>>,
     en_traitement: bool,
     erreur: String,
 }
@@ -123,6 +125,7 @@ impl Application for App {
             Message::TableChanged(table) => {
                 self.infos = table;
             }
+
         };
 
         Command::none()
@@ -165,7 +168,7 @@ impl Application for App {
 
         let infos = column![
             text(self.radio_fournisseur).size(24),
-            Table::new(self.infos, Message::TableChanged)
+            table(self.infos)
         ];
 
         let erreur = text(self.erreur)
@@ -180,34 +183,29 @@ impl Application for App {
     }
 }
 
+fn table(data: Option<TableData>) -> Column<'static, Message, Renderer> {
+    "".into()
+}
+
 mod table {
     use iced::alignment::{self, Alignment};
-    use iced::widget::{self, button, row, text, text_input};
+    use iced::widget::{self, button, row, text };
     use iced::{Element, Length};
     use iced_lazy::{self, Component};
     use super::TableData;
 
-
-    #[derive(Debug, Clone)]
-    pub enum Event {
-        InputChanged(String),
-        IncrementPressed,
-        DecrementPressed,
-    }
+    type Event = ();
 
     pub struct Table<Message> {
         data: Option<TableData>,
-        on_change: Box<dyn Fn(Option<TableData>) -> Message>,
     }
 
     impl<Message> Table<Message> {
         pub fn new(
             data: Option<TableData>,
-            on_change: impl Fn(Option<TableData>) -> Message + 'static,
         ) -> Self {
             Self {
                 data,
-                on_change: Box::new(on_change),
             }
         }
     }
@@ -219,65 +217,9 @@ mod table {
             + widget::text_input::StyleSheet
             + widget::text::StyleSheet,
     {
-        type State = ();
-        type Event = Event;
-
-        fn update(
-            &mut self,
-            _state: &mut Self::State,
-            event: Event,
-        ) -> Option<Message> {
-            match event {
-                Event::IncrementPressed => Some((self.on_change)(Some(
-                    self.value.unwrap_or_default().saturating_add(1),
-                ))),
-                Event::DecrementPressed => Some((self.on_change)(Some(
-                    self.value.unwrap_or_default().saturating_sub(1),
-                ))),
-                Event::InputChanged(value) => {
-                    if value.is_empty() {
-                        Some((self.on_change)(None))
-                    } else {
-                        value
-                            .parse()
-                            .ok()
-                            .map(Some)
-                            .map(self.on_change.as_ref())
-                    }
-                }
-            }
-        }
 
         fn view(&self, _state: &Self::State) -> Element<Event, Renderer> {
-            let button = |label, on_press| {
-                button(
-                    text(label)
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .horizontal_alignment(alignment::Horizontal::Center)
-                        .vertical_alignment(alignment::Vertical::Center),
-                )
-                .width(Length::Fixed(50.0))
-                .on_press(on_press)
-            };
-
-            row![
-                button("-", Event::DecrementPressed),
-                text_input(
-                    "Type a number",
-                    self.value
-                        .as_ref()
-                        .map(u32::to_string)
-                        .as_deref()
-                        .unwrap_or(""),
-                    Event::InputChanged,
-                )
-                .padding(10),
-                button("+", Event::IncrementPressed),
-            ]
-            .align_items(Alignment::Fill)
-            .spacing(10)
-            .into()
+            "".into()
         }
     }
 
