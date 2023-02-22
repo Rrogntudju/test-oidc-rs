@@ -1,5 +1,4 @@
 use std::fmt;
-use std::sync::Arc;
 use iced::widget::{container, button, radio, text, column, row};
 use iced::{executor, Renderer};
 use iced::{Color, Element, Length, Application, Settings, Theme, Command, alignment};
@@ -35,18 +34,8 @@ struct TableData {
     rows: TableRows,
 }
 
-use table::Table;
-
-fn infos<Message>(
-    table: Option<TableData>,
-    on_change: impl Fn(Option<TableData>) -> Message + 'static,
-) -> Table<Message> {
-    Table::new(table, on_change)
-}
-
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Fournisseur {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Fournisseur {
     Microsoft,
     Google,
 }
@@ -84,14 +73,14 @@ impl Fournisseur {
     }
 }
 
-pub fn main() -> iced::Result {
+fn main() -> iced::Result {
     App::run(Settings::default())
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct App {
     radio_fournisseur: Fournisseur,
-    infos: Arc<Option<TableData>>,
+    infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
 }
@@ -99,7 +88,6 @@ struct App {
 #[derive(Debug, Clone)]
 enum Message {
     FournisseurChanged(Fournisseur),
-    TableChanged(Option<TableData>),
     Userinfos,
 }
 
@@ -122,10 +110,9 @@ impl Application for App {
             Message::FournisseurChanged(fournisseur) => {
                 self.radio_fournisseur = fournisseur;
             }
-            Message::TableChanged(table) => {
-                self.infos = table;
-            }
+            Message::Userinfos => {
 
+            }
         };
 
         Command::none()
@@ -150,7 +137,7 @@ impl Application for App {
                                     format!("{fournisseur}"),
                                     fournisseur,
                                     Some(fournisseur),
-                                    |f: &Fournisseur| Message::FournisseurChanged(*f),
+                                    |f: &Fournisseur| Message::FournisseurChanged(f.clone()),
                                 )
                             })
                             .map(Element::from)
@@ -161,17 +148,18 @@ impl Application for App {
                 .padding(20)
                 .spacing(10);
 
-        let mut bouton = button("Userinfos");
-        if !self.en_traitement {
-            bouton.on_press(Message::Userinfos);
-        }
+        let bouton = if !self.en_traitement {
+            button("Userinfos").on_press(Message::Userinfos)
+        } else {
+            button("Userinfos")
+        };
 
         let infos = column![
-            text(self.radio_fournisseur).size(24),
-            table(self.infos)
+            text(&self.radio_fournisseur).size(24),
+            table(&self.infos)
         ];
 
-        let erreur = text(self.erreur)
+        let erreur = text(&self.erreur)
                 .width(Length::Fill)
                 .size(100);
 
@@ -183,57 +171,6 @@ impl Application for App {
     }
 }
 
-fn table(data: Option<TableData>) -> Column<'static, Message, Renderer> {
-    "".into()
-}
-
-mod table {
-    use iced::alignment::{self, Alignment};
-    use iced::widget::{self, button, row, text };
-    use iced::{Element, Length};
-    use iced_lazy::{self, Component};
-    use super::TableData;
-
-    type Event = ();
-
-    pub struct Table<Message> {
-        data: Option<TableData>,
-    }
-
-    impl<Message> Table<Message> {
-        pub fn new(
-            data: Option<TableData>,
-        ) -> Self {
-            Self {
-                data,
-            }
-        }
-    }
-
-    impl<Message, Renderer> Component<Message, Renderer> for Table<Message>
-    where
-        Renderer: iced_native::text::Renderer + 'static,
-        Renderer::Theme: widget::button::StyleSheet
-            + widget::text_input::StyleSheet
-            + widget::text::StyleSheet,
-    {
-
-        fn view(&self, _state: &Self::State) -> Element<Event, Renderer> {
-            "".into()
-        }
-    }
-
-    impl<'a, Message, Renderer> From<Table<Message>>
-        for Element<'a, Message, Renderer>
-    where
-        Message: 'a,
-        Renderer: 'static + iced_native::text::Renderer,
-        Renderer::Theme: widget::button::StyleSheet
-            + widget::text_input::StyleSheet
-            + widget::text::StyleSheet,
-    {
-        fn from(table: Table<Message>) -> Self {
-            iced_lazy::component(table)
-        }
-    }
+fn table(_data: &Option<TableData>) -> Column<'static, Message, Renderer> {
+    column![text("")]
 }
