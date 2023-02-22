@@ -1,5 +1,5 @@
 use std::fmt;
-use std::sync::Arc;
+use iced::theme;
 use iced::widget::{container, button, radio, text, column};
 use iced::{executor, Renderer};
 use iced::{Color, Element, Length, Application, Settings, Theme, Command, alignment};
@@ -90,6 +90,7 @@ pub fn main() -> iced::Result {
 #[derive(Debug, Clone)]
 struct App {
     radio_fournisseur: Fournisseur,
+    infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
 }
@@ -98,6 +99,7 @@ struct App {
 enum Message {
     FournisseurChanged(Fournisseur),
     TableChanged(Option<TableData>),
+    Userinfos,
 }
 
 impl Application for App {
@@ -107,7 +109,7 @@ impl Application for App {
     type Theme = Theme;
 
     fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Self { radio_fournisseur: Fournisseur::Microsoft, en_traitement: false, erreur: String::new()}, Command::none())
+        (Self { radio_fournisseur: Fournisseur::Microsoft, infos: None, en_traitement: false, erreur: String::new()}, Command::none())
     }
 
     fn title(&self) -> String {
@@ -129,11 +131,13 @@ impl Application for App {
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         let image = Image::<Handle>::new("openid-icon-100x100.png");
+
         let titre = text("OpenID Connect")
                     .width(Length::Fill)
                     .size(100)
                     .style(Color::from([0.5, 0.5, 0.5]))
                     .horizontal_alignment(alignment::Horizontal::Center);
+
         let fournisseur =  column![
                     text("Fournisseur:").size(24),
                     column(
@@ -155,11 +159,15 @@ impl Application for App {
                 .padding(20)
                 .spacing(10);
 
-        let bouton = button("Userinfos").on_press(msg)
+        let mut bouton = button("Userinfos");
+        if !self.en_traitement {
+            bouton.on_press(Message::Userinfos);
+        }
+
         let infos = column![
             text(self.radio_fournisseur).size(24),
-            column(table::new(Some(self.infos), Message::)
-        ]
+            Table::new(self.infos, Message::TableChanged)
+        ];
 
         let erreur = text(self.erreur)
                 .width(Length::Fill)
@@ -180,16 +188,17 @@ mod table {
     use iced_lazy::{self, Component};
     use super::TableData;
 
-    pub struct Table<Message> {
-        data: Option<TableData>,
-        on_change: Box<dyn Fn(Option<TableData>) -> Message>,
-    }
 
     #[derive(Debug, Clone)]
     pub enum Event {
         InputChanged(String),
         IncrementPressed,
         DecrementPressed,
+    }
+
+    pub struct Table<Message> {
+        data: Option<TableData>,
+        on_change: Box<dyn Fn(Option<TableData>) -> Message>,
     }
 
     impl<Message> Table<Message> {
