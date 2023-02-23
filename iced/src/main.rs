@@ -122,9 +122,12 @@ impl Application for App {
                 Command::none()
             }
             Message::GetInfos => {
-                Command::none()
+                let task = async { (None, "DOH!".to_owned()) };
+                Command::perform(task, |i| Message::Infos(i))
             }
             Message::Infos((infos, erreur)) => {
+                self.infos = infos;
+                self.erreur = erreur;
                 Command::none()
             }
         }
@@ -176,5 +179,5 @@ impl Application for App {
 }
 
 fn table(_data: &Option<TableData>) -> Column<'static, Message, Renderer> {
-    column![text("")]
+    column![text("LOL")]
 }
