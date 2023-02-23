@@ -1,11 +1,12 @@
-use std::fmt;
-use iced::widget::{container, button, radio, text, column, row};
+use iced::widget::{button, column, container, radio, row, text};
+use iced::{alignment, Application, Color, Command, Element, Length, Settings, Theme};
 use iced::{executor, Renderer};
-use iced::{Color, Element, Length, Application, Settings, Theme, Command, alignment};
-use iced_native::widget::image::Image;
 use iced_native::image::Handle;
+use iced_native::widget::image::Image;
 use iced_native::widget::Column;
 use static_init::dynamic;
+use std::fmt;
+use anyhow::Error;
 
 mod pkce;
 use pkce::Pkce;
@@ -28,7 +29,7 @@ type TableColumns = Vec<String>;
 type TableRows = Vec<TableColumns>;
 type TableHeader = Vec<String>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct TableData {
     header: TableHeader,
     rows: TableRows,
@@ -88,7 +89,8 @@ struct App {
 #[derive(Debug, Clone)]
 enum Message {
     FournisseurChanged(Fournisseur),
-    Userinfos,
+    GetInfos,
+    Infos((Option<TableData>, String)),
 }
 
 impl Application for App {
@@ -98,7 +100,15 @@ impl Application for App {
     type Theme = Theme;
 
     fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Self { radio_fournisseur: Fournisseur::Microsoft, infos: None, en_traitement: false, erreur: String::new()}, Command::none())
+        (
+            Self {
+                radio_fournisseur: Fournisseur::Microsoft,
+                infos: None,
+                en_traitement: false,
+                erreur: String::new(),
+            },
+            Command::none(),
+        )
     }
 
     fn title(&self) -> String {
@@ -109,61 +119,55 @@ impl Application for App {
         match message {
             Message::FournisseurChanged(fournisseur) => {
                 self.radio_fournisseur = fournisseur;
+                Command::none()
             }
-            Message::Userinfos => {
-
+            Message::GetInfos => {
+                Command::none()
             }
-        };
-
-        Command::none()
+            Message::Infos((infos, erreur)) => {
+                Command::none()
+            }
+        }
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         let image = Image::<Handle>::new("openid-icon-100x100.png");
 
         let titre = text("OpenID Connect")
-                    .width(Length::Fill)
-                    .size(100)
-                    .style(Color::from([0.5, 0.5, 0.5]))
-                    .horizontal_alignment(alignment::Horizontal::Center);
+            .width(Length::Fill)
+            .size(100)
+            .style(Color::from([0.5, 0.5, 0.5]))
+            .horizontal_alignment(alignment::Horizontal::Center);
 
-        let fournisseur =  column![
-                    text("Fournisseur:").size(24),
-                    column(
-                        [Fournisseur::Microsoft, Fournisseur::Google]
-                            .iter()
-                            .map(|fournisseur| {
-                                radio(
-                                    format!("{fournisseur}"),
-                                    fournisseur,
-                                    Some(fournisseur),
-                                    |f: &Fournisseur| Message::FournisseurChanged(f.clone()),
-                                )
-                            })
-                            .map(Element::from)
-                            .collect()
-                    )
-                    .spacing(10)
-                ]
-                .padding(20)
-                .spacing(10);
+        let fournisseur = column![
+            text("Fournisseur:").size(24),
+            column(
+                [Fournisseur::Microsoft, Fournisseur::Google]
+                    .iter()
+                    .map(|fournisseur| {
+                        radio(format!("{fournisseur}"), fournisseur, Some(fournisseur), |f: &Fournisseur| {
+                            Message::FournisseurChanged(f.clone())
+                        })
+                    })
+                    .map(Element::from)
+                    .collect()
+            )
+            .spacing(10)
+        ]
+        .padding(20)
+        .spacing(10);
 
         let bouton = if !self.en_traitement {
-            button("Userinfos").on_press(Message::Userinfos)
+            button("Userinfos").on_press(Message::GetInfos)
         } else {
             button("Userinfos")
         };
 
-        let infos = column![
-            text(&self.radio_fournisseur).size(24),
-            table(&self.infos)
-        ];
+        let infos = column![text(&self.radio_fournisseur).size(24), table(&self.infos)];
 
-        let erreur = text(&self.erreur)
-                .width(Length::Fill)
-                .size(100);
+        let erreur = text(&self.erreur).width(Length::Fill).size(100);
 
-        container(row![ column![image, titre, fournisseur, bouton], column![infos], erreur])
+        container(row![column![image, titre, fournisseur, bouton], column![infos], erreur])
             .padding(20)
             .height(Length::Fill)
             .center_y()
