@@ -1,9 +1,9 @@
-use iced::widget::{button, column, container, radio, row, text, Image, Column};
-use iced::{alignment, Application, Color, Command, Element, Length, Settings, Theme};
+use iced::widget::{button, column, container, radio, row, text, Column, Image};
+use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced::{executor, Renderer};
 use static_init::dynamic;
 use std::fmt;
-use anyhow::Error;
+use serde_json::value::Value;
 
 mod pkce;
 use pkce::Pkce;
@@ -119,7 +119,8 @@ impl Application for App {
                 Command::none()
             }
             Message::GetInfos => {
-                let task = async { (None, "DOH!".to_owned()) };
+                let fournisseur = self.radio_fournisseur.clone();
+                let task = async move { get_userinfos(fournisseur) };
                 Command::perform(task, |i| Message::Infos(i))
             }
             Message::Infos((infos, erreur)) => {
@@ -133,16 +134,19 @@ impl Application for App {
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         let image = Image::new("openid-icon-100x100.png");
 
-        let titre = text("OpenID Connect")
-            .size(48)
-            .style(Color::from([1.0, 0.5, 0.2]));
+        let titre = text("OpenID Connect").size(48).style(Color::from([1.0, 0.5, 0.2]));
 
         let fournisseur = column![
             text("Fournisseur:"),
             column(
                 [Fournisseur::Microsoft, Fournisseur::Google]
                     .into_iter()
-                    .map(|fournisseur| radio(format!("{fournisseur}"), fournisseur, Some(self.radio_fournisseur), Message::FournisseurChanged))
+                    .map(|fournisseur| radio(
+                        format!("{fournisseur}"),
+                        fournisseur,
+                        Some(self.radio_fournisseur),
+                        Message::FournisseurChanged
+                    ))
                     .map(Element::from)
                     .collect()
             )
@@ -156,16 +160,59 @@ impl Application for App {
             button("Userinfos")
         };
 
-        let infos = column![text(&self.radio_fournisseur).size(24), table(&self.infos)].spacing(10);
+        let infos = column![
+            text(&self.radio_fournisseur).size(36).style(Color::from([1.0, 0.5, 0.2])),
+            table(&self.infos)
+        ]
+        .spacing(10);
+
         let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
 
-        container(row![column![image, titre, fournisseur, bouton, erreur].spacing(10), infos].spacing(10))
-        .padding(20)
-        .center_y()
-        .into()
+        container(row![column![image, titre, fournisseur, bouton, erreur].spacing(10), infos.padding(50)])
+            .padding(20)
+            .into()
     }
 }
 
 fn table<'a>(_data: &Option<TableData>) -> Column<'a, Message, Renderer> {
     column![text("LOL"), text("LOL"), text("LOL"), text("LOL"), text("LOL")]
+}
+
+fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
+    let token = TOKEN.read();
+    if token.is_some() {
+        let (fournisseur, secret) = token.as_ref().unwrap();
+        if f != fournisseur || secret.is_expired() {
+            drop(token);
+            TOKEN.write().replace((f.to_owned(), Pkce::new(f)?));
+        }
+    } else {
+        drop(token);
+        TOKEN.write().replace((f.to_owned(), Pkce::new(f)?));
+    }
+
+    Ok(ureq::get(f.userinfos())
+        .set("Authorization", &format!("Bearer {}", TOKEN.read().as_ref().unwrap().1.secret()))
+        .call()?
+        .into_json::<Value>()?)
+}
+
+fn get_userinfos(fournisseur: Fournisseur) -> (Option<TableData>, String) {
+    match request_userinfos(&fournisseur) {
+        Ok(value) => match value {
+            Value::Object(map) => {
+                let infos = map
+                    .iter()
+                    .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
+                    .collect::<TableRows>();
+                let table = TableData {
+                    rows: infos.to_owned(),
+                    header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
+                };
+                (Some(table), String::new())
+            }
+            _ => (None, "La valeur doit être un map".to_owned()),
+        },
+        Err(e) => (None, e.to_string()),
+    }
 }
