@@ -32,7 +32,7 @@ struct TableData {
     rows: TableRows,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fournisseur {
     Microsoft,
     Google,
@@ -135,20 +135,16 @@ impl Application for App {
 
         let titre = text("OpenID Connect")
             .width(Length::Fill)
-            .size(48);
-     //       .style(Color::from([255.0, 127.0, 43.0]));
+            .size(48)
+            .style(Color::from([1.0, 0.5, 0.17]));
             //.horizontal_alignment(alignment::Horizontal::Center);
 
         let fournisseur = column![
-            text("Fournisseur:").size(24),
+            text("Fournisseur:"),
             column(
                 [Fournisseur::Microsoft, Fournisseur::Google]
-                    .iter()
-                    .map(|fournisseur| {
-                        radio(format!("{fournisseur}"), fournisseur, Some(&self.radio_fournisseur), |f: &Fournisseur| {
-                            Message::FournisseurChanged(f.clone())
-                        })
-                    })
+                    .into_iter()
+                    .map(|fournisseur| radio(format!("{fournisseur}"), fournisseur, Some(self.radio_fournisseur), Message::FournisseurChanged))
                     .map(Element::from)
                     .collect()
             )
