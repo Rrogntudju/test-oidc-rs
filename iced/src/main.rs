@@ -131,13 +131,11 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let image = Image::new("iced/src/openid-icon-100x100.png").height(100).width(100);
+        let image = Image::new("openid-icon-100x100.png");
 
         let titre = text("OpenID Connect")
-            .width(Length::Fill)
             .size(48)
-            .style(Color::from([1.0, 0.5, 0.17]));
-            //.horizontal_alignment(alignment::Horizontal::Center);
+            .style(Color::from([1.0, 0.5, 0.2]));
 
         let fournisseur = column![
             text("Fournisseur:"),
@@ -148,9 +146,9 @@ impl Application for App {
                     .map(Element::from)
                     .collect()
             )
-            .spacing(10)
+            .spacing(5)
         ]
-        .spacing(20);
+        .spacing(10);
 
         let bouton = if !self.en_traitement {
             button("Userinfos").on_press(Message::GetInfos)
@@ -158,10 +156,10 @@ impl Application for App {
             button("Userinfos")
         };
 
-        let infos = column![text(&self.radio_fournisseur).size(24), table(&self.infos)];
-        let erreur = text(&self.erreur).width(Length::Fill);
+        let infos = column![text(&self.radio_fournisseur).size(24), table(&self.infos)].spacing(10);
+        let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
 
-        container(column![image, titre, fournisseur, bouton, infos, erreur])
+        container(row![column![image, titre, fournisseur, bouton, erreur].spacing(10), infos].spacing(10))
         .padding(20)
         .center_y()
         .into()
@@ -169,5 +167,5 @@ impl Application for App {
 }
 
 fn table<'a>(_data: &Option<TableData>) -> Column<'a, Message, Renderer> {
-    column![text("LOL")]
+    column![text("LOL"), text("LOL"), text("LOL"), text("LOL"), text("LOL")]
 }
