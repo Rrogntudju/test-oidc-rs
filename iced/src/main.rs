@@ -1,9 +1,6 @@
-use iced::widget::{button, column, container, radio, row, text};
+use iced::widget::{button, column, container, radio, row, text, Image, Column};
 use iced::{alignment, Application, Color, Command, Element, Length, Settings, Theme};
 use iced::{executor, Renderer};
-use iced_native::image::Handle;
-use iced_native::widget::image::Image;
-use iced_native::widget::Column;
 use static_init::dynamic;
 use std::fmt;
 use anyhow::Error;
@@ -105,7 +102,7 @@ impl Application for App {
                 radio_fournisseur: Fournisseur::Microsoft,
                 infos: None,
                 en_traitement: false,
-                erreur: String::new(),
+                erreur: "ipsum lorem".to_owned(),
             },
             Command::none(),
         )
@@ -134,13 +131,13 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let image = Image::<Handle>::new("openid-icon-100x100.png");
+        let image = Image::new("iced/src/openid-icon-100x100.png").height(100).width(100);
 
         let titre = text("OpenID Connect")
             .width(Length::Fill)
-            .size(100)
-            .style(Color::from([0.5, 0.5, 0.5]))
-            .horizontal_alignment(alignment::Horizontal::Center);
+            .size(48);
+     //       .style(Color::from([255.0, 127.0, 43.0]));
+            //.horizontal_alignment(alignment::Horizontal::Center);
 
         let fournisseur = column![
             text("Fournisseur:").size(24),
@@ -148,7 +145,7 @@ impl Application for App {
                 [Fournisseur::Microsoft, Fournisseur::Google]
                     .iter()
                     .map(|fournisseur| {
-                        radio(format!("{fournisseur}"), fournisseur, Some(fournisseur), |f: &Fournisseur| {
+                        radio(format!("{fournisseur}"), fournisseur, Some(&self.radio_fournisseur), |f: &Fournisseur| {
                             Message::FournisseurChanged(f.clone())
                         })
                     })
@@ -157,8 +154,7 @@ impl Application for App {
             )
             .spacing(10)
         ]
-        .padding(20)
-        .spacing(10);
+        .spacing(20);
 
         let bouton = if !self.en_traitement {
             button("Userinfos").on_press(Message::GetInfos)
@@ -167,17 +163,15 @@ impl Application for App {
         };
 
         let infos = column![text(&self.radio_fournisseur).size(24), table(&self.infos)];
+        let erreur = text(&self.erreur).width(Length::Fill);
 
-        let erreur = text(&self.erreur).width(Length::Fill).size(100);
-
-        container(row![column![image, titre, fournisseur, bouton], column![infos], erreur])
-            .padding(20)
-            .height(Length::Fill)
-            .center_y()
-            .into()
+        container(column![image, titre, fournisseur, bouton, infos, erreur])
+        .padding(20)
+        .center_y()
+        .into()
     }
 }
 
-fn table(_data: &Option<TableData>) -> Column<'static, Message, Renderer> {
+fn table<'a>(_data: &Option<TableData>) -> Column<'a, Message, Renderer> {
     column![text("LOL")]
 }
