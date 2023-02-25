@@ -1,4 +1,4 @@
-use iced::widget::{button, column, container, radio, row, text, Column, Image};
+use iced::widget::{button, column, container, radio, row, text, Row, Image};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced::{executor, Renderer};
 use static_init::dynamic;
@@ -121,11 +121,13 @@ impl Application for App {
             Message::GetInfos => {
                 let fournisseur = self.radio_fournisseur.clone();
                 let task = async move { get_userinfos(fournisseur) };
+                self.en_traitement = true;
                 Command::perform(task, |i| Message::Infos(i))
             }
             Message::Infos((infos, erreur)) => {
                 self.infos = infos;
                 self.erreur = erreur;
+                self.en_traitement = false;
                 Command::none()
             }
         }
@@ -162,21 +164,32 @@ impl Application for App {
 
         let infos = column![
             text(&self.radio_fournisseur).size(36).style(Color::from([1.0, 0.5, 0.2])),
-            table(&self.infos)
+            infos_table(&self.infos)
         ]
         .spacing(10);
 
         let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
 
-        container(row![column![image, titre, fournisseur, bouton, erreur].spacing(10), infos.padding(50)])
+        container(row![column![image, titre, fournisseur, bouton, erreur].spacing(10), infos.padding([50., 0., 0., 50.])])
             .padding(20)
             .into()
     }
 }
 
-fn table<'a>(_data: &Option<TableData>) -> Column<'a, Message, Renderer> {
-    column![text("LOL"), text("LOL"), text("LOL"), text("LOL"), text("LOL")]
-}
+fn infos_table<'a>(data: &'a Option<TableData>) -> Row<'a, Message, Renderer> {
+    match data {
+        Some(data) => {
+            let mut c1 = column![data.header[0].as_ref()];
+            let mut c2 = column![data.header[1].as_ref()];
+            for row in &data.rows {
+                c1 = c1.push(row[0].as_ref());
+                c2 = c2.push(row[1].as_ref());
+            }
+            row![c1, c2]
+        },
+        _ => row![""]
+    }
+ }
 
 fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
     let token = TOKEN.read();
