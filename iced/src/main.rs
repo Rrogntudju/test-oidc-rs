@@ -1,9 +1,11 @@
-use iced::widget::{button, column, container, radio, row, text, Row, Image};
+use iced::widget::container::StyleSheet;
+use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced::{executor, Renderer};
 use static_init::dynamic;
 use std::fmt;
 use serde_json::value::Value;
+use iced::theme::Container;
 
 mod pkce;
 use pkce::Pkce;
@@ -162,34 +164,31 @@ impl Application for App {
             button("Userinfos")
         };
 
-        let infos = column![
-            text(&self.radio_fournisseur).size(36).style(Color::from([1.0, 0.5, 0.2])),
-            infos_table(&self.infos)
-        ]
-        .spacing(10);
+        let infos = match &self.infos {
+            Some(data) => {
+                column![
+                    text(format!("Userinfos {}", &self.radio_fournisseur)).size(24),
+                    {
+                        let mut c1 = column![data.header[0].as_ref()];
+                        let mut c2 = column![data.header[1].as_ref()];
+                        for row in &data.rows {
+                            c1 = c1.push(row[0].as_ref());
+                            c2 = c2.push(row[1].as_ref());
+                        }
+                        row![c1.spacing(10), c2.spacing(10)].spacing(10)
+                    }
+                ].spacing(10)
+            }
+            _ => column![""]
+        };
 
         let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
 
-        container(row![column![image, titre, fournisseur, bouton, erreur].spacing(10), infos.padding([50., 0., 0., 50.])])
+        container(row![column![image, titre, fournisseur, bouton, erreur].spacing(10), infos.padding([30., 0., 0., 30.])])
             .padding(20)
             .into()
     }
 }
-
-fn infos_table<'a>(data: &'a Option<TableData>) -> Row<'a, Message, Renderer> {
-    match data {
-        Some(data) => {
-            let mut c1 = column![data.header[0].as_ref()];
-            let mut c2 = column![data.header[1].as_ref()];
-            for row in &data.rows {
-                c1 = c1.push(row[0].as_ref());
-                c2 = c2.push(row[1].as_ref());
-            }
-            row![c1, c2]
-        },
-        _ => row![""]
-    }
- }
 
 fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
     let token = TOKEN.read();
