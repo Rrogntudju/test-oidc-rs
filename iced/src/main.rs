@@ -71,8 +71,6 @@ impl Fournisseur {
     }
 }
 
-
-
 fn main() -> iced::Result {
     App::run(Settings::default())
 }
