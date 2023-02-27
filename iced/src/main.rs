@@ -1,11 +1,9 @@
-use iced::widget::container::StyleSheet;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced::{executor, Renderer};
 use static_init::dynamic;
 use std::fmt;
 use serde_json::value::Value;
-use iced::theme::Container;
 
 mod pkce;
 use pkce::Pkce;
@@ -73,6 +71,8 @@ impl Fournisseur {
     }
 }
 
+
+
 fn main() -> iced::Result {
     App::run(Settings::default())
 }
@@ -138,7 +138,7 @@ impl Application for App {
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
         let image = Image::new("openid-icon-100x100.png");
 
-        let titre = text("OpenID Connect").size(48).style(Color::from([1.0, 0.5, 0.2]));
+        let titre = text("OpenID Connect").size(48).style(Color::from_rgb8(255, 165, 0));
 
         let fournisseur = column![
             text("Fournisseur:"),
@@ -164,18 +164,40 @@ impl Application for App {
             button("Userinfos")
         };
 
+        let f = |theme: &Theme| -> container::Appearance {
+            let mut bg_color = theme.palette().background;
+            let mut txt_color = theme.palette().text;
+            bg_color.invert();
+            txt_color.invert();
+
+            container::Appearance {
+                text_color: Some(txt_color),
+                background: Some(bg_color.into()),
+                ..Default::default()
+            }
+        };
+
         let infos = match &self.infos {
             Some(data) => {
+                let mut zèbre = false;
                 column![
                     text(format!("Userinfos {}", &self.radio_fournisseur)).size(24),
                     {
-                        let mut c1 = column![data.header[0].as_ref()];
-                        let mut c2 = column![data.header[1].as_ref()];
+                        let mut c1 = column![text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))];
+                        let mut c2 = column![text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))];
+                        let mut spacer = column!["    "];
                         for row in &data.rows {
                             c1 = c1.push(row[0].as_ref());
                             c2 = c2.push(row[1].as_ref());
+                            spacer = spacer.push("    ");
                         }
-                        row![c1.spacing(10), c2.spacing(10)].spacing(10)
+
+                        zèbre = !zèbre;
+                        if zèbre {
+                            container(row![c1.spacing(10), spacer.spacing(10), c2.spacing(10)]).style(f as for<'r> fn(&'r _) -> _)
+                        } else {
+                            container(row![c1.spacing(10), spacer.spacing(10), c2.spacing(10)])
+                        }
                     }
                 ].spacing(10)
             }
