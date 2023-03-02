@@ -9,9 +9,7 @@
     <body>
         <div class="w3-container w3-cell">
             <img src="https://openid.net/images/logo/openid-icon-100x100.png">
-            <div class="w3-panel w3-round w3-orange w3-text-white">
-                <h1><b>OpenID Connect</b></h1>
-            </div>
+            <h1>OpenID Connect</h1>
 
             <div class="w3-text-orange">
                 <h5><b>Fournisseur:</b></h5>
@@ -27,7 +25,7 @@
 
             <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos, enable: enableUserInfos">
                 <b>UserInfos</b>
-            </button>  
+            </button>
             <br><span class="w3-text-red" data-bind="text: erreurFetch"></span></br>
         </div>
 
@@ -47,7 +45,7 @@
                 </tbody>
             </table>
         </div>
-        
+
         <script>
             if (sessionStorage.length > 0) {
                 document.onreadystatechange = function () {
@@ -68,7 +66,7 @@
                 ]),
 
                 fournisseur: ko.observable("Microsoft"),
-                
+
                 clicFournisseur : function() {
                     this.propriétés.removeAll();
                     sessionStorage.setItem("fournisseur", this.fournisseur());
@@ -91,7 +89,7 @@
                         document.cookie
                         .split(';')
                         .find((item) => item.trim().startsWith('Csrf-Token='));
-                    
+
                     if (csrfCookie) {
                         headers.set('X-Csrf-Token', csrfCookie.split('=')[1])
                     }
@@ -126,7 +124,7 @@
                     });
                 }
             }
-            
+
             ko.applyBindings(userInfosViewModel);
 
             const fournisseur = sessionStorage.getItem("fournisseur");
