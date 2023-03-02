@@ -18,10 +18,10 @@ use pkce::Pkce;
 mod seticon;
 
 const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
-const ID_MS: &str = include_str!("../../secrets/clientid.microsoft");
-const SECRET_MS: &str = include_str!("../../secrets/secret.microsoft");
-const ID_GG: &str = include_str!("../../secrets/clientid.google");
-const SECRET_GG: &str = include_str!("../../secrets/secret.google");
+const ID_MS: &str = include_str!("../../../secrets/clientid.microsoft");
+const SECRET_MS: &str = include_str!("../../../secrets/secret.microsoft");
+const ID_GG: &str = include_str!("../../../secrets/clientid.google");
+const SECRET_GG: &str = include_str!("../../../secrets/secret.google");
 const AUTH_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
 const AUTH_GG: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
