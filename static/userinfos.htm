@@ -1,0 +1,138 @@
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <script src='knockout-3.5.1.js'></script>
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <link rel="icon" type="image/gif" href="https://openid.net/images/logo/openid-16x16.gif"/>
+    </head>
+
+    <body>
+        <div class="w3-container w3-cell">
+            <img src="https://openid.net/images/logo/openid-icon-100x100.png">
+            <h1>OpenID Connect</h1>
+
+            <div class="w3-text-orange">
+                <h5><b>Fournisseur:</b></h5>
+                <div>
+                    <input class="w3-radio" type="radio" name="fournisseurs" value="Microsoft" data-bind="checked: fournisseur, click: clicFournisseur" />
+                    <b>Microsoft</b>
+                </div>
+                <div>
+                    <input class="w3-radio" type="radio" name="fournisseurs" value="Google" data-bind="checked: fournisseur, click: clicFournisseur" />
+                    <b>Google</b>
+                </div>
+            </div>
+
+            <button class="w3-button w3-round w3-orange w3-hover-amber w3-margin-top" data-bind="click: getUserInfos, enable: enableUserInfos">
+                <b>UserInfos</b>
+            </button>
+            <br><span class="w3-text-red" data-bind="text: erreurFetch"></span></br>
+        </div>
+
+        <div class="w3-container w3-cell w3-animate-right" data-bind="visible: propriétés().length > 0">
+            <hr>
+            <h3><b>UserInfos</b> <span data-bind="text: fournisseur"></span></h3>
+
+            <table class="w3-table-all">
+                <thead>
+                    <tr class="w3-text-orange"><th>Propriété</th><th>Valeur</th></tr>
+                </thead>
+                <tbody data-bind="foreach: propriétés">
+                    <tr>
+                        <td data-bind="text: propriété"></td>
+                        <td data-bind="text: valeur"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <script>
+            if (sessionStorage.length > 0) {
+                document.onreadystatechange = function () {
+                    if (document.readyState === 'interactive') {
+                        userInfosViewModel.fournisseur(sessionStorage.getItem("fournisseur"));
+                        const actionAfterAuth = sessionStorage.getItem("actionAfterAuth");
+                        if (actionAfterAuth) {
+                            sessionStorage.removeItem("actionAfterAuth");
+                            userInfosViewModel[actionAfterAuth]();
+                        }
+                    }
+                }
+            }
+
+            const userInfosViewModel = {
+                propriétés: ko.observableArray( [
+                 // { propriété: 'name', valeur : 'LOL' },
+                ]),
+
+                fournisseur: ko.observable("Microsoft"),
+
+                clicFournisseur : function() {
+                    this.propriétés.removeAll();
+                    sessionStorage.setItem("fournisseur", this.fournisseur());
+                    return true;
+                },
+
+                enableUserInfos: ko.observable(true),
+
+                erreurFetch: ko.observable(""),
+
+                getUserInfos: function() {
+                    this.enableUserInfos(false);
+                    this.erreurFetch("");
+
+                    const headers = new Headers({
+                        'Content-Type': 'application/json',
+                    });
+
+                    const csrfCookie =
+                        document.cookie
+                        .split(';')
+                        .find((item) => item.trim().startsWith('Csrf-Token='));
+
+                    if (csrfCookie) {
+                        headers.set('X-Csrf-Token', csrfCookie.split('=')[1])
+                    }
+
+                    const request = new Request('/userinfos', {
+                        method: 'POST',
+                        headers: headers,
+                        cache: 'no-cache',
+                        redirect: 'error',
+                        body: '{ "fournisseur": "' + this.fournisseur() + '", "origine": "' + location.origin + '" }'
+                    });
+
+                    fetch(request)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.hasOwnProperty("redirectOP")) {
+                            sessionStorage.setItem("actionAfterAuth", "getUserInfos");
+                            window.location.replace(data.redirectOP);
+                        } else {
+                            this.propriétés.removeAll();
+                            for (const propriété of data) {
+                                this.propriétés.push(propriété)
+                            }
+                            this.enableUserInfos(true);
+                        }
+                    })
+                    .catch((error) => {
+                        console.log("Erreur Fetch: " + error);
+                        this.erreurFetch(error);
+                        this.propriétés.removeAll();
+                        this.enableUserInfos(true);
+                    });
+                }
+            }
+
+            ko.applyBindings(userInfosViewModel);
+
+            const fournisseur = sessionStorage.getItem("fournisseur");
+            if (fournisseur) {
+                userInfosViewModel.fournisseur(fournisseur);
+            } else {
+                sessionStorage.setItem("fournisseur", userInfosViewModel.fournisseur());
+            }
+        </script>
+    </body>
+</html>
