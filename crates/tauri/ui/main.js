@@ -1,10 +1,6 @@
 const { invoke } = window.__TAURI__.tauri;
 
-async function getUserinfos() {
-   greetMsgEl.textContent = await invoke("get_userinfos", { name: greetInputEl.value });
-}
-
-const userInfosViewModel = {
+  const userInfosViewModel = {
     propriétés: ko.observableArray( [
       // { propriété: 'name', valeur : 'LOL' },
     ]),
@@ -18,50 +14,20 @@ const userInfosViewModel = {
 
     enableUserInfos: ko.observable(true),
 
-    erreurFetch: ko.observable(""),
+    erreurInvoke: ko.observable(""),
 
     getUserInfos: async function() {
         this.enableUserInfos(false);
-        this.erreurFetch("");
+        this.erreurInvoke("");
 
-        const headers = new Headers({
-            'Content-Type': 'application/json',
-        });
-
-        const csrfCookie =
-            document.cookie
-            .split(';')
-            .find((item) => item.trim().startsWith('Csrf-Token='));
-
-        if (csrfCookie) {
-            headers.set('X-Csrf-Token', csrfCookie.split('=')[1])
-        }
-
-        const request = new Request('/userinfos', {
-            method: 'POST',
-            headers: headers,
-            cache: 'no-cache',
-            redirect: 'error',
-            body: '{ "fournisseur": "' + this.fournisseur() + '", "origine": "' + location.origin + '" }'
-        });
-
-        fetch(request)
-        .then(response => response.json())
-        .then(data => {
-            if (data.hasOwnProperty("redirectOP")) {
-                sessionStorage.setItem("actionAfterAuth", "getUserInfos");
-                window.location.replace(data.redirectOP);
-            } else {
-                this.propriétés.removeAll();
-                for (const propriété of data) {
-                    this.propriétés.push(propriété)
-                }
-                this.enableUserInfos(true);
-            }
+        await invoke("get_userinfos", { fournisseur: this.fournisseur })
+        .then((data) => {
+            this.propriétés.removeAll();
+            ko.utils.arrayPushAll(this.propriétés, data.propriétés);
         })
         .catch((error) => {
-            console.log("Erreur Fetch: " + error);
-            this.erreurFetch(error);
+            console.log("Erreur Invoke: " + error);
+            this.erreurInvoke(error);
             this.enableUserInfos(true);
         });
     }
