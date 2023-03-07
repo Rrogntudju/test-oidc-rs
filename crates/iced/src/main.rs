@@ -1,5 +1,5 @@
 use iced::widget::{button, column, container, radio, row, text, Image};
-use iced::{executor, Renderer, window};
+use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use serde_json::value::Value;
 use static_init::dynamic;
@@ -148,7 +148,7 @@ impl Application for App {
                         fournisseur,
                         Some(self.radio_fournisseur),
                         Message::FournisseurChanged
-                    ) )
+                    ))
                     .map(Element::from)
                     .collect()
             )
@@ -164,7 +164,9 @@ impl Application for App {
 
         let infos = match &self.infos {
             Some(data) => {
-                let r1 = text(format!("Userinfos {}", &self.radio_fournisseur)).size(24).style(Color::from_rgb8(255, 165, 0));
+                let r1 = text(format!("Userinfos {}", &self.radio_fournisseur))
+                    .size(24)
+                    .style(Color::from_rgb8(255, 165, 0));
                 let r2 = {
                     let mut c1 = column![text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))];
                     let mut c2 = column![text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))];
@@ -182,7 +184,7 @@ impl Application for App {
             _ => column![""],
         };
 
-       let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
+        let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
 
         container(row![
             column![image, titre, fournisseur, bouton, erreur].spacing(10),
