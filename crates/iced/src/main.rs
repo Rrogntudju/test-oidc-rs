@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
@@ -84,7 +85,8 @@ struct App {
 enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
-    Infos((Option<TableData>, Option<Pkce>, String)),
+    Secret(Result<Option<Pkce>, String>),
+    Infos(Result<Option<TableData>, String>),
 }
 
 impl Application for App {
@@ -119,15 +121,31 @@ impl Application for App {
             }
             Message::GetInfos => {
                 let fournisseur = self.radio_fournisseur.clone();
-                let pkce = self.secret.clone();
-                let task = async move { get_userinfos(fournisseur, pkce) };
+                let secret = self.secret.clone();
+                let task = async move { get_secret(fournisseur, secret) };
+                self.erreur = String::new();
+                self.infos = None;
                 self.en_traitement = true;
-                Command::perform(task, |i| Message::Infos(i))
+                Command::perform(task, |s| Message::Secret(s.map_err(|e| e.to_string())))
             }
-            Message::Infos((infos, secret, erreur)) => {
-                self.infos = infos;
-                self.secret = secret;
-                self.erreur = erreur;
+            Message::Secret(result) => match result {
+                Ok(secret) => {
+                    let fournisseur = self.radio_fournisseur.clone();
+                    self.secret = secret.clone();
+                    let task = async move { get_userinfos(fournisseur, secret) };
+                    Command::perform(task, |i| Message::Infos(i.map_err(|e| e.to_string())))
+                }
+                Err(e) => {
+                    self.erreur = e;
+                    self.en_traitement = false;
+                    Command::none()
+                }
+            },
+            Message::Infos(result) => {
+                match result {
+                    Ok(infos) => self.infos = infos,
+                    Err(erreur) => self.erreur = erreur,
+                }
                 self.en_traitement = false;
                 Command::none()
             }
@@ -196,38 +214,33 @@ impl Application for App {
     }
 }
 
-fn request_userinfos(f: &Fournisseur, secret: Option<Pkce>) -> Result<(Value, Option<Pkce>), anyhow::Error> {
+fn get_secret(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Option<Pkce>> {
     let secret = match secret {
-        Some(pkce) if pkce.is_expired() => Some(Pkce::new(f)?),
+        Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur)?),
         Some(pkce) => Some(pkce),
-        None => Some(Pkce::new(f)?),
+        None => Some(Pkce::new(&fournisseur)?),
     };
-
-    Ok((
-        ureq::get(f.userinfos())
-            .set("Authorization", &format!("Bearer {}", secret.as_ref().unwrap().secret()))
-            .call()?
-            .into_json::<Value>()?,
-        secret,
-    ))
+    Ok(secret)
 }
 
-fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> (Option<TableData>, Option<Pkce>, String) {
-    match request_userinfos(&fournisseur, secret) {
-        Ok((value, secret)) => match value {
-            Value::Object(map) => {
-                let infos = map
-                    .iter()
-                    .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
-                    .collect::<TableRows>();
-                let table = TableData {
-                    rows: infos.to_owned(),
-                    header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
-                };
-                (Some(table), secret, String::new())
-            }
-            _ => (None, secret, "La valeur doit être un map".to_owned()),
-        },
-        Err(e) => (None, None, e.to_string()),
+fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Option<TableData>> {
+    let value = ureq::get(fournisseur.userinfos())
+        .set("Authorization", &format!("Bearer {}", secret.unwrap().secret()))
+        .call()?
+        .into_json::<Value>()?;
+
+    match value {
+        Value::Object(map) => {
+            let infos = map
+                .iter()
+                .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
+                .collect::<TableRows>();
+            let table = TableData {
+                rows: infos.to_owned(),
+                header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
+            };
+            Ok(Some(table))
+        }
+        _ => Err(anyhow!("La valeur doit être un map")),
     }
 }
