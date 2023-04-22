@@ -135,8 +135,8 @@ impl Application for App {
                     let task = async move { get_userinfos(fournisseur, secret) };
                     Command::perform(task, |i| Message::Infos(i.map_err(|e| e.to_string())))
                 }
-                Err(e) => {
-                    self.erreur = e;
+                Err(erreur) => {
+                    self.erreur = erreur;
                     self.en_traitement = false;
                     Command::none()
                 }
