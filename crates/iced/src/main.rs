@@ -197,14 +197,10 @@ impl Application for App {
 }
 
 fn request_userinfos(f: &Fournisseur, secret: Option<Pkce>) -> Result<(Value, Option<Pkce>), anyhow::Error> {
-    let secret = if let Some(pkce) = secret {
-        if pkce.is_expired() {
-            Some(Pkce::new(f)?)
-        } else {
-            Some(pkce)
-        }
-    } else {
-        Some(Pkce::new(f)?)
+    let secret = match secret {
+        Some(pkce) if pkce.is_expired() => Some(Pkce::new(f)?),
+        Some(pkce) => Some(pkce),
+        None => Some(Pkce::new(f)?),
     };
 
     Ok((
