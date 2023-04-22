@@ -226,7 +226,7 @@ fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> (Option<Tabl
                 };
                 (Some(table), secret, String::new())
             }
-            _ => (None, None, "La valeur doit être un map".to_owned()),
+            _ => (None, secret, "La valeur doit être un map".to_owned()),
         },
         Err(e) => (None, None, e.to_string()),
     }
