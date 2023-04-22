@@ -2,7 +2,6 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use serde_json::value::Value;
-use static_init::dynamic;
 use std::fmt;
 
 mod pkce;
@@ -18,9 +17,6 @@ const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/
 const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
-
-#[dynamic]
-static mut TOKEN: Option<(Fournisseur, Pkce)> = None;
 
 type TableColumns = Vec<String>;
 type TableRows = Vec<TableColumns>;
@@ -78,6 +74,7 @@ fn main() -> iced::Result {
 #[derive(Debug)]
 struct App {
     radio_fournisseur: Fournisseur,
+    secret: Option<Pkce>,
     infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
@@ -87,7 +84,7 @@ struct App {
 enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
-    Infos((Option<TableData>, String)),
+    Infos((Option<TableData>, Option<Pkce>, String)),
 }
 
 impl Application for App {
@@ -100,6 +97,7 @@ impl Application for App {
         (
             Self {
                 radio_fournisseur: Fournisseur::Microsoft,
+                secret: None,
                 infos: None,
                 en_traitement: false,
                 erreur: String::new(),
@@ -116,16 +114,19 @@ impl Application for App {
         match message {
             Message::FournisseurChanged(fournisseur) => {
                 self.radio_fournisseur = fournisseur;
+                self.secret = None;
                 Command::none()
             }
             Message::GetInfos => {
                 let fournisseur = self.radio_fournisseur.clone();
-                let task = async move { get_userinfos(fournisseur) };
+                let pkce = self.secret.clone();
+                let task = async move { get_userinfos(fournisseur, pkce) };
                 self.en_traitement = true;
                 Command::perform(task, |i| Message::Infos(i))
             }
-            Message::Infos((infos, erreur)) => {
+            Message::Infos((infos, secret, erreur)) => {
                 self.infos = infos;
+                self.secret = secret;
                 self.erreur = erreur;
                 self.en_traitement = false;
                 Command::none()
@@ -195,28 +196,29 @@ impl Application for App {
     }
 }
 
-fn request_userinfos(f: &Fournisseur) -> Result<Value, anyhow::Error> {
-    let token = TOKEN.read();
-    if token.is_some() {
-        let (fournisseur, secret) = token.as_ref().unwrap();
-        if f != fournisseur || secret.is_expired() {
-            drop(token);
-            TOKEN.write().replace((f.to_owned(), Pkce::new(f)?));
+fn request_userinfos(f: &Fournisseur, secret: Option<Pkce>) -> Result<(Value, Option<Pkce>), anyhow::Error> {
+    let secret = if let Some(pkce) = secret {
+        if pkce.is_expired() {
+            Some(Pkce::new(f)?)
+        } else {
+            Some(pkce)
         }
     } else {
-        drop(token);
-        TOKEN.write().replace((f.to_owned(), Pkce::new(f)?));
-    }
+        Some(Pkce::new(f)?)
+    };
 
-    Ok(ureq::get(f.userinfos())
-        .set("Authorization", &format!("Bearer {}", TOKEN.read().as_ref().unwrap().1.secret()))
-        .call()?
-        .into_json::<Value>()?)
+    Ok((
+        ureq::get(f.userinfos())
+            .set("Authorization", &format!("Bearer {}", secret.as_ref().unwrap().secret()))
+            .call()?
+            .into_json::<Value>()?,
+        secret,
+    ))
 }
 
-fn get_userinfos(fournisseur: Fournisseur) -> (Option<TableData>, String) {
-    match request_userinfos(&fournisseur) {
-        Ok(value) => match value {
+fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> (Option<TableData>, Option<Pkce>, String) {
+    match request_userinfos(&fournisseur, secret) {
+        Ok((value, secret)) => match value {
             Value::Object(map) => {
                 let infos = map
                     .iter()
@@ -226,10 +228,10 @@ fn get_userinfos(fournisseur: Fournisseur) -> (Option<TableData>, String) {
                     rows: infos.to_owned(),
                     header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
                 };
-                (Some(table), String::new())
+                (Some(table), secret, String::new())
             }
-            _ => (None, "La valeur doit être un map".to_owned()),
+            _ => (None, None, "La valeur doit être un map".to_owned()),
         },
-        Err(e) => (None, e.to_string()),
+        Err(e) => (None, None, e.to_string()),
     }
 }
