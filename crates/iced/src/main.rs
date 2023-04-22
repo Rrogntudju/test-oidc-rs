@@ -124,7 +124,6 @@ impl Application for App {
                 let secret = self.secret.clone();
                 let task = async move { get_secret(fournisseur, secret) };
                 self.erreur = String::new();
-                self.infos = None;
                 self.en_traitement = true;
                 Command::perform(task, |s| Message::Secret(s.map_err(|e| e.to_string())))
             }
