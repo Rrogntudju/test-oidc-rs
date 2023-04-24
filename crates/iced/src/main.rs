@@ -166,7 +166,8 @@ impl Application for App {
                         fournisseur,
                         Some(self.radio_fournisseur),
                         Message::FournisseurChanged
-                    ))
+                    )
+                    .size(18))
                     .map(Element::from)
                     .collect()
             )
@@ -210,6 +211,10 @@ impl Application for App {
         ])
         .padding([10, 0, 0, 10])
         .into()
+    }
+
+    fn theme(&self) -> Self::Theme {
+        Theme::Dark
     }
 }
 
