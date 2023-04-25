@@ -74,7 +74,7 @@ fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let settings = Settings {
         window: window::Settings {
-            size: (1000,400),
+            size: (1000, 400),
             icon: Some(icon),
             ..Default::default()
         },
