@@ -19,7 +19,6 @@ const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/
 const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
-const ICON: &[u8; 41662] = include_bytes!("../icon.ico");
 
 type TableColumns = Vec<String>;
 type TableRows = Vec<TableColumns>;
@@ -71,7 +70,7 @@ impl Fournisseur {
 }
 
 fn main() -> iced::Result {
-    let icon = icon::from_file_data(ICON, None).unwrap();
+    let icon = icon::from_file("openid-icon-100x100.png").unwrap();
     let settings = Settings {
         window: window::Settings {
             size: (1000, 400),
