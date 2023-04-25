@@ -4,6 +4,7 @@ use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use serde_json::value::Value;
 use std::fmt;
+use window::icon;
 
 mod pkce;
 use pkce::Pkce;
@@ -18,6 +19,7 @@ const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/
 const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
+const ICON: &[u8; 41662] = include_bytes!("../icon.ico");
 
 type TableColumns = Vec<String>;
 type TableRows = Vec<TableColumns>;
@@ -69,7 +71,16 @@ impl Fournisseur {
 }
 
 fn main() -> iced::Result {
-    App::run(Settings::default())
+    let icon = icon::from_file_data(ICON, None).unwrap();
+    let settings = Settings {
+        window: window::Settings {
+            size: (1000,400),
+            icon: Some(icon),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    App::run(settings)
 }
 
 #[derive(Debug)]
@@ -104,7 +115,7 @@ impl Application for App {
                 en_traitement: false,
                 erreur: String::new(),
             },
-            window::resize(1000, 400),
+            Command::none(),
         )
     }
 
@@ -214,7 +225,9 @@ impl Application for App {
     }
 
     fn theme(&self) -> Self::Theme {
-        Theme::Dark
+        let mut palette = Theme::Dark.palette();
+        palette.primary = Color::from_rgb(255.0 as f32 / 255.0, 165 as f32 / 255.0, 0.0 as f32 / 255.0);
+        Theme::custom(palette)
     }
 }
 
