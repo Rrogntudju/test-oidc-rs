@@ -226,7 +226,7 @@ impl Application for App {
 
     fn theme(&self) -> Self::Theme {
         let mut palette = Theme::Dark.palette();
-        palette.primary = Color::from_rgb(255.0 as f32 / 255.0, 165 as f32 / 255.0, 0.0 as f32 / 255.0);
+        palette.primary = Color::from_rgb(255.0_f32 / 255.0, 165.0_f32 / 255.0, 0.0_f32);
         Theme::custom(palette)
     }
 }
