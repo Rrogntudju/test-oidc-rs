@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Renderer};
-use iced::{Application, Color, Command, Element, Settings, Theme};
+use iced::{Application, Color, Command, Element, Settings, Theme,Length};
 use serde_json::value::Value;
 use std::fmt;
 use window::icon;
@@ -196,19 +196,28 @@ impl Application for App {
                 let r1 = text(format!("Userinfos {}", &self.radio_fournisseur))
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
-                let r2 = {
-                    let mut c1 = column![text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))];
-                    let mut c2 = column![text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))];
+                // let r2 = {
+                //     let mut c1 = column![text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))];
+                //     let mut c2 = column![text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))];
 
-                    for row in &data.rows {
-                        c1 = c1.push(text(row[0].to_owned()).size(18));
-                        c2 = c2.push(text(row[1].to_owned()).size(18));
-                    }
+                //     for row in &data.rows {
+                //         c1 = c1.push(container(text(row[0].to_owned()).size(18)).width(Length::FillPortion(1)).style(iced::theme::Container::Box));
+                //         c2 = c2.push(container(text(row[1].to_owned()).size(18)).width(Length::FillPortion(5)).style(iced::theme::Container::Box));
+                //     }
 
-                    row![c1.spacing(5).padding([0, 10, 0, 0]), c2.spacing(5)]
-                };
-
-                column![r1, r2].spacing(10)
+                //     row![c1.spacing(5).padding([0, 10, 0, 0]), c2.spacing(5)]
+                // };
+                let r2 = row![container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(1)),
+                              container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(5))];
+                let r3 = row![container(text("blablablabla").size(18))
+                            .width(Length::FillPortion(1)).style(iced::theme::Container::Box),
+                                container(text("llkdJKJFADKLFKA ASDLFADSKFADSF SAFLDKLSDFSLDFLDLKLKFLALDSLFKDDLSKAL").size(18))
+                                .width(Length::FillPortion(5)).style(iced::theme::Container::Box)];
+                let r4 = row![container(text("blablablablaxxx").size(18))
+                            .width(Length::FillPortion(1)).style(iced::theme::Container::Box),
+                                container(text("llkdJKJADKLFKA ASDADSKFADSF SAFLDKLSDFSLDFLDLKDSLFKDDLSKAL").size(18))
+                                .width(Length::FillPortion(5)).style(iced::theme::Container::Box)];
+                column![r1, r2, r3, r4]
             }
             _ => column![""],
         };
