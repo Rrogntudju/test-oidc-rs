@@ -3,7 +3,7 @@ use iced::widget::{button, column, container, radio, row, text, Image, Space};
 use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Length, Settings, Theme};
 use serde_json::value::Value;
-use std::fmt;
+use std::{iter, fmt};
 use window::icon;
 
 mod pkce;
@@ -196,10 +196,14 @@ impl Application for App {
                 let titre = text(format!("Userinfos {}", &self.radio_fournisseur))
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
+
+                let width = columns_width(data);
+                
+
                 let entêtes = row![
-                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(1)),
-                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(6)),
-                    Space::with_width(5)
+                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(11)),
+                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(88)),
+                    Space::with_width(Length::FillPortion(1))
                 ];
                 let mut infos = column![];
                 let mut flip = false;
@@ -213,12 +217,12 @@ impl Application for App {
                 for row in &data.rows {
                     let info = row![
                         container(text(row[0].to_owned()).size(18))
-                            .width(Length::FillPortion(1))
+                            .width(Length::FillPortion(11))
                             .style(style(flip)),
                         container(text(row[1].to_owned()).size(18))
-                            .width(Length::FillPortion(6))
+                            .width(Length::FillPortion(88))
                             .style(style(flip)),
-                        Space::with_width(5)
+                        Space::with_width(Length::FillPortion(1))
                     ];
                     infos = infos.push(info);
                     flip = !flip;
@@ -274,4 +278,24 @@ fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Optio
         }
         _ => Err(anyhow!("La valeur doit être un map")),
     }
+}
+
+// Find out the maximum width (nb chars) of each column
+fn columns_width(data: &TableData) -> Vec<usize> {
+    let mut columns_width = Vec::new();
+    for j in 0_usize..2 {
+        let mut max_width = 0;
+
+        data.rows.iter().chain(iter::once(&data.header)).for_each(|row| {
+            if let Some(text) = row.get(j) {
+                let width = text.len();
+                if width > max_width {
+                    max_width = width;
+                }
+            }
+        });
+
+        columns_width.push(max_width);
+    }
+    columns_width
 }
