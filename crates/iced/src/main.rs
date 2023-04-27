@@ -198,13 +198,20 @@ impl Application for App {
                     .style(Color::from_rgb8(255, 165, 0));
 
                 let width = columns_width(data);
-                
+                let total = width[0] + width[1];
+                let vide = if total < 100 {
+                    100 - total
+                } else {
+                    1
+                };
+
 
                 let entêtes = row![
-                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(11)),
-                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(88)),
-                    Space::with_width(Length::FillPortion(1))
+                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(width[0])),
+                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(width[1])),
+                    Space::with_width(Length::FillPortion(vide))
                 ];
+
                 let mut infos = column![];
                 let mut flip = false;
                 let style = |flip| {
@@ -214,15 +221,16 @@ impl Application for App {
                         iced::theme::Container::default()
                     }
                 };
+                
                 for row in &data.rows {
                     let info = row![
                         container(text(row[0].to_owned()).size(18))
-                            .width(Length::FillPortion(11))
+                            .width(Length::FillPortion(width[0]))
                             .style(style(flip)),
                         container(text(row[1].to_owned()).size(18))
-                            .width(Length::FillPortion(88))
+                            .width(Length::FillPortion(width[1]))
                             .style(style(flip)),
-                        Space::with_width(Length::FillPortion(1))
+                        Space::with_width(Length::FillPortion(vide))
                     ];
                     infos = infos.push(info);
                     flip = !flip;
@@ -281,14 +289,14 @@ fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Optio
 }
 
 // Find out the maximum width (nb chars) of each column
-fn columns_width(data: &TableData) -> Vec<usize> {
+fn columns_width(data: &TableData) -> Vec<u16> {
     let mut columns_width = Vec::new();
     for j in 0_usize..2 {
-        let mut max_width = 0;
+        let mut max_width = 0_u16;
 
         data.rows.iter().chain(iter::once(&data.header)).for_each(|row| {
             if let Some(text) = row.get(j) {
-                let width = text.len();
+                let width = text.len() as u16;
                 if width > max_width {
                     max_width = width;
                 }
