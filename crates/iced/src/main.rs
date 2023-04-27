@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use iced::widget::{button, column, container, radio, row, text, Image};
+use iced::widget::{button, column, container, radio, row, text, Image, Space};
 use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme,Length};
 use serde_json::value::Value;
@@ -212,11 +212,13 @@ impl Application for App {
                 let r3 = row![container(text("blablablabla").size(18))
                             .width(Length::FillPortion(1)).style(iced::theme::Container::Box),
                                 container(text("llkdJKJFADKLFKA ASDLFADSKFADSF SAFLDKLSDFSLDFLDLKLKFLALDSLFKDDLSKAL").size(18))
-                                .width(Length::FillPortion(5)).style(iced::theme::Container::Box)];
+                                .width(Length::FillPortion(5)).style(iced::theme::Container::Box),
+                                Space::with_width(5)];
                 let r4 = row![container(text("blablablablaxxx").size(18))
-                            .width(Length::FillPortion(1)).style(iced::theme::Container::Box),
+                            .width(Length::FillPortion(5)).style(iced::theme::Container::Box),
                                 container(text("llkdJKJADKLFKA ASDADSKFADSF SAFLDKLSDFSLDFLDLKDSLFKDDLSKAL").size(18))
-                                .width(Length::FillPortion(5)).style(iced::theme::Container::Box)];
+                                .width(Length::FillPortion(25)).style(iced::theme::Container::Box),
+                                Space::with_width(Length::FillPortion(1))];
                 column![r1, r2, r3, r4]
             }
             _ => column![""],
