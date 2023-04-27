@@ -3,7 +3,7 @@ use iced::widget::{button, column, container, radio, row, text, Image, Space};
 use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Length, Settings, Theme};
 use serde_json::value::Value;
-use std::{iter, fmt};
+use std::{fmt, iter};
 use window::icon;
 
 mod pkce;
