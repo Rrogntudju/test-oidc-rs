@@ -198,17 +198,14 @@ impl Application for App {
                     .style(Color::from_rgb8(255, 165, 0));
 
                 let width = columns_width(data);
+                let c1 = if width[0] > 0 { width[0] } else { 1 };
+                let c2 = if width[1] > 0 { width[1] } else { 1 };
                 let total = width[0] + width[1];
-                let vide = if total < 100 {
-                    100 - total
-                } else {
-                    1
-                };
-
+                let vide = if total < 100 { 100 - total } else { 1 };
 
                 let entêtes = row![
-                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(width[0])),
-                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(width[1])),
+                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c1)),
+                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c2)),
                     Space::with_width(Length::FillPortion(vide))
                 ];
 
@@ -221,14 +218,14 @@ impl Application for App {
                         iced::theme::Container::default()
                     }
                 };
-                
+
                 for row in &data.rows {
                     let info = row![
                         container(text(row[0].to_owned()).size(18))
-                            .width(Length::FillPortion(width[0]))
+                            .width(Length::FillPortion(c1))
                             .style(style(flip)),
                         container(text(row[1].to_owned()).size(18))
-                            .width(Length::FillPortion(width[1]))
+                            .width(Length::FillPortion(c2))
                             .style(style(flip)),
                         Space::with_width(Length::FillPortion(vide))
                     ];
