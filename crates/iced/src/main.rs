@@ -3,7 +3,7 @@ use iced::widget::{button, column, container, radio, row, text, Image, Space};
 use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Length, Settings, Theme};
 use serde_json::value::Value;
-use std::fmt;
+use std::{fmt, iter};
 use window::icon;
 
 mod pkce;
@@ -197,13 +197,19 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                let width = data.rows.iter().fold(vec![0, data.rows.len()], |acc, row| {
-                    acc.iter()
-                        .zip(row.iter())
-                        .map(|(max, s)| if s.len() > *max { s.len() } else { *max })
-                        .collect()
-                });
-                
+                // Largeur maximum de chaque colonne de la table
+                let width = data
+                    .rows
+                    .iter()
+                    .chain(iter::once(&data.header))
+                    .fold(vec![0, data.header.len()], |acc, row| {
+                        acc.iter()
+                            .zip(row.iter())
+                            .map(|(max, s)| if s.len() > *max { s.len() } else { *max })
+                            .collect()
+                    });
+
+                // Calcul cabalistique
                 let c1 = if width[0] > 0 { width[0] } else { 1 };
                 let c2 = if width[1] > 0 { width[1] } else { 1 };
                 let total = width[0] + width[1];
