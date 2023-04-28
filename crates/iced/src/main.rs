@@ -3,7 +3,7 @@ use iced::widget::{button, column, container, radio, row, text, Image, Space};
 use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Length, Settings, Theme};
 use serde_json::value::Value;
-use std::{fmt, iter};
+use std::fmt;
 use window::icon;
 
 mod pkce;
@@ -197,18 +197,22 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                let max_len = data.rows.iter().fold(vec![0, data.rows.len()], |acc, row| {
-                    acc.iter().zip(row.iter()).map(|(max, s)| if s.len() > *max { s.len() }  else { *max }).collect()
+                let width = data.rows.iter().fold(vec![0, data.rows.len()], |acc, row| {
+                    acc.iter()
+                        .zip(row.iter())
+                        .map(|(max, s)| if s.len() > *max { s.len() } else { *max })
+                        .collect()
                 });
+                
                 let c1 = if width[0] > 0 { width[0] } else { 1 };
                 let c2 = if width[1] > 0 { width[1] } else { 1 };
                 let total = width[0] + width[1];
                 let vide = if total < 100 { 100 - total } else { 1 };
 
                 let entêtes = row![
-                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c1)),
-                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c2)),
-                    Space::with_width(Length::FillPortion(vide))
+                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c1 as u16)),
+                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c2 as u16)),
+                    Space::with_width(Length::FillPortion(vide as u16))
                 ];
 
                 let mut infos = column![];
@@ -224,12 +228,12 @@ impl Application for App {
                 for row in &data.rows {
                     let info = row![
                         container(text(row[0].to_owned()).size(18))
-                            .width(Length::FillPortion(c1))
+                            .width(Length::FillPortion(c1 as u16))
                             .style(style(flip)),
                         container(text(row[1].to_owned()).size(18))
-                            .width(Length::FillPortion(c2))
+                            .width(Length::FillPortion(c2 as u16))
                             .style(style(flip)),
-                        Space::with_width(Length::FillPortion(vide))
+                        Space::with_width(Length::FillPortion(vide as u16))
                     ];
                     infos = infos.push(info);
                     flip = !flip;
