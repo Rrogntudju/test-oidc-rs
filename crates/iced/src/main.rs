@@ -197,7 +197,9 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                let width = columns_width(data);
+                let max_len = data.rows.iter().fold(vec![0, data.rows.len()], |acc, row| {
+                    acc.iter().zip(row.iter()).map(|(max, s)| if s.len() > *max { s.len() }  else { *max }).collect()
+                });
                 let c1 = if width[0] > 0 { width[0] } else { 1 };
                 let c2 = if width[1] > 0 { width[1] } else { 1 };
                 let total = width[0] + width[1];
@@ -283,24 +285,4 @@ fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Optio
         }
         _ => Err(anyhow!("La valeur doit être un map")),
     }
-}
-
-// Find out the maximum width (nb chars) of each column
-fn columns_width(data: &TableData) -> Vec<u16> {
-    let mut columns_width = Vec::new();
-    for j in 0_usize..2 {
-        let mut max_width = 0_u16;
-
-        data.rows.iter().chain(iter::once(&data.header)).for_each(|row| {
-            if let Some(text) = row.get(j) {
-                let width = text.len() as u16;
-                if width > max_width {
-                    max_width = width;
-                }
-            }
-        });
-
-        columns_width.push(max_width);
-    }
-    columns_width
 }
