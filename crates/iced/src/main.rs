@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
-use iced::widget::{button, column, container, radio, row, text, Image, Space};
-use iced::{executor, window, Renderer};
-use iced::{Application, Color, Command, Element, Length, Settings, Theme};
+use iced::widget::{button, column, container, radio, row, text, Image};
+use iced::{executor, window, Font, Renderer};
+use iced::{Application, Color, Command, Element, Settings, Theme};
 use serde_json::value::Value;
 use std::{fmt, iter};
 use window::icon;
@@ -19,6 +19,7 @@ const TOKEN_MS: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/
 const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
+const MONO: &[u8; 111108] = include_bytes!("../lucon.ttf");
 
 type TableColumns = Vec<String>;
 type TableRows = Vec<TableColumns>;
@@ -89,6 +90,7 @@ struct App {
     infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
+    mono: Font,
 }
 
 #[derive(Debug, Clone)]
@@ -113,6 +115,10 @@ impl Application for App {
                 infos: None,
                 en_traitement: false,
                 erreur: String::new(),
+                mono: Font::External {
+                    name: "Lucida Console",
+                    bytes: MONO,
+                },
             },
             Command::none(),
         )
@@ -209,16 +215,19 @@ impl Application for App {
                             .collect()
                     });
 
-                // Calcul cabalistique
-                let c1 = if width[0] > 0 { width[0] } else { 1 };
-                let c2 = if width[1] > 0 { width[1] } else { 1 };
-                let total = width[0] + width[1];
-                let vide = if total < 100 { 100 - total } else { 1 };
+                let stretch = |s: &str, w| format!("{}{}", s, "".repeat(w - s.len()));
 
                 let entêtes = row![
-                    container(text(&data.header[0]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c1 as u16)),
-                    container(text(&data.header[1]).style(Color::from_rgb8(255, 165, 0))).width(Length::FillPortion(c2 as u16)),
-                    Space::with_width(Length::FillPortion(vide as u16))
+                    container(
+                        text(stretch(&data.header[0], width[0]))
+                            .style(Color::from_rgb8(255, 165, 0))
+                            .font(self.mono)
+                    ),
+                    container(
+                        text(stretch(&data.header[1], width[1]))
+                            .style(Color::from_rgb8(255, 165, 0))
+                            .font(self.mono)
+                    ),
                 ];
 
                 let mut infos = column![];
@@ -233,13 +242,8 @@ impl Application for App {
 
                 for row in &data.rows {
                     let info = row![
-                        container(text(row[0].to_owned()).size(18))
-                            .width(Length::FillPortion(c1 as u16))
-                            .style(style(flip)),
-                        container(text(row[1].to_owned()).size(18))
-                            .width(Length::FillPortion(c2 as u16))
-                            .style(style(flip)),
-                        Space::with_width(Length::FillPortion(vide as u16))
+                        container(text(stretch(&row[0], width[0])).size(18).font(self.mono)).style(style(flip)),
+                        container(text(stretch(&row[1], width[1])).size(18).font(self.mono)).style(style(flip)),
                     ];
                     infos = infos.push(info);
                     flip = !flip;
