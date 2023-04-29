@@ -95,11 +95,7 @@ mod handlers {
             Some(stoken) => {
                 let id: SessionId = stoken.into();
                 // MutexGuard n'est pas Send
-                let session = match sessions.read().expect("Failed due to poisoned lock").get(&id) {
-                    Some(session) => Some(session.clone()),
-                    None => None,
-                };
-
+                let session = sessions.read().expect("Failed due to poisoned lock").get(&id).cloned();
                 match session {
                     Some(session) => {
                         match session {
@@ -121,11 +117,11 @@ mod handlers {
                                 let map = userinfo.as_object().unwrap_or(&LOL_MAP);
                                 let infos = map
                                     .iter()
-                                    .filter_map(|(k, v)| {
+                                    .map(|(k, v)| {
                                         let mut map = serde_json::Map::new();
                                         map.insert("propriété".into(), Value::String(k.to_owned()));
                                         map.insert("valeur".into(), v.to_owned());
-                                        Some(Value::Object(map))
+                                        Value::Object(map)
                                     })
                                     .collect::<Vec<Value>>();
 

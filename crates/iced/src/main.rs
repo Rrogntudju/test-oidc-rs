@@ -136,7 +136,7 @@ impl Application for App {
                 Command::none()
             }
             Message::GetInfos => {
-                let fournisseur = self.radio_fournisseur.clone();
+                let fournisseur = self.radio_fournisseur;
                 let secret = self.secret.clone();
                 let task = async move { get_secret(fournisseur, secret) };
                 self.erreur = String::new();
@@ -145,7 +145,7 @@ impl Application for App {
             }
             Message::Secret(result) => match result {
                 Ok(secret) => {
-                    let fournisseur = self.radio_fournisseur.clone();
+                    let fournisseur = self.radio_fournisseur;
                     self.secret = secret.clone();
                     let task = async move { get_userinfos(fournisseur, secret) };
                     Command::perform(task, |i| Message::Infos(i.map_err(|e| e.to_string())))
@@ -215,7 +215,7 @@ impl Application for App {
                             .collect()
                     });
 
-                let stretch = |s: &str, w| format!("{}{}", s, "".repeat(w - s.len()));
+                let stretch = |s: &str, w| format!("{}{}", s, " ".repeat(w - s.len()));
 
                 let entêtes = row![
                     container(
@@ -292,7 +292,7 @@ fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Optio
                 .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
                 .collect::<TableRows>();
             let table = TableData {
-                rows: infos.to_owned(),
+                rows: infos,
                 header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
             };
             Ok(Some(table))
