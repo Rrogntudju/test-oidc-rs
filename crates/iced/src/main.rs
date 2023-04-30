@@ -74,7 +74,7 @@ fn main() -> iced::Result {
     let icon = icon::from_file("openid-icon-100x100.png").unwrap();
     let settings = Settings {
         window: window::Settings {
-            size: (1000, 400),
+            size: (950, 400),
             icon: Some(icon),
             ..Default::default()
         },
@@ -203,32 +203,41 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                // Largeur maximum de chaque colonne de la table
-                let width = data
+                let count = data
                     .rows
                     .iter()
                     .chain(iter::once(&data.header))
                     .fold(vec![0, data.header.len()], |acc, row| {
                         acc.iter()
                             .zip(row.iter())
-                            .map(|(max, s)| if s.len() > *max { s.len() } else { *max })
+                            .map(|(max, s)| {
+                                let count = s.chars().count();
+                                if count > *max {
+                                    count
+                                } else {
+                                    *max
+                                }
+                            })
                             .collect()
                     });
 
-                let stretch = |s: &str, w| format!("{}{}", s, " ".repeat(w - s.len()));
+                let stretch = |s: &str, w| format!("{}{}", s, " ".repeat(w - s.chars().count()));
 
                 let entêtes = row![
                     container(
-                        text(stretch(&data.header[0], width[0]))
+                        text(stretch(&data.header[0], count[0] + 1))
                             .style(Color::from_rgb8(255, 165, 0))
                             .font(self.mono)
+                            .size(12)
                     ),
                     container(
-                        text(stretch(&data.header[1], width[1]))
+                        text(stretch(&data.header[1], count[1]))
                             .style(Color::from_rgb8(255, 165, 0))
                             .font(self.mono)
+                            .size(12)
                     ),
-                ];
+                ]
+                .padding([5, 0, 5, 0]);
 
                 let mut infos = column![];
                 let mut flip = false;
@@ -242,9 +251,10 @@ impl Application for App {
 
                 for row in &data.rows {
                     let info = row![
-                        container(text(stretch(&row[0], width[0])).size(18).font(self.mono)).style(style(flip)),
-                        container(text(stretch(&row[1], width[1])).size(18).font(self.mono)).style(style(flip)),
-                    ];
+                        container(text(stretch(&row[0], count[0] + 1)).size(12).font(self.mono)).style(style(flip)),
+                        container(text(stretch(&row[1], count[1])).size(12).font(self.mono)).style(style(flip)),
+                    ]
+                    .padding([5, 0, 0, 0]);
                     infos = infos.push(info);
                     flip = !flip;
                 }
