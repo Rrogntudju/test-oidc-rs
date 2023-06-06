@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use druid::im::Vector;
 use druid::widget::{Button, CrossAxisAlignment, Either, Flex, Image, Label, MainAxisAlignment, RadioGroup, Spinner};
 use druid::{

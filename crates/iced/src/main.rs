@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Font, Renderer};
