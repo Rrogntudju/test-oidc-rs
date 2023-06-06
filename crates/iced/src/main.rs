@@ -1,5 +1,6 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
+use iced::theme::Container;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Font, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
@@ -222,18 +223,14 @@ impl Application for App {
                             .collect()
                     });
 
-                let stretch = |s: &str, w| format!("{}{}", s, " ".repeat(w - s.chars().count()));
-
                 let entêtes = row![
                     container(
                         text(stretch(&data.header[0], count[0] + 1))
-                            .style(Color::from_rgb8(255, 165, 0))
                             .font(self.mono)
                             .size(12)
                     ),
                     container(
                         text(stretch(&data.header[1], count[1]))
-                            .style(Color::from_rgb8(255, 165, 0))
                             .font(self.mono)
                             .size(12)
                     ),
@@ -242,13 +239,6 @@ impl Application for App {
 
                 let mut infos = column![];
                 let mut flip = false;
-                let style = |flip| {
-                    if flip {
-                        iced::theme::Container::Box
-                    } else {
-                        iced::theme::Container::default()
-                    }
-                };
 
                 for row in &data.rows {
                     let info = row![
@@ -309,5 +299,17 @@ fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Optio
             Ok(Some(table))
         }
         _ => Err(anyhow!("La valeur doit être un map")),
+    }
+}
+
+fn stretch(s: &str, w: usize) -> String {
+     format!("{}{}", s, " ".repeat(w - s.chars().count()))
+}
+
+fn style(flip: bool) -> iced::theme::Container {
+    if flip {
+        Container::Box
+    } else {
+        Container::default()
     }
 }
