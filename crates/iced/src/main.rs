@@ -226,16 +226,8 @@ impl Application for App {
                     });
 
                 let entêtes = row![
-                    container(
-                        text(stretch(&data.header[0], count[0] + 1))
-                            .font(self.mono)
-                            .size(12)
-                    ),
-                    container(
-                        text(stretch(&data.header[1], count[1]))
-                            .font(self.mono)
-                            .size(12)
-                    ),
+                    container(text(stretch(&data.header[0], count[0] + 1)).font(self.mono).size(12)),
+                    container(text(stretch(&data.header[1], count[1])).font(self.mono).size(12)),
                 ]
                 .padding([5, 0, 5, 0]);
 
@@ -267,11 +259,7 @@ impl Application for App {
     }
 
     fn theme(&self) -> Self::Theme {
-        let mut palette = if self.dark_mode {
-            Theme::Dark.palette()
-        } else {
-            Theme::Light.palette()
-        };
+        let mut palette = if self.dark_mode { Theme::Dark.palette() } else { Theme::Light.palette() };
         palette.primary = Color::from_rgb(255.0_f32 / 255.0, 165.0_f32 / 255.0, 0.0_f32);
         Theme::custom(palette)
     }
@@ -309,7 +297,7 @@ fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Optio
 }
 
 fn stretch(s: &str, w: usize) -> String {
-     format!("{}{}", s, " ".repeat(w - s.chars().count()))
+    format!("{}{}", s, " ".repeat(w - s.chars().count()))
 }
 
 fn style(flip: bool) -> iced::theme::Container {
