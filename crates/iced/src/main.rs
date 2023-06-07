@@ -92,6 +92,7 @@ struct App {
     infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
+    dark_mode: bool,
     mono: Font,
 }
 
@@ -117,6 +118,7 @@ impl Application for App {
                 infos: None,
                 en_traitement: false,
                 erreur: String::new(),
+                dark_mode: false,
                 mono: Font::External {
                     name: "Lucida Console",
                     bytes: MONO,
@@ -265,7 +267,11 @@ impl Application for App {
     }
 
     fn theme(&self) -> Self::Theme {
-        let mut palette = Theme::Dark.palette();
+        let mut palette = if self.dark_mode {
+            Theme::Dark.palette()
+        } else {
+            Theme::Light.palette()
+        };
         palette.primary = Color::from_rgb(255.0_f32 / 255.0, 165.0_f32 / 255.0, 0.0_f32);
         Theme::custom(palette)
     }
