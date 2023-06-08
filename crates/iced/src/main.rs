@@ -5,7 +5,7 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Font, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced_native::command::Action;
-use iced_native::window::Action as Act;
+use iced_native::window::Action as WAction;
 use serde_json::value::Value;
 use std::{fmt, iter};
 use window::icon;
@@ -154,7 +154,7 @@ impl Application for App {
                     Err(erreur) => self.erreur = erreur,
                 }
                 self.en_traitement = false;
-                Command::single(Action::Window(Act::GainFocus))
+                Command::single(Action::Window(WAction::GainFocus))
             }
         }
     }
