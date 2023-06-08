@@ -102,7 +102,7 @@ struct App {
 enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
-    Infos(Result<Option<TableData>, String>),
+    Infos(Result<(Option<TableData>, Option<Pkce>), String>),
 }
 
 impl Application for App {
@@ -146,11 +146,14 @@ impl Application for App {
                 let task = async move { get_infos(fournisseur, secret) };
                 self.erreur = String::new();
                 self.en_traitement = true;
-                Command::perform(task, |s| Message::Infos(s.map_err(|e| format!("{e:#}"))))
+                Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
             }
             Message::Infos(result) => {
                 match result {
-                    Ok(infos) => self.infos = infos,
+                    Ok(infos) => {
+                        self.infos = infos.0;
+                        self.secret = infos.1;
+                    }
                     Err(erreur) => self.erreur = erreur,
                 }
                 self.en_traitement = false;
@@ -253,14 +256,14 @@ impl Application for App {
     }
 }
 
-fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Option<TableData>> {
+fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
     let secret = match secret {
         Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur)?),
         Some(pkce) => Some(pkce),
         None => Some(Pkce::new(&fournisseur)?),
     };
     let value = ureq::get(fournisseur.userinfos())
-        .set("Authorization", &format!("Bearer {}", secret.unwrap().secret()))
+        .set("Authorization", &format!("Bearer {}", secret.clone().unwrap().secret()))
         .call()?
         .into_json::<Value>()?;
 
@@ -274,7 +277,7 @@ fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Option<Ta
                 rows: infos,
                 header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
             };
-            Ok(Some(table))
+            Ok((Some(table), secret))
         }
         _ => Err(anyhow!("La valeur doit être un map")),
     }
