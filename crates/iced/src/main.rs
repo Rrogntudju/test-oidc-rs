@@ -100,7 +100,6 @@ struct App {
 enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
-    Secret(Result<Option<Pkce>, String>),
     Infos(Result<Option<TableData>, String>),
 }
 
@@ -142,24 +141,11 @@ impl Application for App {
             Message::GetInfos => {
                 let fournisseur = self.radio_fournisseur;
                 let secret = self.secret.clone();
-                let task = async move { get_secret(fournisseur, secret) };
+                let task = async move { get_infos(fournisseur, secret) };
                 self.erreur = String::new();
                 self.en_traitement = true;
-                Command::perform(task, |s| Message::Secret(s.map_err(|e| format!("{e:#}"))))
+                Command::perform(task, |s| Message::Infos(s.map_err(|e| format!("{e:#}"))))
             }
-            Message::Secret(result) => match result {
-                Ok(secret) => {
-                    let fournisseur = self.radio_fournisseur;
-                    self.secret = secret.clone();
-                    let task = async move { get_userinfos(fournisseur, secret) };
-                    Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
-                }
-                Err(erreur) => {
-                    self.erreur = erreur;
-                    self.en_traitement = false;
-                    Command::none()
-                }
-            },
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => self.infos = infos,
@@ -265,16 +251,12 @@ impl Application for App {
     }
 }
 
-fn get_secret(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Option<Pkce>> {
+fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Option<TableData>> {
     let secret = match secret {
         Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur)?),
         Some(pkce) => Some(pkce),
         None => Some(Pkce::new(&fournisseur)?),
     };
-    Ok(secret)
-}
-
-fn get_userinfos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<Option<TableData>> {
     let value = ureq::get(fournisseur.userinfos())
         .set("Authorization", &format!("Bearer {}", secret.unwrap().secret()))
         .call()?
