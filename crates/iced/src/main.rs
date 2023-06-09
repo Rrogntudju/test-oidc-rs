@@ -150,10 +150,7 @@ impl Application for App {
             }
             Message::Infos(result) => {
                 match result {
-                    Ok(infos) => {
-                        self.infos = infos.0;
-                        self.secret = infos.1;
-                    }
+                    Ok(infos) => (self.infos, self.secret) = infos,
                     Err(erreur) => self.erreur = erreur,
                 }
                 self.en_traitement = false;
