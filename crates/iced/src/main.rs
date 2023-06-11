@@ -5,13 +5,17 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Font, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced_native::command::Action;
+use iced_native::Subscription;
 use iced_native::window::Action as WAction;
+use mode_couleur::{ModeCouleur, stream_event_mode_couleur};
 use serde_json::value::Value;
 use std::{fmt, iter};
 use window::icon;
 
 mod pkce;
 use pkce::Pkce;
+
+mod mode_couleur;
 
 const ID_MS: &str = include_str!("../../../secrets/clientid.microsoft");
 const SECRET_MS: &str = include_str!("../../../secrets/secret.microsoft");
@@ -103,6 +107,7 @@ enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
     Infos(Result<(Option<TableData>, Option<Pkce>), String>),
+    ModeCouleurChanged(ModeCouleur)
 }
 
 impl Application for App {
@@ -250,6 +255,10 @@ impl Application for App {
         let mut palette = if self.dark_mode { Theme::Dark.palette() } else { Theme::Light.palette() };
         palette.primary = Color::from_rgb(255.0_f32 / 255.0, 165.0_f32 / 255.0, 0.0_f32);
         Theme::custom(palette)
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        stream_event_mode_couleur().map(Message::ModeCouleurChanged)
     }
 }
 
