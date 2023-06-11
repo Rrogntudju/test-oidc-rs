@@ -5,9 +5,9 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Font, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced_native::command::Action;
-use iced_native::Subscription;
 use iced_native::window::Action as WAction;
-use mode_couleur::{ModeCouleur, stream_event_mode_couleur};
+use iced_native::Subscription;
+use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::{fmt, iter};
 use window::icon;
@@ -98,7 +98,7 @@ struct App {
     infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
-    dark_mode: bool,
+    mode: ModeCouleur,
     mono: Font,
 }
 
@@ -107,7 +107,7 @@ enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
     Infos(Result<(Option<TableData>, Option<Pkce>), String>),
-    ModeCouleurChanged(ModeCouleur)
+    ModeCouleurChanged(ModeCouleur),
 }
 
 impl Application for App {
@@ -124,7 +124,7 @@ impl Application for App {
                 infos: None,
                 en_traitement: false,
                 erreur: String::new(),
-                dark_mode: false,
+                mode: ModeCouleur::Claire,
                 mono: Font::External {
                     name: "Lucida Console",
                     bytes: MONO,
@@ -160,6 +160,10 @@ impl Application for App {
                 }
                 self.en_traitement = false;
                 Command::single(Action::Window(WAction::GainFocus))
+            }
+            Message::ModeCouleurChanged(mode) => {
+                self.mode = mode;
+                Command::none()
             }
         }
     }
@@ -252,7 +256,10 @@ impl Application for App {
     }
 
     fn theme(&self) -> Self::Theme {
-        let mut palette = if self.dark_mode { Theme::Dark.palette() } else { Theme::Light.palette() };
+        let mut palette = match self.mode {
+            ModeCouleur::Sombre => Theme::Dark.palette(),
+            ModeCouleur::Claire => Theme::Light.palette(),
+        };
         palette.primary = Color::from_rgb(255.0_f32 / 255.0, 165.0_f32 / 255.0, 0.0_f32);
         Theme::custom(palette)
     }

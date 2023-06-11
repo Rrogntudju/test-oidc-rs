@@ -3,7 +3,7 @@ use iced_native::Subscription;
 #[derive(Debug, Clone)]
 pub enum ModeCouleur {
     Claire,
-    Sombre
+    Sombre,
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<ModeCouleur> {
