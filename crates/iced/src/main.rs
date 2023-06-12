@@ -7,7 +7,7 @@ use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced_native::command::Action;
 use iced_native::window::Action as WAction;
 use iced_native::Subscription;
-use mode_couleur::{stream_event_mode_couleur, ModeCouleur, mode_couleur};
+use mode_couleur::{mode_couleur, stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::{fmt, iter};
 use window::icon;
