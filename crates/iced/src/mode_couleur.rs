@@ -2,9 +2,11 @@ use anyhow::{Result, Context};
 use iced_native::Subscription;
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::UI::ViewManagement::{UIColorType, UISettings};
+use tokio::sync::oneshot::{self, Sender};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum ModeCouleur {
+    #[default]
     Clair,
     Sombre,
 }
@@ -15,10 +17,12 @@ struct EventModeCouleur {
 }
 
 impl EventModeCouleur {
-    fn new() -> Result<Self> {
-        let settings = UISettings::new().context("Iniatialisation UISettings")?;
+    fn new(sender: Sender<ModeCouleur>) -> Result<Self> {
+        let settings = UISettings::new().context("Initialisation UISettings")?;
         let token = settings.ColorValuesChanged(&TypedEventHandler::new(move |settings, _| {
-             Ok(())
+            let couleur = mode_couleur().unwrap_or_default();
+            sender.send(couleur).unwrap_or_default();
+            Ok(())
         })).context("Initialisation ColorValuesChanged")?;
         Ok(Self { settings, token })
     }
@@ -45,5 +49,7 @@ pub fn mode_couleur() -> Result<ModeCouleur> {
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<ModeCouleur> {
+    let (sender, receiver) = oneshot::channel::<ModeCouleur>();
+    let revoker = EventModeCouleur::new(sender).
     Subscription::none()
 }

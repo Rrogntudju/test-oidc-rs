@@ -119,7 +119,7 @@ impl Application for App {
     fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
         let (mode, erreur) = match mode_couleur() {
             Ok(mode) => (mode, String::new()),
-            Err(e) => (ModeCouleur::Clair, e.to_string())
+            Err(e) => (ModeCouleur::Clair, format!("{e:#}"))
         };
         (
             Self {
@@ -262,7 +262,7 @@ impl Application for App {
     fn theme(&self) -> Self::Theme {
         let mut palette = match self.mode {
             ModeCouleur::Sombre => Theme::Dark.palette(),
-            ModeCouleur::Claire => Theme::Light.palette(),
+            ModeCouleur::Clair => Theme::Light.palette(),
         };
         palette.primary = Color::from_rgb(255.0_f32 / 255.0, 165.0_f32 / 255.0, 0.0_f32);
         Theme::custom(palette)
