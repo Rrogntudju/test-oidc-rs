@@ -10,23 +10,21 @@ pub enum ModeCouleur {
 }
 
 struct EventModeCouleur {
-    token: EventRegistrationToken,
     settings: UISettings,
+    token: EventRegistrationToken,
 }
 
 impl EventModeCouleur {
     fn new() -> Self {
         let settings = UISettings::new().unwrap();
-        let f = |settings, _| Ok(());
-        let handler = TypedEventHandler::new(f);
-        let token = settings.ColorValuesChanged(&handler).unwrap();
-        Self { token, settings }
+        let token = settings.ColorValuesChanged(&TypedEventHandler::new(move |settings, _| Ok(()))).unwrap();
+        Self { settings, token }
     }
 }
 
 impl Drop for EventModeCouleur {
     fn drop(&mut self) {
-        self.settings.RemoveColorValuesChanged(self.token);
+        self.settings.RemoveColorValuesChanged(self.token).unwrap();
     }
 }
 
@@ -42,10 +40,6 @@ pub fn mode_couleur() -> Result<ModeCouleur> {
     } else {
         ModeCouleur::Sombre
     })
-}
-
-fn event_mod_couleur() -> Result<EventRegistrationToken> {
-    let settings = UISettings::new();
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<ModeCouleur> {
