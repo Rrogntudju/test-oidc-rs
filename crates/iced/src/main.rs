@@ -117,14 +117,18 @@ impl Application for App {
     type Theme = Theme;
 
     fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
+        let (mode, erreur) = match mode_couleur() {
+            Ok(mode) => (mode, String::new()),
+            Err(e) => (ModeCouleur::Clair, e.to_string())
+        };
         (
             Self {
                 radio_fournisseur: Fournisseur::Microsoft,
                 secret: None,
                 infos: None,
                 en_traitement: false,
-                erreur: String::new(),
-                mode: mode_couleur().unwrap(),
+                erreur,
+                mode,
                 mono: Font::External {
                     name: "Lucida Console",
                     bytes: MONO,
