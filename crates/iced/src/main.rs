@@ -119,7 +119,7 @@ impl Application for App {
     fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
         let (mode, erreur) = match mode_couleur() {
             Ok(mode) => (mode, String::new()),
-            Err(e) => (ModeCouleur::Clair, format!("{e:#}"))
+            Err(e) => (ModeCouleur::Clair, format!("{e:#}")),
         };
         (
             Self {

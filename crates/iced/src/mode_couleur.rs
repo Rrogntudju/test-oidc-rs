@@ -1,8 +1,8 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use iced_native::Subscription;
+use std::sync::mpsc::{self, Sender};
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::UI::ViewManagement::{UIColorType, UISettings};
-use tokio::sync::oneshot::{self, Sender};
 
 #[derive(Debug, Clone, Default)]
 pub enum ModeCouleur {
@@ -17,14 +17,15 @@ struct EventModeCouleur {
 }
 
 impl EventModeCouleur {
-    fn new(sender: Sender<ModeCouleur>) -> Result<Self> {
+    fn new(sender: Sender<Result<ModeCouleur>>) -> Result<Self> {
         let settings = UISettings::new().context("Initialisation UISettings")?;
-        let token = settings.ColorValuesChanged(&TypedEventHandler::new(move |settings: &Option<UISettings>, _| {
-            let settings: &UISettings = settings.as_ref().unwrap();
-            let mode = mode_couleur_(settings).unwrap_or_default();
-            sender.send(mode).unwrap_or_default();
-            Ok(())
-        })).context("Initialisation ColorValuesChanged")?;
+        let token = settings
+            .ColorValuesChanged(&TypedEventHandler::new(move |settings: &Option<UISettings>, _| {
+                let settings: &UISettings = settings.as_ref().unwrap();
+                sender.send(mode_couleur_(settings)).unwrap_or_default();
+                Ok(())
+            }))
+            .context("Initialisation ColorValuesChanged")?;
         Ok(Self { settings, token })
     }
 }
@@ -50,12 +51,18 @@ fn mode_couleur_(settings: &UISettings) -> Result<ModeCouleur> {
 }
 
 pub fn mode_couleur() -> Result<ModeCouleur> {
-    let settings = &UISettings::new()?;
+    let settings = &UISettings::new().context("Initialisation UISettings")?;
     mode_couleur_(settings)
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<ModeCouleur> {
-    let (sender, receiver) = oneshot::channel::<ModeCouleur>();
-    let revoker = EventModeCouleur::new(sender).
+    let (sender, receiver) = mpsc::channel::<Result<ModeCouleur>>();
+    let revoker = match EventModeCouleur::new(sender) {
+        Ok(revoker) => revoker,
+        Err(e) => {
+            eprintln!("{e:#}");
+            return Subscription::none()
+        }
+    };
     Subscription::none()
 }
