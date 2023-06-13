@@ -19,9 +19,10 @@ struct EventModeCouleur {
 impl EventModeCouleur {
     fn new(sender: Sender<ModeCouleur>) -> Result<Self> {
         let settings = UISettings::new().context("Initialisation UISettings")?;
-        let token = settings.ColorValuesChanged(&TypedEventHandler::new(move |settings, _| {
-            let couleur = mode_couleur().unwrap_or_default();
-            sender.send(couleur).unwrap_or_default();
+        let token = settings.ColorValuesChanged(&TypedEventHandler::new(move |settings: &Option<UISettings>, _| {
+            let settings: &UISettings = settings.as_ref().unwrap();
+            let mode = mode_couleur_(settings).unwrap_or_default();
+            sender.send(mode).unwrap_or_default();
             Ok(())
         })).context("Initialisation ColorValuesChanged")?;
         Ok(Self { settings, token })
@@ -39,13 +40,18 @@ fn is_color_light(clr: &windows::UI::Color) -> bool {
     ((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128)
 }
 
-pub fn mode_couleur() -> Result<ModeCouleur> {
-    let couleur = UISettings::new()?.GetColorValue(UIColorType::Foreground)?;
+fn mode_couleur_(settings: &UISettings) -> Result<ModeCouleur> {
+    let couleur = settings.GetColorValue(UIColorType::Foreground)?;
     Ok(if is_color_light(&couleur) {
         ModeCouleur::Clair
     } else {
         ModeCouleur::Sombre
     })
+}
+
+pub fn mode_couleur() -> Result<ModeCouleur> {
+    let settings = &UISettings::new()?;
+    mode_couleur_(settings)
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<ModeCouleur> {
