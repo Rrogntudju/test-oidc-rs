@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use iced_native::Subscription;
+use iced_native::{Subscription, subscription};
 use std::sync::mpsc::{self, Sender};
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::UI::ViewManagement::{UIColorType, UISettings};
@@ -55,7 +55,7 @@ pub fn mode_couleur() -> Result<ModeCouleur> {
     mode_couleur_(settings)
 }
 
-pub fn stream_event_mode_couleur() -> Subscription<ModeCouleur> {
+pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
     let (sender, receiver) = mpsc::channel::<Result<ModeCouleur>>();
     let revoker = match EventModeCouleur::new(sender) {
         Ok(revoker) => revoker,
@@ -64,5 +64,12 @@ pub fn stream_event_mode_couleur() -> Subscription<ModeCouleur> {
             return Subscription::none()
         }
     };
-    Subscription::none()
+
+    struct EventModeCouleurId;
+
+    subscription::unfold(std::any::TypeId::of::<EventModeCouleurId>(),
+        (receiver, revoker),
+        |state| async {
+
+        })
 }

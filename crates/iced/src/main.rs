@@ -107,7 +107,7 @@ enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
     Infos(Result<(Option<TableData>, Option<Pkce>), String>),
-    ModeCouleurChanged(ModeCouleur),
+    ModeCouleurChanged(Result<ModeCouleur, String>),
 }
 
 impl Application for App {
@@ -160,13 +160,16 @@ impl Application for App {
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => (self.infos, self.secret) = infos,
-                    Err(erreur) => self.erreur = erreur,
+                    Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
                 Command::single(Action::Window(WAction::GainFocus))
             }
             Message::ModeCouleurChanged(mode) => {
-                self.mode = mode;
+                match mode {
+                    Ok(mode) => self.mode = mode,
+                    Err(e) => self.erreur = e
+                }
                 Command::none()
             }
         }
