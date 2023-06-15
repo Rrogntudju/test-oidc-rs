@@ -5,9 +5,8 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::UI::ViewManagement::{UIColorType, UISettings};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub enum ModeCouleur {
-    #[default]
     Clair,
     Sombre,
 }
