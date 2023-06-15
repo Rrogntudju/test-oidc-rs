@@ -33,7 +33,7 @@ impl EventModeCouleur {
 
 impl Drop for EventModeCouleur {
     fn drop(&mut self) {
-        self.settings.RemoveColorValuesChanged(self.token).unwrap_or_default();
+        let _ = self.settings.RemoveColorValuesChanged(self.token);
     }
 }
 
