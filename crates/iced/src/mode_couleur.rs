@@ -38,15 +38,16 @@ impl Drop for EventModeCouleur {
 
 #[inline]
 fn is_color_light(clr: &windows::UI::Color) -> bool {
-    ((5 * clr.G) + (2 * clr.R) + clr.B) as u16 > (8 * 128)
+   (0.299 * clr.R as f32 + 0.587 * clr.G as f32 + 0.114 * clr.B as f32) > 128.0 // https://www.w3.org/TR/AERT/#color-contrast
 }
 
+// https://learn.microsoft.com/fr-fr/windows/apps/desktop/modernize/apply-windows-themes
 fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
     let couleur = settings.GetColorValue(UIColorType::Foreground)?;
     Ok(if is_color_light(&couleur) {
-        ModeCouleur::Clair
-    } else {
         ModeCouleur::Sombre
+    } else {
+        ModeCouleur::Clair
     })
 }
 
