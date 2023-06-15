@@ -263,7 +263,7 @@ impl Application for App {
             ModeCouleur::Sombre => Theme::Dark.palette(),
             ModeCouleur::Clair => Theme::Light.palette(),
         };
-        palette.primary = Color::from_rgb(255.0_f32 / 255.0, 165.0_f32 / 255.0, 0.0_f32);
+        palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32);
         Theme::custom(palette)
     }
 

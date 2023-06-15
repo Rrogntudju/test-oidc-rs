@@ -1,10 +1,7 @@
 use anyhow::{Context, Result};
-use iced_native::futures::channel::mpsc;
-use iced_native::futures::StreamExt;
-use iced_native::{subscription, Subscription};
-use iced::futures::channel::mpsc::{Receiver, Sender};
 use iced::futures::executor::block_on;
-use iced::futures::SinkExt;
+use iced_native::{subscription, Subscription};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::UI::ViewManagement::{UIColorType, UISettings};
 
@@ -21,7 +18,7 @@ struct EventModeCouleur {
 }
 
 impl EventModeCouleur {
-    fn new(mut tx: Sender<Result<ModeCouleur>>) -> Result<Self> {
+    fn new(tx: Sender<Result<ModeCouleur>>) -> Result<Self> {
         let settings = UISettings::new().context("Initialisation UISettings")?;
         let token = settings
             .ColorValuesChanged(&TypedEventHandler::new(move |settings: &Option<UISettings>, _| {
@@ -42,7 +39,7 @@ impl Drop for EventModeCouleur {
 
 #[inline]
 fn is_color_light(clr: &windows::UI::Color) -> bool {
-    ((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128)
+    ((5 * clr.G) + (2 * clr.R) + clr.B) as u16 > (8 * 128)
 }
 
 fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
@@ -55,7 +52,7 @@ fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
-    let (tx, rx) = mpsc::channel::<Result<ModeCouleur>>(10);
+    let (tx, rx) = channel::<Result<ModeCouleur>>(10);
     let revoker = match EventModeCouleur::new(tx) {
         Ok(revoker) => revoker,
         Err(e) => {
@@ -77,10 +74,13 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
                 let mode = mode_couleur(&revoker.settings);
                 (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker)))
             }
-            State::Receiving((mut rx, revoker)) => {
-                let mode = rx.().await;
-                (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker)))
-            }
+            State::Receiving((mut rx, revoker)) => match rx.recv().await {
+                Some(mode) => (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker))),
+                None => {
+                    let erreur: Result<ModeCouleur, String> = Err("Échec du mode de couleur".to_string());
+                    (erreur, State::Receiving((rx, revoker)))
+                }
+            },
         }
     })
 }
