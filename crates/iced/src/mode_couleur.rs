@@ -77,7 +77,7 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
             State::Receiving((mut rx, revoker)) => match rx.recv().await {
                 Some(mode) => (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker))),
                 None => {
-                    let erreur: Result<ModeCouleur, String> = Err("Échec du mode de couleur".to_string());
+                    let erreur: Result<ModeCouleur, String> = Err("Échec du changement de mode couleur".to_string());
                     (erreur, State::Receiving((rx, revoker)))
                 }
             },
