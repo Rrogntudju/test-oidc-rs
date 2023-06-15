@@ -1,6 +1,10 @@
 use anyhow::{Context, Result};
-use iced_native::{Subscription, subscription};
-use std::sync::mpsc::{self, Sender, Receiver};
+use iced_native::futures::channel::mpsc;
+use iced_native::futures::StreamExt;
+use iced_native::{subscription, Subscription};
+use iced::futures::channel::mpsc::{Receiver, Sender};
+use iced::futures::executor::block_on;
+use iced::futures::SinkExt;
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::UI::ViewManagement::{UIColorType, UISettings};
 
@@ -17,12 +21,12 @@ struct EventModeCouleur {
 }
 
 impl EventModeCouleur {
-    fn new(sender: Sender<Result<ModeCouleur>>) -> Result<Self> {
+    fn new(mut tx: Sender<Result<ModeCouleur>>) -> Result<Self> {
         let settings = UISettings::new().context("Initialisation UISettings")?;
         let token = settings
             .ColorValuesChanged(&TypedEventHandler::new(move |settings: &Option<UISettings>, _| {
                 let settings: &UISettings = settings.as_ref().unwrap();
-                sender.send(mode_couleur(settings)).unwrap_or_default();
+                let _ = block_on(async { tx.send(mode_couleur(settings)).await });
                 Ok(())
             }))
             .context("Initialisation ColorValuesChanged")?;
@@ -50,39 +54,33 @@ fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
     })
 }
 
-/* pub fn mode_couleur() -> Result<ModeCouleur> {
-    let settings = &UISettings::new().context("Initialisation UISettings")?;
-    mode_couleur_(settings)
-} */
-
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
-    let (sender, receiver) = mpsc::channel::<Result<ModeCouleur>>();
-    let revoker = match EventModeCouleur::new(sender) {
+    let (tx, rx) = mpsc::channel::<Result<ModeCouleur>>(10);
+    let revoker = match EventModeCouleur::new(tx) {
         Ok(revoker) => revoker,
         Err(e) => {
             eprintln!("{e:#}");
-            return Subscription::none()
+            return Subscription::none();
         }
     };
 
     enum State {
         Init((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
-        Receiving((Receiver<Result<ModeCouleur>>, EventModeCouleur))
+        Receiving((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
     }
 
     struct EventModeCouleurId;
 
-    subscription::unfold(std::any::TypeId::of::<EventModeCouleurId>(),
-        State::Init((receiver, revoker)),
-        |state| async {
-            match state {
-                State::Init((receiver, revoker)) => {
-                    let mode = mode_couleur(&revoker.settings);
-                    (mode.map_err(|e| format!("{e:#}")), State::Receiving((receiver, revoker)))
-                },
-                State::Receiving((receiver, revoker)) => {
-                    (mode.map_err(|e| format!("{e:#}")), State::Receiving((receiver, revoker)))
-                }
+    subscription::unfold(std::any::TypeId::of::<EventModeCouleurId>(), State::Init((rx, revoker)), |state| async {
+        match state {
+            State::Init((rx, revoker)) => {
+                let mode = mode_couleur(&revoker.settings);
+                (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker)))
             }
-        })
+            State::Receiving((mut rx, revoker)) => {
+                let mode = rx.().await;
+                (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker)))
+            }
+        }
+    })
 }

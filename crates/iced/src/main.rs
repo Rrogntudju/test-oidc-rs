@@ -7,7 +7,7 @@ use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced_native::command::Action;
 use iced_native::window::Action as WAction;
 use iced_native::Subscription;
-use mode_couleur::{mode_couleur, stream_event_mode_couleur, ModeCouleur};
+use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::{fmt, iter};
 use window::icon;
@@ -117,18 +117,14 @@ impl Application for App {
     type Theme = Theme;
 
     fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
-        let (mode, erreur) = match mode_couleur() {
-            Ok(mode) => (mode, String::new()),
-            Err(e) => (ModeCouleur::Clair, format!("{e:#}")),
-        };
         (
             Self {
                 radio_fournisseur: Fournisseur::Microsoft,
                 secret: None,
                 infos: None,
                 en_traitement: false,
-                erreur,
-                mode,
+                erreur: String::new(),
+                mode: ModeCouleur::Clair,
                 mono: Font::External {
                     name: "Lucida Console",
                     bytes: MONO,
@@ -168,7 +164,7 @@ impl Application for App {
             Message::ModeCouleurChanged(mode) => {
                 match mode {
                     Ok(mode) => self.mode = mode,
-                    Err(e) => self.erreur = e
+                    Err(e) => self.erreur = e,
                 }
                 Command::none()
             }
