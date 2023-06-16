@@ -16,6 +16,7 @@ struct EventModeCouleur {
     token: EventRegistrationToken,
 }
 
+// https://learn.microsoft.com/fr-fr/windows/apps/desktop/modernize/apply-windows-themes
 impl EventModeCouleur {
     fn new(tx: Sender<Result<ModeCouleur>>) -> Result<Self> {
         let settings = UISettings::new().context("Initialisation UISettings")?;
@@ -42,7 +43,6 @@ fn is_color_light(clr: &windows::UI::Color) -> bool {
     (0.299 * clr.R as f32 + 0.587 * clr.G as f32 + 0.114 * clr.B as f32) > 128.0
 }
 
-// https://learn.microsoft.com/fr-fr/windows/apps/desktop/modernize/apply-windows-themes
 fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
     let couleur = settings.GetColorValue(UIColorType::Foreground)?;
     Ok(if is_color_light(&couleur) {
