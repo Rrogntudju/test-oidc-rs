@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use iced::futures::executor::block_on;
+use iced::futures;
 use iced_native::{subscription, Subscription};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
@@ -22,7 +22,7 @@ impl EventModeCouleur {
         let token = settings
             .ColorValuesChanged(&TypedEventHandler::new(move |settings: &Option<UISettings>, _| {
                 let settings: &UISettings = settings.as_ref().unwrap();
-                let _ = block_on(async { tx.send(mode_couleur(settings)).await });
+                let _ = futures::executor::block_on(async { tx.send(mode_couleur(settings)).await });
                 Ok(())
             }))
             .context("Initialisation ColorValuesChanged")?;
@@ -38,7 +38,8 @@ impl Drop for EventModeCouleur {
 
 #[inline]
 fn is_color_light(clr: &windows::UI::Color) -> bool {
-   (0.299 * clr.R as f32 + 0.587 * clr.G as f32 + 0.114 * clr.B as f32) > 128.0 // https://www.w3.org/TR/AERT/#color-contrast
+    (0.299 * clr.R as f32 + 0.587 * clr.G as f32 + 0.114 * clr.B as f32) > 128.0
+    // https://www.w3.org/TR/AERT/#color-contrast
 }
 
 // https://learn.microsoft.com/fr-fr/windows/apps/desktop/modernize/apply-windows-themes
@@ -64,23 +65,27 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
     enum State {
         Init((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
         Receiving((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
+        End,
     }
 
     struct EventModeCouleurId;
 
-    subscription::unfold(std::any::TypeId::of::<EventModeCouleurId>(), State::Init((rx, revoker)), |state| async {
-        match state {
-            State::Init((rx, revoker)) => {
-                let mode = mode_couleur(&revoker.settings);
-                (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker)))
-            }
-            State::Receiving((mut rx, revoker)) => match rx.recv().await {
-                Some(mode) => (mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker))),
-                None => {
-                    let erreur: Result<ModeCouleur, String> = Err("Échec du changement de mode couleur".to_string());
-                    (erreur, State::Receiving((rx, revoker)))
+    subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
+        futures::stream::unfold(State::Init((rx, revoker)), |state| async {
+            match state {
+                State::Init((rx, revoker)) => {
+                    let mode = mode_couleur(&revoker.settings);
+                    Some((mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker))))
                 }
-            },
-        }
+                State::Receiving((mut rx, revoker)) => match rx.recv().await {
+                    Some(mode) => Some((mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker)))),
+                    None => {
+                        let erreur: Result<ModeCouleur, String> = Err("Échec du changement de mode couleur".to_string());
+                        Some((erreur, State::End))
+                    }
+                },
+                State::End => None,
+            }
+        })
     })
 }
