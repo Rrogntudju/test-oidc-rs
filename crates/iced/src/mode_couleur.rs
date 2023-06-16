@@ -38,8 +38,8 @@ impl Drop for EventModeCouleur {
 
 #[inline]
 fn is_color_light(clr: &windows::UI::Color) -> bool {
-    (0.299 * clr.R as f32 + 0.587 * clr.G as f32 + 0.114 * clr.B as f32) > 128.0
     // https://www.w3.org/TR/AERT/#color-contrast
+    (0.299 * clr.R as f32 + 0.587 * clr.G as f32 + 0.114 * clr.B as f32) > 128.0
 }
 
 // https://learn.microsoft.com/fr-fr/windows/apps/desktop/modernize/apply-windows-themes
