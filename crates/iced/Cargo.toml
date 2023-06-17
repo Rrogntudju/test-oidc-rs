@@ -5,7 +5,6 @@ authors = ["Rrogntudju"]
 edition = "2021"
 build = "build/build.rs"
 
-
 [dependencies]
 iced = { version = "0.9", features = ["tokio", "image"] }
 iced_native = "0.10"
