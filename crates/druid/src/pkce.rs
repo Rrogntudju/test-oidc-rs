@@ -1,7 +1,7 @@
 use crate::Fournisseur;
 use anyhow::Error;
 use oauth2::basic::BasicClient;
-use oauth2::reqwest::http_client;
+use oauth2::ureq::http_client;
 use oauth2::{
     AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse,
     TokenUrl,

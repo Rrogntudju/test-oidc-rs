@@ -10,7 +10,7 @@ build = "build/build.rs"
 druid = { version = "0.8", features = [ "png", "im" ] }
 serde_json = "1"
 windows = { version = "0.44", features = ["Win32_UI_WindowsAndMessaging", "Win32_System_LibraryLoader", "Win32_Foundation"] }
-oauth2 = { version = "4", features = ["reqwest"]}
+oauth2 = { version = "4", default-features = false, features = ["ureq"]}
 webbrowser = "0.8"
 url = "2"
 ureq = { version = "2", features = ["json"] }
