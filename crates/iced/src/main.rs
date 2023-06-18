@@ -5,6 +5,7 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::{executor, window, Font, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Theme};
 use iced_native::command::Action;
+use iced_native::image::Handle;
 use iced_native::window::Action as WAction;
 use iced_native::Subscription;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
@@ -173,7 +174,7 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let image = Image::new("openid-icon-100x100.png");
+        let image = Image::new(Handle::from_memory(ICON));
 
         let titre = text("OpenID Connect").size(26);
 
