@@ -213,7 +213,7 @@ impl Application for App {
                     .rows
                     .iter()
                     .chain(iter::once(&data.header))
-                    .fold(vec![0, data.header.len()], |acc, row| {
+                    .fold(vec![0; data.header.len()], |acc, row| {
                         acc.iter()
                             .zip(row.iter())
                             .map(|(max, s)| {
