@@ -31,14 +31,11 @@ const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 const ICON: &[u8; 1612] = include_bytes!("../openid.png");
 const MONO: &[u8; 111108] = include_bytes!("../lucon.ttf");
 
-type TableColumns = Vec<String>;
-type TableRows = Vec<TableColumns>;
-type TableHeader = Vec<String>;
 
 #[derive(Debug, Clone)]
 struct TableData {
-    header: TableHeader,
-    rows: TableRows,
+    header: Vec<String>,
+    rows: Vec<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -290,7 +287,7 @@ fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<T
             let infos = map
                 .iter()
                 .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
-                .collect::<TableRows>();
+                .collect::<Vec<Vec<String>>>();
             let table = TableData {
                 rows: infos,
                 header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
