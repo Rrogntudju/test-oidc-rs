@@ -11,14 +11,14 @@ mod table;
 use serde_json::value::Value;
 use std::sync::Arc;
 use std::{fmt, thread};
-use table::{Table, TableData, TableRows};
+use table::{Table, TableData};
 
 mod pkce;
 use pkce::Pkce;
 
 mod seticon;
 
-const FINISH_GET_USERINFOS: Selector<Result<TableRows, String>> = Selector::new("finish_get_userinfos");
+const FINISH_GET_USERINFOS: Selector<Result<Vec<Vec<String>>, String>> = Selector::new("finish_get_userinfos");
 const ID_MS: &str = include_str!("../../../secrets/clientid.microsoft");
 const SECRET_MS: &str = include_str!("../../../secrets/secret.microsoft");
 const ID_GG: &str = include_str!("../../../secrets/clientid.google");
@@ -105,10 +105,10 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
         let result = match request_userinfos(&fournisseur) {
             Ok(value) => match value {
                 Value::Object(map) => {
-                    let table = map
+                    let table: Vec<Vec<String>> = map
                         .iter()
                         .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
-                        .collect::<TableRows>();
+                        .collect();
                     Ok(table)
                 }
                 _ => Err("La valeur doit être un map".to_string()),

@@ -8,12 +8,9 @@ const SPACING: f64 = 12.0;
 const LAST_SPACING: f64 = SPACING / 2.0;
 const SHADING: f64 = 0.1;
 
-pub type TableColumns = Vec<String>;
-pub type TableRows = Vec<TableColumns>;
-pub type TableHeader = Vec<String>;
 pub struct TableData {
-    pub header: TableHeader,
-    pub rows: TableRows,
+    pub header: Vec<String>,
+    pub rows: Vec<Vec<String>>,
 }
 
 impl Default for TableData {

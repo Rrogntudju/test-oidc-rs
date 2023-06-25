@@ -284,10 +284,10 @@ fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<T
 
     match value {
         Value::Object(map) => {
-            let infos = map
+            let infos: Vec<Vec<String>> = map
                 .iter()
                 .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
-                .collect::<Vec<Vec<String>>>();
+                .collect();
             let table = TableData {
                 rows: infos,
                 header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
