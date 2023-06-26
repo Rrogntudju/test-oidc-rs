@@ -1,22 +1,21 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
+use iced::advanced::image::Handle;
 use iced::theme::Container;
-use iced::widget::{button, column, container, radio, row, text, Image};
-use iced::{executor, window, Font, Renderer};
-use iced::{Application, Color, Command, Element, Settings, Theme};
-use iced_native::command::Action;
-use iced_native::image::Handle;
-use iced_native::window::Action as WAction;
-use iced_native::Subscription;
+use iced::widget::{button, column, container, radio, row, runtime, text, Image};
+use iced::window::icon;
+use iced::window::Action;
+use iced::{executor, window, Renderer};
+use iced::{Application, Color, Command, Element, Font, Settings, Subscription, Theme};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::{fmt, iter};
-use window::icon;
 
 mod pkce;
 use pkce::Pkce;
 
 mod mode_couleur;
+mod table;
 
 const ID_MS: &str = include_str!("../../../secrets/clientid.microsoft");
 const SECRET_MS: &str = include_str!("../../../secrets/secret.microsoft");
@@ -30,7 +29,6 @@ const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 const ICON: &[u8; 1612] = include_bytes!("../openid.png");
 const MONO: &[u8; 111108] = include_bytes!("../lucon.ttf");
-
 
 #[derive(Debug, Clone)]
 struct TableData {
@@ -158,7 +156,7 @@ impl Application for App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Command::single(Action::Window(WAction::GainFocus))
+                Command::single(runtime::command::Action::Window(Action::GainFocus))
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
@@ -284,10 +282,7 @@ fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<T
 
     match value {
         Value::Object(map) => {
-            let infos: Vec<Vec<String>> = map
-                .iter()
-                .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
-                .collect();
+            let infos: Vec<Vec<String>> = map.iter().map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")]).collect();
             let table = TableData {
                 rows: infos,
                 header: vec!["Propriété".to_owned(), "Valeur".to_owned()],

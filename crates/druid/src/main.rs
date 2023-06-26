@@ -105,10 +105,7 @@ fn get_userinfos(sink: ExtEventSink, fournisseur: Fournisseur) {
         let result = match request_userinfos(&fournisseur) {
             Ok(value) => match value {
                 Value::Object(map) => {
-                    let table: Vec<Vec<String>> = map
-                        .iter()
-                        .map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")])
-                        .collect();
+                    let table: Vec<Vec<String>> = map.iter().map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")]).collect();
                     Ok(table)
                 }
                 _ => Err("La valeur doit être un map".to_string()),
