@@ -109,7 +109,7 @@ enum Message {
 
 impl Application for App {
     type Message = Message;
-    type Executor = executor::Default; 
+    type Executor = executor::Default;
     type Flags = ();
     type Theme = Theme;
 
