@@ -1,9 +1,10 @@
 use iced::advanced::layout::Node;
 use iced::advanced::mouse;
 use iced::advanced::{layout, Layout};
-use iced::advanced::{renderer, Renderer};
+use iced::advanced::{renderer};
 use iced::advanced::{widget, Widget};
-use iced::{Color, Element, Event, Length, Point, Rectangle, Size};
+use iced::widget::{column, container};
+use iced::{Element, Length, Rectangle, Size, Theme};
 
 pub struct TableData {
     pub header: Vec<String>,
@@ -22,27 +23,27 @@ impl Table {
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for Table
 where
-    Renderer: iced::advanced::Renderer,
+    Renderer: iced::advanced::Renderer
 {
     fn width(&self) -> Length {
-        self.base.as_widget().width()
+        Length::Shrink
     }
 
     fn height(&self) -> Length {
-        self.base.as_widget().height()
-    }
+        Length::Shrink
+     }
 
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-        self.base.as_widget().layout(renderer, limits)
+        Node::new(Size::ZERO)
     }
 
     fn draw(
         &self,
-        state: &widget::Tree,
+        _state: &widget::Tree,
         renderer: &mut Renderer,
         theme: &Renderer::Theme,
         style: &renderer::Style,
-        layout: Layout<'_>,
+        _layout: Layout<'_>,
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
@@ -52,6 +53,11 @@ where
     }
 }
 
-fn layout(data: &TableData, columns_max_width: Option<Vec<Length>>) -> Node {
-    Node::new(Size::ZERO)
+fn create_table<'a, Message, Renderer>(data: &TableData, columns_max_width: Option<Vec<Length>>) -> Element<'a, Message, Renderer<Theme>>
+where
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Renderer::Theme: iced::widget::text::StyleSheet
+
+{
+    column![container("")].into()
 }
