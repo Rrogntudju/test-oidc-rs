@@ -4,6 +4,7 @@ use iced::advanced::renderer;
 use iced::advanced::{layout, Layout};
 use iced::advanced::{widget, Widget};
 use iced::widget::{column, container, row, text};
+use iced::Pixels;
 use iced::{Element, Length, Rectangle, Size};
 use std::iter;
 
@@ -14,11 +15,12 @@ pub struct TableData {
 
 pub struct Table {
     data: TableData,
+    text_size: f32,
 }
 
 impl Table {
-    pub fn new(data: TableData) -> Self {
-        Self { data }
+    pub fn new(data: TableData, text_size: impl Into<Pixels>) -> Self {
+        Self { data, text_size }
     }
 }
 
@@ -70,25 +72,49 @@ where
                     })
                     .collect()
             });
-        let table = create_table::<'a, Message, Renderer>(self.data, columns_max_width);
+        let table = create_table::<'a, Message, Renderer>(self.data, self.text_size, columns_max_width);
         let layout = Layout::new(&table.as_widget().layout(renderer, &limits));
-        table.as_widget().draw(
-            state,
-            renderer,
-            theme,
-            style,
-            layout,
-            cursor,
-            viewport,
-        );
-
+        table.as_widget().draw(state, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
-fn create_table<'a, Message, Renderer>(data: TableData, columns_max_width: Vec<impl Into<Length>>) -> Element<'a, Message, Renderer>
+fn create_table<'a, Message, Renderer>(
+    data: TableData,
+    text_size: impl Into<Pixels>,
+    columns_max_width: Vec<impl Into<Length>>,
+) -> Element<'a, Message, Renderer>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet,
 {
-    row![column![container(text(""))]].into()
+    let entêtes = data
+        .header
+        .iter()
+        .zip(columns_max_width)
+        .map(|(h, width)| container(text(h).size(text_size)))
+        .collect::<Vec<_>>();
+
+    //            .padding([5, 0, 5, 0]);
+
+    /*            let mut infos = column![];
+    let mut flip = false;
+
+    for row in &data.rows {
+        let info = row!
+            container(text(stretch(&row[0], count[0] + 1)).style(style(flip)),
+            container(text(stretch(&row[1], count[1])).size(12)).style(style(flip)),
+
+        .padding([5, 0, 0, 0]);
+        infos = infos.push(info);
+        flip = !flip;
+    }
+    column![entêtes, infos].into() */
+}
+
+fn style(flip: bool) -> iced::theme::Container {
+    if flip {
+        iced::theme::Container::Box
+    } else {
+        iced::theme::Container::default()
+    }
 }
