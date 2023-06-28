@@ -3,7 +3,7 @@ use iced::advanced::mouse;
 use iced::advanced::renderer;
 use iced::advanced::{layout, Layout};
 use iced::advanced::{widget, Widget};
-use iced::widget::{column, container, row, text};
+use iced::widget::{column, container, Row, text};
 use iced::Pixels;
 use iced::{Element, Length, Rectangle, Size};
 use std::iter;
@@ -20,7 +20,7 @@ pub struct Table {
 
 impl Table {
     pub fn new(data: TableData, text_size: impl Into<Pixels>) -> Self {
-        Self { data, text_size }
+        Self { data, text_size: text_size.into().0 }
     }
 }
 
@@ -61,7 +61,7 @@ where
                 acc.iter()
                     .zip(row.iter())
                     .map(|(max, s)| {
-                        let text = Into::<Element<'a, Message, Renderer>>::into(text(s));
+                        let text: Element<'a, Message, Renderer> = Element::from(text(s));
                         let layout = text.as_widget().layout(renderer, &limits);
                         let width = layout.bounds().width;
                         if width > *max {
@@ -91,10 +91,10 @@ where
         .header
         .iter()
         .zip(columns_max_width)
-        .map(|(h, width)| container(text(h).size(text_size)))
+        .map(|(h, width)| Element::from(container(text(h).size(text_size))))
         .collect::<Vec<_>>();
 
-    //            .padding([5, 0, 5, 0]);
+    let entêtes = Row::with_children(entêtes).padding([5, 0, 5, 0]);
 
     /*            let mut infos = column![];
     let mut flip = false;
