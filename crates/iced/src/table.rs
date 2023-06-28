@@ -1,3 +1,4 @@
+use iced::advanced::layout::Limits;
 use iced::advanced::mouse;
 use iced::advanced::renderer;
 use iced::advanced::{layout, Layout};
@@ -48,26 +49,27 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        //let layout = create_table(self.data, None).as_widget().layout(renderer, layout.bounds().w);
-        let count = self.data
-        .rows
-        .iter()
-        .chain(iter::once(&self.data.header))
-        .fold(vec![0; self.data.header.len()], |acc, row| {
-            acc.iter()
-                .zip(row.iter())
-                .map(|(max, s)| {
-                    let text = Into::<Element<'a, Message, Renderer>>::into(text(s));
-                    let layout = text.as_widget().layout(renderer, );
-                    let count = s.chars().count();
-                    if count > *max {
-                        count
-                    } else {
-                        *max
-                    }
-                })
-                .collect()
-        });
+        let limits = Limits::new(Size::ZERO, layout.bounds().size());
+        let count = self
+            .data
+            .rows
+            .iter()
+            .chain(iter::once(&self.data.header))
+            .fold(vec![0; self.data.header.len()], |acc, row| {
+                acc.iter()
+                    .zip(row.iter())
+                    .map(|(max, s)| {
+                        let text = Into::<Element<'a, Message, Renderer>>::into(text(s));
+                        let layout = text.as_widget().layout(renderer, &limits);
+                        let count = s.chars().count();
+                        if count > *max {
+                            count
+                        } else {
+                            *max
+                        }
+                    })
+                    .collect()
+            });
     }
 }
 
