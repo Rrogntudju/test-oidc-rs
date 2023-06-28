@@ -50,20 +50,20 @@ where
         viewport: &Rectangle,
     ) {
         let limits = Limits::new(Size::ZERO, layout.bounds().size());
-        let count = self
+        let columns_max_width = self
             .data
             .rows
             .iter()
             .chain(iter::once(&self.data.header))
-            .fold(vec![0; self.data.header.len()], |acc, row| {
+            .fold(vec![0.0; self.data.header.len()], |acc, row| {
                 acc.iter()
                     .zip(row.iter())
                     .map(|(max, s)| {
                         let text = Into::<Element<'a, Message, Renderer>>::into(text(s));
                         let layout = text.as_widget().layout(renderer, &limits);
-                        let count = s.chars().count();
-                        if count > *max {
-                            count
+                        let width = layout.bounds().width;
+                        if width > *max {
+                            width
                         } else {
                             *max
                         }
