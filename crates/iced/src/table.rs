@@ -41,7 +41,7 @@ where
 
     fn draw(
         &self,
-        _state: &widget::Tree,
+        state: &widget::Tree,
         renderer: &mut Renderer,
         theme: &Renderer::Theme,
         style: &renderer::Style,
@@ -70,10 +70,22 @@ where
                     })
                     .collect()
             });
+        let table = create_table::<'a, Message, Renderer>(self.data, columns_max_width);
+        let layout = Layout::new(&table.as_widget().layout(renderer, &limits));
+        table.as_widget().draw(
+            state,
+            renderer,
+            theme,
+            style,
+            layout,
+            cursor,
+            viewport,
+        );
+
     }
 }
 
-fn create_table<'a, Message, Renderer>(data: TableData, columns_max_width: Option<Vec<Length>>) -> Element<'a, Message, Renderer>
+fn create_table<'a, Message, Renderer>(data: TableData, columns_max_width: Vec<impl Into<Length>>) -> Element<'a, Message, Renderer>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet,
