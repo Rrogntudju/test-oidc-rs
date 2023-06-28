@@ -91,10 +91,24 @@ where
         .header
         .iter()
         .zip(columns_max_width)
-        .map(|(h, width)| Element::from(container(text(h).size(text_size))))
+        .map(|(h, width)| Element::from(container(text(h).size(text_size)).width(width)))
         .collect::<Vec<_>>();
 
     let entêtes = Row::with_children(entêtes).padding([5, 0, 5, 0]);
+
+    let infos = data
+    .rows
+    .iter()
+    .map(|row| {
+        row.iter().zip(columns_max_width)
+        .map(|(r, width)| Element::from(container(text(r).size(text_size)).width(width)))
+        .collect::<Vec<_>>()
+    }
+    )  .collect::<Vec<_>>();
+
+
+
+let infos = infos.iter().map(Row::with_children(infos).padding([5, 0, 5, 0]);
 
     /*            let mut infos = column![];
     let mut flip = false;
