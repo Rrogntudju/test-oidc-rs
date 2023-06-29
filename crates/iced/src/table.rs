@@ -73,7 +73,11 @@ where
                     let text: Element<'a, Message, Renderer> = Element::from(text(s));
                     let layout = text.as_widget().layout(renderer, &limits);
                     let width = layout.bounds().width;
-                    if width > *max { width } else { *max }
+                    if width > *max {
+                        width
+                    } else {
+                        *max
+                    }
                 })
                 .collect()
         });
