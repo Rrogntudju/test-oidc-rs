@@ -14,12 +14,23 @@ pub struct TableData {
 }
 
 pub struct Table {
-    data: TableData,
+    data: Vec<Vec<String>>,
     text_size: f32,
 }
 
 impl Table {
     pub fn new(data: TableData, text_size: impl Into<Pixels>) -> Self {
+        let last_col = data.header.len() - 1;
+        let data = iter::once(data.header)
+            .chain(data.rows.into_iter())
+            .map(|row| {
+                row.into_iter()
+                    .enumerate()
+                    .map(|(i, s)| if i < last_col { stretch(&s, 1) } else { s })
+                    .collect()
+            })
+            .collect();
+
         Self {
             data,
             text_size: text_size.into().0,
@@ -55,26 +66,17 @@ where
         viewport: &Rectangle,
     ) {
         let limits = Limits::new(Size::ZERO, layout.bounds().size());
-        let columns_max_width = self
-            .data
-            .rows
-            .iter()
-            .chain(iter::once(&self.data.header))
-            .fold(vec![0.0; self.data.header.len()], |acc, row| {
-                acc.iter()
-                    .zip(row.iter())
-                    .map(|(max, s)| {
-                        let text: Element<'a, Message, Renderer> = Element::from(text(s));
-                        let layout = text.as_widget().layout(renderer, &limits);
-                        let width = layout.bounds().width;
-                        if width > *max {
-                            width
-                        } else {
-                            *max
-                        }
-                    })
-                    .collect()
-            });
+        let columns_max_width = self.data.iter().fold(vec![0.0; self.data[0].len()], |acc, row| {
+            acc.iter()
+                .zip(row.iter())
+                .map(|(max, s)| {
+                    let text: Element<'a, Message, Renderer> = Element::from(text(s));
+                    let layout = text.as_widget().layout(renderer, &limits);
+                    let width = layout.bounds().width;
+                    if width > *max { width } else { *max }
+                })
+                .collect()
+        });
         let table = create_table::<'a, Message, Renderer>(self.data, self.text_size, columns_max_width);
         let layout = Layout::new(&table.as_widget().layout(renderer, &limits));
         table.as_widget().draw(state, renderer, theme, style, layout, cursor, viewport);
@@ -82,17 +84,17 @@ where
 }
 
 fn create_table<'a, Message, Renderer>(
-    data: TableData,
+    data: Vec<Vec<String>>,
     text_size: impl Into<Pixels>,
     columns_max_width: Vec<impl Into<Length>>,
 ) -> Element<'a, Message, Renderer>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>
+    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     let mut flip = true;
-    let infos = iter::once(data.header)
-        .chain(data.rows)
+    let infos = data
+        .iter()
         .map(|row| {
             let info: Vec<Element<'_, Message, Renderer>> = row
                 .iter()
@@ -115,4 +117,8 @@ fn style(flip: bool) -> iced::theme::Container {
     } else {
         iced::theme::Container::default()
     }
+}
+
+fn stretch(s: &str, w: usize) -> String {
+    format!("{}{}", s, " ".repeat(w))
 }

@@ -293,10 +293,6 @@ fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<T
     }
 }
 
-fn stretch(s: &str, w: usize) -> String {
-    format!("{}{}", s, " ".repeat(w - s.chars().count()))
-}
-
 fn style(flip: bool) -> iced::theme::Container {
     if flip {
         Container::Box
