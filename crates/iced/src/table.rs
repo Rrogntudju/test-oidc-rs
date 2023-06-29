@@ -3,7 +3,7 @@ use iced::advanced::mouse;
 use iced::advanced::renderer;
 use iced::advanced::{layout, Layout};
 use iced::advanced::{widget, Widget};
-use iced::widget::{column, container, text, Row};
+use iced::widget::{Column, container, text, Row};
 use iced::Pixels;
 use iced::{Element, Length, Rectangle, Size};
 use std::iter;
@@ -90,19 +90,9 @@ where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet,
 {
-    let entête = data
-        .header
-        .iter()
-        .zip(columns_max_width)
-        .map(|(h, width)| Element::from(container(text(h).size(text_size)).width(width)))
-        .collect::<Vec<_>>();
-
-    let entête = Row::with_children(entête).padding([5, 0, 5, 0]);
-
-    let mut flip = false;
-    let infos = data
-        .rows
-        .iter()
+    let mut flip = true;
+    let infos = iter::once(data.header)
+        .chain(data.rows)
         .map(|row| {
             let info: Vec<Element<'_, Message, Renderer>> = row.iter()
                 .zip(columns_max_width)
@@ -111,12 +101,12 @@ where
                     Element::from(container(text(i).size(text_size)).style(style(flip)).width(width))
                 })
                 .collect::<Vec<_>>();
-            Row::with_children(info).padding([5, 0, 5, 0])
+            Row::with_children(info).padding([5, 0, 5, 0]).into()
         })
         .collect::<Vec<_>>();
 
-   column![entête, infos].into()
-}
+    Column::with_children(infos).into()
+ }
 
 fn style(flip: bool) -> iced::theme::Container {
     if flip {
