@@ -3,7 +3,7 @@ use iced::advanced::mouse;
 use iced::advanced::renderer;
 use iced::advanced::{layout, Layout};
 use iced::advanced::{widget, Widget};
-use iced::widget::{Column, container, text, Row};
+use iced::widget::{container, text, Column, Row};
 use iced::Pixels;
 use iced::{Element, Length, Rectangle, Size};
 use std::iter;
@@ -30,7 +30,7 @@ impl Table {
 impl<'a, Message, Renderer> Widget<Message, Renderer> for Table
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet,
+    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     fn width(&self) -> Length {
         Length::Shrink
@@ -88,13 +88,14 @@ fn create_table<'a, Message, Renderer>(
 ) -> Element<'a, Message, Renderer>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet,
+    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>
 {
     let mut flip = true;
     let infos = iter::once(data.header)
         .chain(data.rows)
         .map(|row| {
-            let info: Vec<Element<'_, Message, Renderer>> = row.iter()
+            let info: Vec<Element<'_, Message, Renderer>> = row
+                .iter()
                 .zip(columns_max_width)
                 .map(|(i, width)| {
                     flip = !flip;
@@ -106,7 +107,7 @@ where
         .collect::<Vec<_>>();
 
     Column::with_children(infos).into()
- }
+}
 
 fn style(flip: bool) -> iced::theme::Container {
     if flip {
