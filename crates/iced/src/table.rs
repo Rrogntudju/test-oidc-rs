@@ -72,7 +72,7 @@ where
             acc.iter()
                 .zip(row.iter())
                 .map(|(max, s)| {
-                    let text: Element<'_, Message, Renderer> = text(s.clone()).into();
+                    let text: Element<Message, Renderer> = text(s.clone()).into();
                     let layout = text.as_widget().layout(renderer, &limits);
                     let width = layout.bounds().width;
                     if width > *max {
@@ -112,17 +112,17 @@ where
     let infos = data
         .iter()
         .map(|row| {
-            let info: Vec<Element<'_, Message, Renderer>> = row
+            let info: Vec<Element<Message, Renderer>> = row
                 .iter()
                 .zip(&columns_max_width)
                 .map(|(i, width)| {
                     container(text(i).size(text_size)).style(style(flip)).width(*width).into()
                 })
-                .collect::<Vec<_>>();
+                .collect();
             flip = !flip;
             Row::with_children(info).padding([5, 0, 5, 0]).into()
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     Column::with_children(infos).into()
 }
