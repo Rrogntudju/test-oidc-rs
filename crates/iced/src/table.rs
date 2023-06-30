@@ -106,7 +106,7 @@ where
                 .zip(columns_max_width)
                 .map(|(i, width)| {
                     flip = !flip;
-                    Element::from(container(text(i).size(text_size)).style(style(flip)).width(width))
+                    container(text(i).size(text_size)).style(style(flip)).width(width).into()
                 })
                 .collect::<Vec<_>>();
             Row::with_children(info).padding([5, 0, 5, 0]).into()
