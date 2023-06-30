@@ -8,6 +8,7 @@ use iced::Pixels;
 use iced::{Element, Length, Rectangle, Size};
 use std::iter;
 
+#[derive(Debug, Clone)]
 pub struct TableData {
     pub header: Vec<String>,
     pub rows: Vec<Vec<String>>,

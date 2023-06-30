@@ -9,7 +9,8 @@ use iced::{executor, window, Renderer};
 use iced::{Application, Color, Command, Element, Font, Settings, Subscription, Theme};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
-use std::{fmt, iter};
+use std::fmt;
+use table::{Table, TableData};
 
 mod pkce;
 use pkce::Pkce;
@@ -28,13 +29,6 @@ const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 const ICON: &[u8; 1612] = include_bytes!("../openid.png");
-const MONO: &[u8; 111108] = include_bytes!("../lucon.ttf");
-
-#[derive(Debug, Clone)]
-struct TableData {
-    header: Vec<String>,
-    rows: Vec<Vec<String>>,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fournisseur {
@@ -96,7 +90,6 @@ struct App {
     en_traitement: bool,
     erreur: String,
     mode: ModeCouleur,
-    mono: Font,
 }
 
 #[derive(Debug, Clone)]
@@ -122,10 +115,6 @@ impl Application for App {
                 en_traitement: false,
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
-                mono: Font::External {
-                    name: "Lucida Console",
-                    bytes: MONO,
-                },
             },
             Command::none(),
         )
@@ -204,43 +193,7 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                let count = data
-                    .rows
-                    .iter()
-                    .chain(iter::once(&data.header))
-                    .fold(vec![0; data.header.len()], |acc, row| {
-                        acc.iter()
-                            .zip(row.iter())
-                            .map(|(max, s)| {
-                                let count = s.chars().count();
-                                if count > *max {
-                                    count
-                                } else {
-                                    *max
-                                }
-                            })
-                            .collect()
-                    });
-
-                let entêtes = row![
-                    container(text(stretch(&data.header[0], count[0] + 1)).font(self.mono).size(12)),
-                    container(text(stretch(&data.header[1], count[1])).font(self.mono).size(12)),
-                ]
-                .padding([5, 0, 5, 0]);
-
-                let mut infos = column![];
-                let mut flip = false;
-
-                for row in &data.rows {
-                    let info = row![
-                        container(text(stretch(&row[0], count[0] + 1)).size(12).font(self.mono)).style(style(flip)),
-                        container(text(stretch(&row[1], count[1])).size(12).font(self.mono)).style(style(flip)),
-                    ]
-                    .padding([5, 0, 0, 0]);
-                    infos = infos.push(info);
-                    flip = !flip;
-                }
-                column![titre, entêtes, infos]
+                column![titre, Table::new(*data, 12)]
             }
             _ => column![""],
         };
