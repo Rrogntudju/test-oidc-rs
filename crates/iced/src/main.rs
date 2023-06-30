@@ -1,12 +1,11 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
 use iced::advanced::image::Handle;
-use iced::theme::Container;
 use iced::widget::{button, column, container, radio, row, runtime, text, Image};
 use iced::window::icon;
 use iced::window::Action;
 use iced::{executor, window, Renderer};
-use iced::{Application, Color, Command, Element, Font, Settings, Subscription, Theme};
+use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
@@ -193,7 +192,7 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                column![titre, Table::new(*data, 12)]
+                column![titre, Table::new(data, 12)]
             }
             _ => column![""],
         };
@@ -246,10 +245,3 @@ fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<T
     }
 }
 
-fn style(flip: bool) -> iced::theme::Container {
-    if flip {
-        Container::Box
-    } else {
-        Container::default()
-    }
-}
