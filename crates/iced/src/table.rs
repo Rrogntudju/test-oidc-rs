@@ -25,9 +25,9 @@ impl Table {
         let data = iter::once(&data.header)
             .chain(&data.rows)
             .map(|row| {
-                row.into_iter()
+                row.iter()
                     .enumerate()
-                    .map(|(i, s)| if i < last_col { stretch(&s, 1) } else { s.clone() })
+                    .map(|(i, s)| if i < last_col { stretch(s, 1) } else { s.clone() })
                     .collect()
             })
             .collect();
@@ -102,7 +102,7 @@ where
     }
 }
 
-fn create_table<'a, Message, Renderer>(data: &Vec<Vec<String>>, text_size: f32, columns_max_width: Vec<f32>) -> Element<'a, Message, Renderer>
+fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: f32, columns_max_width: Vec<f32>) -> Element<'a, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
