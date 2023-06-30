@@ -41,8 +41,7 @@ impl Table {
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for Table
 where
-    Message: 'a,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     fn width(&self) -> Length {
@@ -93,7 +92,6 @@ where
 
 impl<'a, Message, Renderer> From<Table> for Element<'a, Message, Renderer>
 where
-    Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
@@ -106,7 +104,7 @@ fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: f32, col
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container> + 'a,
+    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     let mut flip = false;
     let infos = data
