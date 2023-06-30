@@ -244,4 +244,3 @@ fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<T
         _ => Err(anyhow!("La valeur doit être un map")),
     }
 }
-

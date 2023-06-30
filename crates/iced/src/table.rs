@@ -85,29 +85,24 @@ where
         });
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, columns_max_width);
         let node = table.as_widget().layout(renderer, &limits);
-        table.as_widget().draw(state, renderer, theme, style, Layout::new(&node), cursor, viewport);
+        table
+            .as_widget()
+            .draw(state, renderer, theme, style, Layout::new(&node), cursor, viewport);
     }
 }
 
-impl<'a, Message, Renderer> From<Table>
-    for Element<'a, Message, Renderer>
+impl<'a, Message, Renderer> From<Table> for Element<'a, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
-    fn from(
-        content: Table,
-    ) -> Element<'a, Message, Renderer> {
+    fn from(content: Table) -> Element<'a, Message, Renderer> {
         Element::new(content)
     }
 }
 
-fn create_table<'a, Message, Renderer>(
-    data: &Vec<Vec<String>>,
-    text_size: f32,
-    columns_max_width: Vec<f32>,
-) -> Element<'a, Message, Renderer>
+fn create_table<'a, Message, Renderer>(data: &Vec<Vec<String>>, text_size: f32, columns_max_width: Vec<f32>) -> Element<'a, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
