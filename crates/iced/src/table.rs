@@ -108,7 +108,7 @@ where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container> + 'a,
 {
-    let mut flip = true;
+    let mut flip = false;
     let infos = data
         .iter()
         .map(|row| {
@@ -116,10 +116,10 @@ where
                 .iter()
                 .zip(&columns_max_width)
                 .map(|(i, width)| {
-                    flip = !flip;
                     container(text(i).size(text_size)).style(style(flip)).width(*width).into()
                 })
                 .collect::<Vec<_>>();
+            flip = !flip;
             Row::with_children(info).padding([5, 0, 5, 0]).into()
         })
         .collect::<Vec<_>>();
