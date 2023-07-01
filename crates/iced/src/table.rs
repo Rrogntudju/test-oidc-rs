@@ -95,8 +95,8 @@ where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
-    fn from(content: Table) -> Element<'a, Message, Renderer> {
-        Element::new(content)
+    fn from(table: Table) -> Element<'a, Message, Renderer> {
+        Element::new(table)
     }
 }
 
