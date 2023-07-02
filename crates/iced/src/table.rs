@@ -92,9 +92,7 @@ where
             children: widget.children(),
         };
 
-        table
-            .as_widget()
-            .draw(&state, renderer, theme, style, Layout::new(&node), cursor, viewport);
+        widget.draw(&state, renderer, theme, style, Layout::new(&node), cursor, viewport);
     }
 }
 
