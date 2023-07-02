@@ -1,6 +1,7 @@
 use iced::advanced::layout::Limits;
 use iced::advanced::mouse;
 use iced::advanced::renderer;
+use iced::advanced::widget::Tree;
 use iced::advanced::{layout, Layout};
 use iced::advanced::{widget, Widget};
 use iced::widget::{container, text, Column, Row};
@@ -58,7 +59,7 @@ where
 
     fn draw(
         &self,
-        state: &widget::Tree,
+        _state: &widget::Tree,
         renderer: &mut Renderer,
         theme: &Renderer::Theme,
         style: &renderer::Style,
@@ -82,11 +83,18 @@ where
                 })
                 .collect()
         });
-        let table = create_table::<Message, Renderer>(&self.data, self.text_size, columns_max_width);
-        let node = table.as_widget().layout(renderer, &limits);
+        let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
+        let widget = table.as_widget();
+        let node = widget.layout(renderer, &limits);
+        let state = Tree {
+            tag: widget.tag(),
+            state: widget.state(),
+            children: widget.children(),
+        };
+
         table
             .as_widget()
-            .draw(state, renderer, theme, style, Layout::new(&node), cursor, viewport);
+            .draw(&state, renderer, theme, style, Layout::new(&node), cursor, viewport);
     }
 }
 
@@ -100,7 +108,7 @@ where
     }
 }
 
-fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: f32, columns_max_width: Vec<f32>) -> Element<'a, Message, Renderer>
+fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: f32, columns_max_width: &[f32]) -> Element<'a, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
@@ -112,10 +120,8 @@ where
         .map(|row| {
             let info: Vec<Element<Message, Renderer>> = row
                 .iter()
-                .zip(&columns_max_width)
-                .map(|(i, width)| {
-                    container(text(i).size(text_size)).style(style(flip)).width(*width).into()
-                })
+                .zip(columns_max_width)
+                .map(|(i, width)| container(text(i).size(text_size)).style(style(flip)).width(*width).into())
                 .collect();
             flip = !flip;
             Row::with_children(info).padding([5, 0, 5, 0]).into()
