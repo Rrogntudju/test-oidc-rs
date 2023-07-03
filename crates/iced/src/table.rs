@@ -57,7 +57,6 @@ where
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let dummy: Element<Message, Renderer> = text("").into();
         dummy.as_widget().layout(renderer, limits)
-    //  layout::Node::with_children(limits.max(), vec![dummy_node])
     }
 
     fn draw(
