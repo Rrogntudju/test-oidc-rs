@@ -1,4 +1,3 @@
-use iced::Point;
 use iced::advanced::layout::Limits;
 use iced::advanced::mouse;
 use iced::advanced::renderer;
@@ -34,13 +33,10 @@ impl Table {
             })
             .collect();
 
-        Self {
-            data,
-            text_size: 12.0,
-        }
+        Self { data, text_size: 12.0 }
     }
 
-    pub fn size(self, text_size: impl Into<Pixels>) -> Self {
+    pub fn size(mut self, text_size: impl Into<Pixels>) -> Self {
         self.text_size = text_size.into().0;
         self
     }
@@ -83,10 +79,8 @@ where
             state: widget.state(),
             children: widget.children(),
         };
-        let mut node = widget.layout(renderer, &limits);
-        node.move_to(Point::new(rectangle.x, rectangle.y));
 
-        widget.draw(&state, renderer, theme, style, Layout::new(&node), cursor, viewport);
+        widget.draw(&state, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
@@ -102,10 +96,9 @@ where
 
 fn get_max_width<Message, Renderer>(data: &[Vec<String>], renderer: &Renderer) -> Vec<f32>
 where
-
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer ,
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet,
- {
+{
     let limits = Limits::new(Size::ZERO, Size::INFINITY);
     data.iter().fold(vec![0.0; data[0].len()], |acc, row| {
         acc.iter()
