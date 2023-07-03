@@ -1,7 +1,7 @@
 use iced::advanced::layout::Limits;
 use iced::advanced::mouse;
 use iced::advanced::renderer;
-//use iced::advanced::widget::Tree;
+use iced::advanced::widget::Tree;
 use iced::advanced::{layout, Layout};
 use iced::advanced::{widget, Widget};
 use iced::widget::{container, text, Column, Row};
@@ -56,14 +56,14 @@ where
     }
 
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, renderer);
+        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
         table.as_widget().layout(renderer, limits)
     }
 
     fn draw(
         &self,
-        state: &widget::Tree,
+        _state: &widget::Tree,
         renderer: &mut Renderer,
         theme: &Renderer::Theme,
         style: &renderer::Style,
@@ -71,16 +71,15 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, renderer);
+        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
         let widget = table.as_widget();
-/*         let state = Tree {
+         let state = Tree {
             tag: widget.tag(),
             state: widget.state(),
             children: widget.children(),
-        }; */
-
-        widget.draw(state, renderer, theme, style, layout, cursor, viewport);
+        };
+        widget.draw(&state, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
@@ -94,7 +93,7 @@ where
     }
 }
 
-fn get_max_width<Message, Renderer>(data: &[Vec<String>], renderer: &Renderer) -> Vec<f32>
+fn get_max_width<Message, Renderer>(data: &[Vec<String>], text_size: f32, renderer: &Renderer) -> Vec<f32>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     Renderer::Theme: text::StyleSheet,
@@ -104,7 +103,7 @@ where
         acc.iter()
             .zip(row.iter())
             .map(|(max, s)| {
-                let text: Element<Message, Renderer> = text(s.clone()).into();
+                let text: Element<Message, Renderer> = text(s.clone()).size(text_size).into();
                 let layout = text.as_widget().layout(renderer, &limits);
                 let width = layout.bounds().width;
                 if width > *max {
