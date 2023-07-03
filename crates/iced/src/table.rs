@@ -55,6 +55,7 @@ where
     }
 
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, renderer);
         let dummy: Element<Message, Renderer> = text("").into();
         dummy.as_widget().layout(renderer, limits)
     }
@@ -110,13 +111,14 @@ where
     }
 }
 
-fn get_max_width<Message, Renderer>(table: &Table, renderer: &Renderer) -> Vec<f32>
+fn get_max_width<Message, Renderer>(data: &[Vec<String>], renderer: &Renderer) -> Vec<f32>
 where
+
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer ,
     Renderer::Theme: text::StyleSheet,
  {
     let limits = Limits::new(Size::ZERO, Size::INFINITY);
-    table.data.iter().fold(vec![0.0; table.data[0].len()], |acc, row| {
+    data.iter().fold(vec![0.0; data[0].len()], |acc, row| {
         acc.iter()
             .zip(row.iter())
             .map(|(max, s)| {
