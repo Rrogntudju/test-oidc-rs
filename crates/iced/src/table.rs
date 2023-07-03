@@ -74,11 +74,7 @@ where
         let columns_max_width = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
         let widget = table.as_widget();
-        let state = Tree {
-            tag: widget.tag(),
-            state: widget.state(),
-            children: widget.children(),
-        };
+        let state = Tree::new(widget);
         widget.draw(&state, renderer, theme, style, layout, cursor, viewport);
     }
 }
