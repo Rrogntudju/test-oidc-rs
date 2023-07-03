@@ -1,7 +1,7 @@
 use iced::advanced::layout::Limits;
 use iced::advanced::mouse;
 use iced::advanced::renderer;
-use iced::advanced::widget::Tree;
+//use iced::advanced::widget::Tree;
 use iced::advanced::{layout, Layout};
 use iced::advanced::{widget, Widget};
 use iced::widget::{container, text, Column, Row};
@@ -63,7 +63,7 @@ where
 
     fn draw(
         &self,
-        _state: &widget::Tree,
+        state: &widget::Tree,
         renderer: &mut Renderer,
         theme: &Renderer::Theme,
         style: &renderer::Style,
@@ -74,13 +74,13 @@ where
         let columns_max_width = get_max_width::<Message, Renderer>(&self.data, renderer);
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
         let widget = table.as_widget();
-        let state = Tree {
+/*         let state = Tree {
             tag: widget.tag(),
             state: widget.state(),
             children: widget.children(),
-        };
+        }; */
 
-        widget.draw(&state, renderer, theme, style, layout, cursor, viewport);
+        widget.draw(state, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
