@@ -110,6 +110,29 @@ where
     }
 }
 
+fn get_max_width<Message, Renderer>(table: &Table, renderer: &Renderer) -> Vec<f32>
+where
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer ,
+    Renderer::Theme: text::StyleSheet,
+ {
+    let limits = Limits::new(Size::ZERO, Size::INFINITY);
+    table.data.iter().fold(vec![0.0; table.data[0].len()], |acc, row| {
+        acc.iter()
+            .zip(row.iter())
+            .map(|(max, s)| {
+                let text: Element<Message, Renderer> = text(s.clone()).into();
+                let layout = text.as_widget().layout(renderer, &limits);
+                let width = layout.bounds().width;
+                if width > *max {
+                    width
+                } else {
+                    *max
+                }
+            })
+            .collect()
+    })
+}
+
 fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: f32, columns_max_width: &[f32]) -> Element<'a, Message, Renderer>
 where
     Message: 'a,
