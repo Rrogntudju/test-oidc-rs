@@ -56,8 +56,8 @@ where
 
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let dummy: Element<Message, Renderer> = text("").into();
-        let children = dummy.as_widget().layout(renderer, limits);
-        layout::Node::with_children(limits.max(), vec![children])
+        dummy.as_widget().layout(renderer, limits)
+    //  layout::Node::with_children(limits.max(), vec![dummy_node])
     }
 
     fn draw(
@@ -70,7 +70,8 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        let limits = Limits::new(Size::ZERO, layout.bounds().size());
+        let rectangle = layout.bounds();
+        let limits = Limits::new(Size::ZERO, rectangle.size());
         let columns_max_width = self.data.iter().fold(vec![0.0; self.data[0].len()], |acc, row| {
             acc.iter()
                 .zip(row.iter())
@@ -88,13 +89,13 @@ where
         });
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
         let widget = table.as_widget();
-        let mut node = widget.layout(renderer, &limits);
-        node.move_to(Point::new(layout.bounds().x, layout.bounds().y));
         let state = Tree {
             tag: widget.tag(),
             state: widget.state(),
             children: widget.children(),
         };
+        let mut node = widget.layout(renderer, &limits);
+        node.move_to(Point::new(rectangle.x, rectangle.y));
 
         widget.draw(&state, renderer, theme, style, Layout::new(&node), cursor, viewport);
     }
