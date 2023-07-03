@@ -1,3 +1,4 @@
+use iced::Point;
 use iced::advanced::layout::Limits;
 use iced::advanced::mouse;
 use iced::advanced::renderer;
@@ -53,8 +54,10 @@ where
         Length::Shrink
     }
 
-    fn layout(&self, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-        layout::Node::new(limits.max())
+    fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+        let dummy: Element<Message, Renderer> = text("").into();
+        let children = dummy.as_widget().layout(renderer, limits);
+        layout::Node::with_children(limits.max(), vec![children])
     }
 
     fn draw(
@@ -85,7 +88,8 @@ where
         });
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
         let widget = table.as_widget();
-        let node = widget.layout(renderer, &limits);
+        let mut node = widget.layout(renderer, &limits);
+        node.move_to(Point::new(layout.bounds().x, layout.bounds().y));
         let state = Tree {
             tag: widget.tag(),
             state: widget.state(),
