@@ -192,7 +192,7 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                column![titre, Table::new(data, 12)]
+                column![titre, Table::new(data)]
             }
             _ => column![""],
         };

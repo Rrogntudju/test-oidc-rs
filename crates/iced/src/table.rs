@@ -22,7 +22,7 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(data: &TableData, text_size: impl Into<Pixels>) -> Self {
+    pub fn new(data: &TableData) -> Self {
         let last_col = data.header.len() - 1;
         let data = iter::once(&data.header)
             .chain(&data.rows)
@@ -36,8 +36,13 @@ impl Table {
 
         Self {
             data,
-            text_size: text_size.into().0,
+            text_size: 12.0,
         }
+    }
+
+    pub fn size(self, text_size: impl Into<Pixels>) -> Self {
+        self.text_size = text_size.into().0;
+        self
     }
 }
 
@@ -56,8 +61,8 @@ where
 
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let columns_max_width = get_max_width::<Message, Renderer>(&self.data, renderer);
-        let dummy: Element<Message, Renderer> = text("").into();
-        dummy.as_widget().layout(renderer, limits)
+        let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
+        table.as_widget().layout(renderer, limits)
     }
 
     fn draw(
@@ -70,23 +75,7 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        let rectangle = layout.bounds();
-        let limits = Limits::new(Size::ZERO, rectangle.size());
-        let columns_max_width = self.data.iter().fold(vec![0.0; self.data[0].len()], |acc, row| {
-            acc.iter()
-                .zip(row.iter())
-                .map(|(max, s)| {
-                    let text: Element<Message, Renderer> = text(s.clone()).into();
-                    let layout = text.as_widget().layout(renderer, &limits);
-                    let width = layout.bounds().width;
-                    if width > *max {
-                        width
-                    } else {
-                        *max
-                    }
-                })
-                .collect()
-        });
+        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, renderer);
         let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
         let widget = table.as_widget();
         let state = Tree {
