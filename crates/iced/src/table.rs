@@ -28,7 +28,7 @@ impl Table {
             .map(|row| {
                 row.iter()
                     .enumerate()
-                    .map(|(i, s)| if i < last_col { stretch(s, 1) } else { s.clone() })
+                    .map(|(i, s)| if i < last_col { format!("{s}  ") } else { format!("{s} ") })
                     .collect()
             })
             .collect();
@@ -152,8 +152,4 @@ fn style(flip: bool) -> iced::theme::Container {
     } else {
         iced::theme::Container::default()
     }
-}
-
-fn stretch(s: &str, w: usize) -> String {
-    format!("{}{}", s, " ".repeat(w))
 }
