@@ -135,6 +135,7 @@ where
                     })
                     .style(style(flip))
                     .width(*width)
+                    .padding([5,0,5,0])
                     .into()
                 })
                 .collect();
