@@ -72,7 +72,7 @@ fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let settings = Settings {
         window: window::Settings {
-            size: (950, 400),
+            size: (1050, 350),
             icon: Some(icon),
             ..Default::default()
         },
@@ -192,7 +192,7 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                column![titre, Table::new(data).size(13.5)]
+                column![titre, Table::new(data).size(15)]
             }
             _ => column![""],
         };
