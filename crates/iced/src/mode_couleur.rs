@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
-use iced::futures;
 use iced::{subscription, Subscription};
+use iced_futures::futures;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
 use windows::UI::ViewManagement::{UIColorType, UISettings};

@@ -1,12 +1,11 @@
-use iced::advanced::layout::Limits;
-use iced::advanced::mouse;
-use iced::advanced::renderer;
-use iced::advanced::widget::Tree;
-use iced::advanced::{layout, Layout};
-use iced::advanced::{widget, Widget};
 use iced::widget::{container, text, Column, Row};
-use iced::Pixels;
 use iced::{Element, Length, Rectangle, Size};
+use iced_native::layout::Limits;
+use iced_native::renderer;
+use iced_native::widget::Tree;
+use iced_native::Pixels;
+use iced_native::{layout, Layout, Point};
+use iced_native::{widget, Widget};
 use std::iter;
 
 #[derive(Debug, Clone)]
@@ -44,7 +43,7 @@ impl Table {
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for Table
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Renderer: iced_native::Renderer + iced_native::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     fn width(&self) -> Length {
@@ -68,7 +67,7 @@ where
         theme: &Renderer::Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        cursor: mouse::Cursor,
+        cursor: Point,
         viewport: &Rectangle,
     ) {
         let columns_max_width = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
@@ -81,7 +80,7 @@ where
 
 impl<'a, Message, Renderer> From<Table> for Element<'a, Message, Renderer>
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Renderer: iced_native::Renderer + iced_native::text::Renderer,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     fn from(table: Table) -> Element<'a, Message, Renderer> {
@@ -91,7 +90,7 @@ where
 
 fn get_max_width<Message, Renderer>(data: &[Vec<String>], text_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Renderer: iced_native::Renderer + iced_native::text::Renderer,
     Renderer::Theme: text::StyleSheet,
 {
     let limits = Limits::new(Size::ZERO, Size::INFINITY);
@@ -118,7 +117,7 @@ where
 fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: Option<f32>, columns_max_width: &[f32]) -> Element<'a, Message, Renderer>
 where
     Message: 'a,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    Renderer: iced_native::Renderer + iced_native::text::Renderer + 'a,
     Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     let mut flip = false;
@@ -135,7 +134,7 @@ where
                     })
                     .style(style(flip))
                     .width(*width)
-                    .padding([5,0,5,0])
+                    .padding([5, 0, 5, 0])
                     .into()
                 })
                 .collect();

@@ -1,11 +1,12 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
-use iced::advanced::image::Handle;
-use iced::widget::{button, column, container, radio, row, runtime, text, Image};
+use cosmic_time::{Instant, Timeline};
+use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
-use iced::window::Action;
-use iced::{executor, window, Renderer};
+use iced::{executor, window, Event, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
+use iced_native::image::Handle;
+use iced_native::window::Action;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
@@ -89,6 +90,7 @@ struct App {
     en_traitement: bool,
     erreur: String,
     mode: ModeCouleur,
+    timeline: Timeline,
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +99,7 @@ enum Message {
     GetInfos,
     Infos(Result<(Option<TableData>, Option<Pkce>), String>),
     ModeCouleurChanged(Result<ModeCouleur, String>),
+    Tick(Instant),
 }
 
 impl Application for App {
@@ -114,6 +117,7 @@ impl Application for App {
                 en_traitement: false,
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
+                timeline: Timeline::new(),
             },
             Command::none(),
         )
@@ -144,13 +148,17 @@ impl Application for App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Command::single(runtime::command::Action::Window(Action::GainFocus))
+                Command::single(iced_native::command::Action::Window(Action::GainFocus))
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
                     Ok(mode) => self.mode = mode,
                     Err(e) => self.erreur = e,
                 }
+                Command::none()
+            }
+            Message::Tick(now) => {
+                self.timeline.now(now);
                 Command::none()
             }
         }
@@ -217,7 +225,9 @@ impl Application for App {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        stream_event_mode_couleur().map(Message::ModeCouleurChanged)
+        let mode_couleur = stream_event_mode_couleur().map(Message::ModeCouleurChanged);
+        let tick = self.timeline.as_subscription::<Event>().map(Message::Tick);
+        Subscription::batch([mode_couleur, tick.into()])
     }
 }
 
