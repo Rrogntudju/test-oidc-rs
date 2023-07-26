@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
-use cosmic_time::{Instant, Timeline};
+use cosmic_time::{anim, chain, id, Duration, Instant, Timeline};
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{executor, window, Event, Renderer};
@@ -8,6 +8,7 @@ use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
 use iced_native::image::Handle;
 use iced_native::window::Action;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
+use once_cell::sync::Lazy;
 use serde_json::value::Value;
 use std::fmt;
 use table::{Table, TableData};
@@ -29,6 +30,8 @@ const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 const ICON: &[u8; 1612] = include_bytes!("../openid.png");
+
+static CONTAINER: Lazy<id::Container> = Lazy::new(id::Container::unique);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fournisseur {
@@ -144,7 +147,19 @@ impl Application for App {
             }
             Message::Infos(result) => {
                 match result {
-                    Ok(infos) => (self.infos, self.secret) = infos,
+                    Ok(infos) => {
+                        let prec = self.infos.clone();
+                        (self.infos, self.secret) = infos;
+                        self.timeline = Timeline::new();
+                        if prec != self.infos {
+                            let animation = chain![
+                                CONTAINER,
+                                cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 800]),
+                                cosmic_time::container(Duration::from_secs(2)).padding([15, 0, 0, 20]),
+                            ];
+                            self.timeline.set_chain(animation).start();
+                        }
+                    }
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
@@ -209,7 +224,7 @@ impl Application for App {
 
         container(row![
             column![image, titre, fournisseur, bouton, erreur].spacing(10),
-            infos.padding([15, 0, 0, 20])
+            anim!(CONTAINER, &self.timeline, infos)
         ])
         .padding([10, 0, 0, 10])
         .into()
@@ -227,7 +242,7 @@ impl Application for App {
     fn subscription(&self) -> Subscription<Self::Message> {
         let mode_couleur = stream_event_mode_couleur().map(Message::ModeCouleurChanged);
         let tick = self.timeline.as_subscription::<Event>().map(Message::Tick);
-        Subscription::batch([mode_couleur, tick.into()])
+        Subscription::batch([mode_couleur, tick])
     }
 }
 

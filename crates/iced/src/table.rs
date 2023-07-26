@@ -8,7 +8,7 @@ use iced_native::{layout, Layout, Point};
 use iced_native::{widget, Widget};
 use std::iter;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableData {
     pub header: Vec<String>,
     pub rows: Vec<Vec<String>>,
