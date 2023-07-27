@@ -151,14 +151,19 @@ impl Application for App {
                         let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
                         self.timeline = Timeline::new();
-                        if prec != self.infos {
-                            let animation = chain![
+                        let animation = if prec != self.infos {
+                            chain![
                                 CONTAINER,
-                                cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 800]),
-                                cosmic_time::container(Duration::from_secs(2)).padding([15, 0, 0, 20]),
-                            ];
-                            self.timeline.set_chain(animation).start();
-                        }
+                                cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 200]),
+                                cosmic_time::container(Duration::from_millis(200)).padding([15, 0, 0, 20]),
+                            ]
+                        } else {
+                            chain![
+                                CONTAINER,
+                                cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 20]),
+                            ]
+                        };
+                        self.timeline.set_chain(animation).start();
                     }
                     Err(e) => self.erreur = e,
                 }
@@ -215,7 +220,7 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                column![titre, Table::new(data).size(15)]
+                column![titre, Table::new(data).size(18)]
             }
             _ => column![""],
         };
