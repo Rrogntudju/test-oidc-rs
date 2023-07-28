@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
-use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
+use cosmic_time::{anim, chain, id, Duration, Instant, Quadratic, Timeline};
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{executor, window, Event, Renderer};
@@ -155,9 +155,9 @@ impl Application for App {
                             chain![
                                 CONTAINER,
                                 cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 200]),
-                                cosmic_time::container(Duration::from_millis(200))
+                                cosmic_time::container(Duration::from_millis(300))
                                     .padding([15, 0, 0, 20])
-                                    .ease(Exponential::In),
+                                    .ease(Quadratic::Out),
                             ]
                         } else {
                             chain![CONTAINER, cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 20]),]
