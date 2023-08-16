@@ -5,8 +5,8 @@ authors = ["Rrogntudju"]
 edition = "2021"
 
 [dependencies]
-iced = { version = "0.9", features = ["tokio", "image"] }
-iced_native = "0.10"
+iced = { version = "0.10", features = ["tokio", "image", "advanced"] }
+iced_runtime = "0.1"
 iced_core = "0.10"
 iced_futures = "0.7"
 cosmic-time = "0.2"

@@ -5,8 +5,7 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{executor, window, Event, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
-use iced_native::image::Handle;
-use iced_native::window::Action;
+use iced::advanced::image::Handle;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use once_cell::sync::Lazy;
 use serde_json::value::Value;
@@ -167,7 +166,7 @@ impl Application for App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Command::single(iced_native::command::Action::Window(Action::GainFocus))
+                Command::single(iced_runtime::command::Action::Window(window::Action::GainFocus))
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
@@ -228,7 +227,8 @@ impl Application for App {
 
         container(row![
             column![image, titre, fournisseur, bouton, erreur].spacing(10),
-            anim!(CONTAINER, &self.timeline, infos)
+            infos,
+//            anim!(CONTAINER, &self.timeline, infos)
         ])
         .padding([10, 0, 0, 10])
         .into()
@@ -246,6 +246,7 @@ impl Application for App {
     fn subscription(&self) -> Subscription<Self::Message> {
         let mode_couleur = stream_event_mode_couleur().map(Message::ModeCouleurChanged);
         let tick = self.timeline.as_subscription::<Event>().map(Message::Tick);
+        let tick = Subscription::none();
         Subscription::batch([mode_couleur, tick])
     }
 }
