@@ -1,11 +1,11 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
 use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
+use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{executor, window, Event, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
-use iced::advanced::image::Handle;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use once_cell::sync::Lazy;
 use serde_json::value::Value;
@@ -228,7 +228,7 @@ impl Application for App {
         container(row![
             column![image, titre, fournisseur, bouton, erreur].spacing(10),
             infos,
-//            anim!(CONTAINER, &self.timeline, infos)
+            //            anim!(CONTAINER, &self.timeline, infos)
         ])
         .padding([10, 0, 0, 10])
         .into()
