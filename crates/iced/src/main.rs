@@ -75,7 +75,7 @@ fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let settings = Settings {
         window: window::Settings {
-            size: (1030, 350),
+            size: (850, 360),
             icon: Some(icon),
             ..Default::default()
         },
@@ -87,6 +87,7 @@ fn main() -> iced::Result {
 #[derive(Debug)]
 struct App {
     radio_fournisseur: Fournisseur,
+    fournisseur: String,
     secret: Option<Pkce>,
     infos: Option<TableData>,
     en_traitement: bool,
@@ -114,6 +115,7 @@ impl Application for App {
         (
             Self {
                 radio_fournisseur: Fournisseur::Microsoft,
+                fournisseur: String::new(),
                 secret: None,
                 infos: None,
                 en_traitement: false,
@@ -151,6 +153,7 @@ impl Application for App {
                         (self.infos, self.secret) = infos;
                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
+                            self.fournisseur = self.radio_fournisseur.to_string();
                             chain![
                                 CONTAINER,
                                 cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 200]),
@@ -214,22 +217,25 @@ impl Application for App {
 
         let infos = match &self.infos {
             Some(data) => {
-                let titre = text(format!("Userinfos {}", &self.radio_fournisseur))
+                let titre = text(format!("Userinfos {}", &self.fournisseur))
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                column![titre, Table::new(data).size(18)]
+                column![titre, Table::new(data).size(16)]
             }
             _ => column![""],
         };
 
         let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
 
-        container(row![
-            column![image, titre, fournisseur, bouton, erreur].spacing(10),
-            infos,
-            //            anim!(CONTAINER, &self.timeline, infos)
-        ])
+        container(
+            row![
+                column![image, titre, fournisseur, bouton, erreur].spacing(10),
+                infos,
+                //            anim!(CONTAINER, &self.timeline, infos)
+            ]
+            .spacing(10),
+        )
         .padding([10, 0, 0, 10])
         .into()
     }
