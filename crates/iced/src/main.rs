@@ -135,10 +135,14 @@ impl Application for App {
         match message {
             Message::FournisseurChanged(fournisseur) => {
                 self.radio_fournisseur = fournisseur;
-                self.secret = None;
                 Command::none()
             }
             Message::GetInfos => {
+                let fournisseur = self.radio_fournisseur.to_string();
+                if self.fournisseur != fournisseur {
+                    self.secret = None;
+                    self.fournisseur = fournisseur;
+                }
                 let fournisseur = self.radio_fournisseur;
                 let secret = self.secret.clone();
                 let task = async move { get_infos(fournisseur, secret) };
@@ -153,7 +157,6 @@ impl Application for App {
                         (self.infos, self.secret) = infos;
                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
-                            self.fournisseur = self.radio_fournisseur.to_string();
                             chain![
                                 CONTAINER,
                                 cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 200]),
