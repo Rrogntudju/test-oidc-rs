@@ -253,10 +253,11 @@ impl Application for App {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        let mode_couleur = stream_event_mode_couleur().map(Message::ModeCouleurChanged);
-        let tick = self.timeline.as_subscription::<Event>().map(Message::Tick);
-        let tick = Subscription::none();
-        Subscription::batch([mode_couleur, tick])
+        Subscription::batch([
+            stream_event_mode_couleur().map(Message::ModeCouleurChanged),
+            //   self.timeline.as_subscription::<Event>().map(Message::Tick),
+            Subscription::none(),
+        ])
     }
 }
 
