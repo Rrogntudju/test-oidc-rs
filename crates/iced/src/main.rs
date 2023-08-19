@@ -75,7 +75,7 @@ fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let settings = Settings {
         window: window::Settings {
-            size: (850, 360),
+            size: (880, 380),
             icon: Some(icon),
             ..Default::default()
         },
@@ -234,8 +234,7 @@ impl Application for App {
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
-                infos,
-                //            anim!(CONTAINER, &self.timeline, infos)
+                anim!(CONTAINER, &self.timeline, infos)
             ]
             .spacing(10),
         )
@@ -255,8 +254,7 @@ impl Application for App {
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
-            //   self.timeline.as_subscription::<Event>().map(Message::Tick),
-            Subscription::none(),
+            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
     }
 }
