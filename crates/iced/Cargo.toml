@@ -3,6 +3,7 @@ name = "userinfos2"
 version = "0.4.0"
 authors = ["Rrogntudju"]
 edition = "2021"
+build = "build/build.rs"
 
 [dependencies]
 iced = { version = "0.10", features = ["tokio", "image", "advanced"] }
@@ -19,3 +20,6 @@ ureq = { version = "2", features = ["json"] }
 anyhow = "1"
 windows = { version = "0.48", features = ["UI_ViewManagement", "Foundation"] }
 tokio = { version = "1", features = [ "sync" ] }
+
+[build-dependencies]
+winres = "0.1"
