@@ -53,12 +53,16 @@ fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
+    struct EventModeCouleurId;
+
     let (tx, rx) = channel::<Result<ModeCouleur>>(10);
     let revoker = match EventModeCouleur::new(tx) {
         Ok(revoker) => revoker,
         Err(e) => {
-            eprintln!("{e:#}");
-            return Subscription::none();
+            return subscription::run_with_id(
+                std::any::TypeId::of::<EventModeCouleurId>(),
+                futures::stream::once(async move { Err(format!("{e:#}")) }),
+            )
         }
     };
 
@@ -67,8 +71,6 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
         Receiving((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
         End,
     }
-
-    struct EventModeCouleurId;
 
     subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
         futures::stream::unfold(State::Init((rx, revoker)), |state| async {
