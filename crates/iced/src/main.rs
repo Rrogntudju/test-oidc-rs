@@ -12,11 +12,12 @@ use serde_json::value::Value;
 use std::fmt;
 use table::{Table, TableData};
 
+mod table;
 mod pkce;
 use pkce::Pkce;
 
+#[cfg(target_os = "windows")]
 mod mode_couleur;
-mod table;
 
 const ID_MS: &str = include_str!("../../../secrets/clientid.microsoft");
 const SECRET_MS: &str = include_str!("../../../secrets/secret.microsoft");
@@ -253,6 +254,7 @@ impl Application for App {
 
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
+            #[cfg(target_os = "windows")]
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
             self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
