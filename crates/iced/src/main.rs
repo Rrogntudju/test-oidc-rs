@@ -16,7 +16,6 @@ mod table;
 mod pkce;
 use pkce::Pkce;
 
-#[cfg(target_os = "windows")]
 mod mode_couleur;
 
 const ID_MS: &str = include_str!("../../../secrets/clientid.microsoft");
@@ -254,7 +253,6 @@ impl Application for App {
 
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
-            #[cfg(target_os = "windows")]
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
             self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])

@@ -11,6 +11,8 @@ pub enum ModeCouleur {
     Sombre,
 }
 
+
+#[cfg(target_os = "windows")]
 struct EventModeCouleur {
     settings: UISettings,
     token: EventRegistrationToken,
@@ -37,12 +39,14 @@ impl Drop for EventModeCouleur {
     }
 }
 
+#[cfg(target_os = "windows")]
 #[inline]
 fn is_color_light(clr: &windows::UI::Color) -> bool {
     // https://www.w3.org/TR/AERT/#color-contrast
     (0.299 * clr.R as f32 + 0.587 * clr.G as f32 + 0.114 * clr.B as f32) > 128.0
 }
 
+#[cfg(target_os = "windows")]
 fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
     let couleur = settings.GetColorValue(UIColorType::Foreground)?;
     Ok(if is_color_light(&couleur) {
@@ -52,6 +56,7 @@ fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
     })
 }
 
+#[cfg(target_os = "windows")]
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
     struct EventModeCouleurId;
 
@@ -91,3 +96,4 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
         })
     })
 }
+
