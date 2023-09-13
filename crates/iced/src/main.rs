@@ -16,8 +16,8 @@ mod table;
 mod pkce;
 use pkce::Pkce;
 
-#[cfg_attr(target_os = "linux", path = "linux_mode_couleur.rs")]
-#[cfg_attr(target_os = "windows", path = "windows_mode_couleur.rs")]
+#[cfg_attr(target_os = "unix", path = "nix_mode_couleur.rs")]
+#[cfg_attr(target_os = "windows", path = "win_mode_couleur.rs")]
 mod mode_couleur;
 
 const ID_MS: &str = include_str!("../../../secrets/clientid.microsoft");

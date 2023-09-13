@@ -18,10 +18,13 @@ webbrowser = "0.8"
 url = "2"
 ureq = { version = "2", features = ["json"] }
 anyhow = "1"
-windows = { version = "0.48", features = ["UI_ViewManagement", "Foundation"] }
 tokio = { version = "1", features = [ "sync" ] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.51", features = ["UI_ViewManagement", "Foundation"] }
+
+[target.'cfg(unix)'.dependencies]
 zbus = "3"
-zvariant = "3"
 
 [build-dependencies]
 winres = "0.1"
