@@ -12,11 +12,11 @@ use serde_json::value::Value;
 use std::fmt;
 use table::{Table, TableData};
 
-mod table;
 mod pkce;
+mod table;
 use pkce::Pkce;
 
-#[cfg_attr(target_os = "unix", path = "nix_mode_couleur.rs")]
+#[cfg_attr(target_os = "linux", path = "nix_mode_couleur.rs")]
 #[cfg_attr(target_os = "windows", path = "win_mode_couleur.rs")]
 mod mode_couleur;
 

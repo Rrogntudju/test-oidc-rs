@@ -11,7 +11,6 @@ pub enum ModeCouleur {
     Sombre,
 }
 
-
 struct EventModeCouleur {
     settings: UISettings,
     token: EventRegistrationToken,

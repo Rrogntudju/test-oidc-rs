@@ -1,4 +1,13 @@
-use zbus::{zvariant::OwnedValue, dbus_proxy};
+use anyhow::{Context, Result};
+use iced::{subscription, Subscription};
+use iced_futures::futures;
+use zbus::{dbus_proxy, zvariant::OwnedValue};
+
+#[derive(Debug, Clone)]
+pub enum ModeCouleur {
+    Clair,
+    Sombre,
+}
 
 #[dbus_proxy(
     interface = "org.freedesktop.portal.Settings",
@@ -12,12 +21,20 @@ trait PortalSettings {
     fn SettingChanged(&self, namespace: &str, key: &str, value: OwnedValue) -> Result<()>;
 }
 
+fn build_portal_settings_proxy<'c>() -> Result<PortalSettingsProxy<'c>> {
+    let proxy = futures::executor::block_on(async {
+        let connection = zbus::ConnectionBuilder::session()?.build().await?;
+        PortalSettingsProxy::new(&connection).await.context("build portal settings proxy")
+    })?;
+
+    Ok(proxy)
+}
+
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
     struct EventModeCouleurId;
 
-    let (tx, rx) = channel::<Result<ModeCouleur>>(10);
-    let revoker = match EventModeCouleur::new(tx) {
-        Ok(revoker) => revoker,
+    let proxy = match build_portal_settings_proxy() {
+        Ok(proxy) => proxy,
         Err(e) => {
             return subscription::run_with_id(
                 std::any::TypeId::of::<EventModeCouleurId>(),
