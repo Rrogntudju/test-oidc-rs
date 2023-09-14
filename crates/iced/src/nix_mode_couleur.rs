@@ -3,10 +3,22 @@ use iced::{subscription, Subscription};
 use iced_futures::futures;
 use zbus::{dbus_proxy, zvariant::OwnedValue};
 
+static APPEARANCE: &str = "org.freedesktop.appearance";
+static SCHEME: &str = "color-scheme";
+
 #[derive(Debug, Clone)]
 pub enum ModeCouleur {
     Clair,
     Sombre,
+}
+
+impl From<OwnedValue> for ModeCouleur {
+    fn from(value: OwnedValue) -> Self {
+        match value.downcast_ref::<u32>() {
+            Some(1) => Self::Sombre,
+            _ => Self::Clair,
+        }
+    }
 }
 
 #[dbus_proxy(
@@ -24,7 +36,7 @@ trait PortalSettings {
 fn build_portal_settings_proxy<'c>() -> Result<PortalSettingsProxy<'c>> {
     let proxy = futures::executor::block_on(async {
         let connection = zbus::ConnectionBuilder::session()?.build().await?;
-        PortalSettingsProxy::new(&connection).await.context("building portal settings proxy")
+        PortalSettingsProxy::new(&connection).await.context("building proxy")
     })?;
 
     Ok(proxy)
@@ -53,7 +65,8 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
         futures::stream::unfold(State::Init(proxy), |state| async {
             match state {
                 State::Init(proxy) => {
-                    let mode = mode_couleur(&revoker.settings);
+                    let value = futures::executor::block_on(async { proxy.Read(APPEARANCE, SCHEME).await });
+
                     Some((mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker))))
                 }
                 State::Receiving((mut rx, revoker)) => match rx.recv().await {
