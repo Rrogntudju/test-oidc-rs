@@ -24,7 +24,7 @@ trait PortalSettings {
 fn build_portal_settings_proxy<'c>() -> Result<PortalSettingsProxy<'c>> {
     let proxy = futures::executor::block_on(async {
         let connection = zbus::ConnectionBuilder::session()?.build().await?;
-        PortalSettingsProxy::new(&connection).await.context("build portal settings proxy")
+        PortalSettingsProxy::new(&connection).await.context("building portal settings proxy")
     })?;
 
     Ok(proxy)
@@ -43,16 +43,16 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
         }
     };
 
-    enum State {
-        Init((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
-        Receiving((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
+    enum State<'c> {
+        Init(PortalSettingsProxy<'c>),
+        Receiving((PortalSettingsProxy<'c>, )),
         End,
     }
 
     subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
-        futures::stream::unfold(State::Init((rx, revoker)), |state| async {
+        futures::stream::unfold(State::Init(proxy), |state| async {
             match state {
-                State::Init((rx, revoker)) => {
+                State::Init(proxy) => {
                     let mode = mode_couleur(&revoker.settings);
                     Some((mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker))))
                 }
