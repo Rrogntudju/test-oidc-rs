@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use iced::{subscription, Subscription};
 use iced_futures::futures;
-use zbus::{dbus_proxy, zvariant::OwnedValue};
 use iced_futures::futures::StreamExt;
+use zbus::{dbus_proxy, zvariant::OwnedValue};
 
 static APPEARANCE: &str = "org.freedesktop.appearance";
 static SCHEME: &str = "color-scheme";
