@@ -12,15 +12,6 @@ pub enum ModeCouleur {
     Sombre,
 }
 
-impl From<OwnedValue> for ModeCouleur {
-    fn from(value: OwnedValue) -> Self {
-        match value.downcast_ref::<u32>() {
-            Some(1) => Self::Sombre,
-            _ => Self::Clair,
-        }
-    }
-}
-
 #[dbus_proxy(
     interface = "org.freedesktop.portal.Settings",
     default_service = "org.freedesktop.portal.Desktop",
@@ -33,13 +24,21 @@ trait PortalSettings {
     fn SettingChanged(&self, namespace: &str, key: &str, value: OwnedValue) -> Result<()>;
 }
 
-fn build_portal_settings_proxy<'c>() -> Result<PortalSettingsProxy<'c>> {
+fn build_portal_settings_proxy<'a>() -> Result<PortalSettingsProxy<'a>> {
     let proxy = futures::executor::block_on(async {
         let connection = zbus::ConnectionBuilder::session()?.build().await?;
         PortalSettingsProxy::new(&connection).await.context("building proxy")
     })?;
 
     Ok(proxy)
+}
+
+fn get_mode_couleur(value: OwnedValue) -> Result<ModeCouleur, String> {
+     match value.downcast_ref::<u32>() {
+        Some(1) => Ok(ModeCouleur::Sombre),
+        Some(_) => Ok(ModeCouleur::Clair),
+        None => Err(format!("get_mode_couleur: u32 attendu mais reçu {value:#?}")),
+    }
 }
 
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
@@ -55,9 +54,9 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
         }
     };
 
-    enum State<'c> {
-        Init(PortalSettingsProxy<'c>),
-        Receiving((PortalSettingsProxy<'c>, )),
+    enum State<'a> {
+        Init(PortalSettingsProxy<'a>),
+        Receiving((PortalSettingsProxy<'a>, SettingChangedStream<'a>)),
         End,
     }
 
@@ -65,9 +64,16 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
         futures::stream::unfold(State::Init(proxy), |state| async {
             match state {
                 State::Init(proxy) => {
-                    let value = futures::executor::block_on(async { proxy.Read(APPEARANCE, SCHEME).await });
-
-                    Some((mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker))))
+                    match proxy.Read(APPEARANCE, SCHEME).await {
+                        Ok(value) =>  {
+                            let mode = get_mode_couleur(value);
+                            match proxy.receive_SettingChanged().await {
+                                Ok(setting_changed) => Some((mode.map_err(|e| format!("{e:#}")), State::Receiving((proxy, setting_changed)))),
+                                Err(e) => Some((Err(format!("{e:#}")), State::End)),
+                            }
+                        },
+                        Err(e) => Some((Err(format!("{e:#}")), State::End)),
+                    }
                 }
                 State::Receiving((mut rx, revoker)) => match rx.recv().await {
                     Some(mode) => Some((mode.map_err(|e| format!("{e:#}")), State::Receiving((rx, revoker)))),
