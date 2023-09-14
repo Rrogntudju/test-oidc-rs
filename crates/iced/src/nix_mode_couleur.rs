@@ -42,15 +42,15 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
     struct EventModeCouleurId;
 
     enum State<'a> {
-        Init(),
+        Init,
         Receiving(SettingChangedStream<'a>),
         End,
     }
 
     subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
-        futures::stream::unfold(State::Init(), |state| async {
+        futures::stream::unfold(State::Init, |state| async {
             match state {
-                State::Init() => match build_portal_settings_proxy().await {
+                State::Init => match build_portal_settings_proxy().await {
                     Ok(proxy) => match proxy.Read(APPEARANCE, SCHEME).await {
                         Ok(value) => {
                             let mode = get_mode_couleur(value);
