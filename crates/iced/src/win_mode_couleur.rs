@@ -37,6 +37,12 @@ impl Drop for EventModeCouleur {
     }
 }
 
+enum State {
+    Init,
+    Receiving((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
+    End,
+}
+
 #[inline]
 fn is_color_light(clr: &windows::UI::Color) -> bool {
     // https://www.w3.org/TR/AERT/#color-contrast
@@ -54,12 +60,6 @@ fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
 
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
     struct EventModeCouleurId;
-
-    enum State {
-        Init,
-        Receiving((Receiver<Result<ModeCouleur>>, EventModeCouleur)),
-        End,
-    }
 
     subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
         futures::stream::unfold(State::Init, |state| async {
