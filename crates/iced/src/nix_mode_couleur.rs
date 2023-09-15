@@ -36,7 +36,7 @@ async fn build_portal_settings_proxy<'a>() -> Result<PortalSettingsProxy<'a>> {
     PortalSettingsProxy::new(&connection).await.context("build proxy")
 }
 
-fn get_mode_couleur(value: OwnedValue) -> Result<ModeCouleur, String> {
+fn get_mode_couleur(value: &OwnedValue) -> Result<ModeCouleur, String> {
     match value.downcast_ref::<u32>() {
         Some(1) => Ok(ModeCouleur::Sombre),
         Some(_) => Ok(ModeCouleur::Clair),
@@ -53,7 +53,7 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
                 State::Init => match build_portal_settings_proxy().await {
                     Ok(proxy) => match proxy.Read(APPEARANCE, SCHEME).await {
                         Ok(value) => {
-                            let mode = get_mode_couleur(value);
+                            let mode = get_mode_couleur(&value);
                             match proxy.receive_SettingChanged().await {
                                 Ok(setting_changed) => Some((mode.map_err(|e| format!("{e:#}")), State::Receiving(setting_changed))),
                                 Err(e) => Some((Err(format!("{e:#}")), State::End)),
@@ -63,10 +63,10 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
                     },
                     Err(e) => Some((Err(format!("{e:#}")), State::End)),
                 },
-                State::Receiving(setting_changed) => match setting_changed.next().await {
+                State::Receiving(mut setting_changed) => match setting_changed.next().await {
                     Some(signal) => match signal.args() {
                         Ok(args) => {
-                            let mode = get_mode_couleur(*args.value());
+                            let mode = get_mode_couleur(args.value());
                             Some((mode.map_err(|e| format!("{e:#}")), State::Receiving(setting_changed)))
                         }
                         Err(e) => Some((Err(format!("{e:#}")), State::End)),
