@@ -63,17 +63,21 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
                     },
                     Err(e) => Some((Err(format!("{e:#}")), State::End)),
                 },
-                State::Receiving(mut setting_changed) => match setting_changed.next().await {
-                    Some(signal) => match signal.args() {
-                        Ok(args) => {
-                            let mode = get_mode_couleur(args.value());
-                            Some((mode.map_err(|e| format!("{e:#}")), State::Receiving(setting_changed)))
+                State::Receiving(mut setting_changed) => loop {
+                    match setting_changed.next().await {
+                        Some(signal) => match signal.args() {
+                            Ok(args) => {
+                                if *args.namespace() == APPEARANCE && *args.key() == SCHEME {
+                                    let mode = get_mode_couleur(args.value());
+                                    break Some((mode.map_err(|e| format!("{e:#}")), State::Receiving(setting_changed)));
+                                }
+                            }
+                            Err(e) => break Some((Err(format!("{e:#}")), State::End)),
+                        },
+                        None => {
+                            let erreur: Result<ModeCouleur, String> = Err("Échec du changement de mode couleur".to_string());
+                            break Some((erreur, State::End));
                         }
-                        Err(e) => Some((Err(format!("{e:#}")), State::End)),
-                    },
-                    None => {
-                        let erreur: Result<ModeCouleur, String> = Err("Échec du changement de mode couleur".to_string());
-                        Some((erreur, State::End))
                     }
                 },
                 State::End => None,
