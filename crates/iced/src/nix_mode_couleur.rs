@@ -25,6 +25,12 @@ trait PortalSettings {
     fn SettingChanged(&self, namespace: &str, key: &str, value: OwnedValue) -> zbus::Result<()>;
 }
 
+enum State<'a> {
+    Init,
+    Receiving(SettingChangedStream<'a>),
+    End,
+}
+
 async fn build_portal_settings_proxy<'a>() -> Result<PortalSettingsProxy<'a>> {
     let connection = zbus::ConnectionBuilder::session()?.build().await.context("build connection")?;
     PortalSettingsProxy::new(&connection).await.context("build proxy")
@@ -40,12 +46,6 @@ fn get_mode_couleur(value: OwnedValue) -> Result<ModeCouleur, String> {
 
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
     struct EventModeCouleurId;
-
-    enum State<'a> {
-        Init,
-        Receiving(SettingChangedStream<'a>),
-        End,
-    }
 
     subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
         futures::stream::unfold(State::Init, |state| async {
