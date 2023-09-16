@@ -27,7 +27,7 @@ trait PortalSettings {
 
 enum State<'a> {
     Init,
-    Receiving(SettingChangedStream<'a>),
+    Streaming(SettingChangedStream<'a>),
     End,
 }
 
@@ -55,7 +55,7 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
                         Ok(value) => {
                             let mode = get_mode_couleur(&value);
                             match proxy.receive_SettingChanged().await {
-                                Ok(setting_changed) => Some((mode.map_err(|e| format!("{e:#}")), State::Receiving(setting_changed))),
+                                Ok(setting_changed) => Some((mode.map_err(|e| format!("{e:#}")), State::Streaming(setting_changed))),
                                 Err(e) => Some((Err(format!("{e:#}")), State::End)),
                             }
                         }
@@ -63,13 +63,13 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
                     },
                     Err(e) => Some((Err(format!("{e:#}")), State::End)),
                 },
-                State::Receiving(mut setting_changed) => loop {
+                State::Streaming(mut setting_changed) => loop {
                     match setting_changed.next().await {
                         Some(signal) => match signal.args() {
                             Ok(args) => {
                                 if *args.namespace() == APPEARANCE && *args.key() == SCHEME {
                                     let mode = get_mode_couleur(args.value());
-                                    break Some((mode.map_err(|e| format!("{e:#}")), State::Receiving(setting_changed)));
+                                    break Some((mode.map_err(|e| format!("{e:#}")), State::Streaming(setting_changed)));
                                 }
                             }
                             Err(e) => break Some((Err(format!("{e:#}")), State::End)),
