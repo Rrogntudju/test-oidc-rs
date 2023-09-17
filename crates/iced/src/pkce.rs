@@ -1,5 +1,5 @@
 use crate::Fournisseur;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use oauth2::basic::BasicClient;
 use oauth2::ureq::http_client;
 use oauth2::{
@@ -42,8 +42,8 @@ impl Pkce {
             .set_pkce_challenge(pkce_code_challenge)
             .url();
 
-        let listener = TcpListener::bind("[::1]:86")?;
-        webbrowser::open(authorize_url.as_ref())?;
+        let listener = TcpListener::bind("[::1]:86").context("TCP bind")?;
+        webbrowser::open(authorize_url.as_ref()).context("open browser")?;
 
         let mut code = AuthorizationCode::new(String::new());
         if let Some(mut stream) = listener.incoming().flatten().next() {
