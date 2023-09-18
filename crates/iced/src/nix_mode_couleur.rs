@@ -4,8 +4,8 @@ use iced_futures::futures;
 use iced_futures::futures::StreamExt;
 use zbus::{dbus_proxy, zvariant::OwnedValue};
 
-static APPEARANCE: &str = "org.freedesktop.appearance";
-static SCHEME: &str = "color-scheme";
+const APPEARANCE: &str = "org.freedesktop.appearance";
+const SCHEME: &str = "color-scheme";
 
 #[derive(Debug, Clone)]
 pub enum ModeCouleur {
