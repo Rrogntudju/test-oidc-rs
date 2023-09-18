@@ -73,6 +73,15 @@ impl Fournisseur {
     }
 }
 
+#[derive(Debug, Clone)]
+enum Message {
+    FournisseurChanged(Fournisseur),
+    GetInfos,
+    Infos(Result<(Option<TableData>, Option<Pkce>), String>),
+    ModeCouleurChanged(Result<ModeCouleur, String>),
+    Tick(Instant),
+}
+
 fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let settings = Settings {
@@ -96,15 +105,6 @@ struct App {
     erreur: String,
     mode: ModeCouleur,
     timeline: Timeline,
-}
-
-#[derive(Debug, Clone)]
-enum Message {
-    FournisseurChanged(Fournisseur),
-    GetInfos,
-    Infos(Result<(Option<TableData>, Option<Pkce>), String>),
-    ModeCouleurChanged(Result<ModeCouleur, String>),
-    Tick(Instant),
 }
 
 impl Application for App {
