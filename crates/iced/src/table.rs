@@ -6,6 +6,7 @@ use iced::advanced::widget::{self, Widget};
 use iced::widget::{container, text, Column, Row};
 use iced::{mouse, Pixels};
 use iced::{Element, Length, Rectangle, Size};
+use std::cell::OnceCell;
 use std::iter;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -17,6 +18,7 @@ pub struct TableData {
 pub struct Table {
     data: Vec<Vec<String>>,
     text_size: Option<f32>,
+    columns_max_width: OnceCell<Vec<f32>>,
 }
 
 impl Table {
@@ -32,7 +34,11 @@ impl Table {
             })
             .collect();
 
-        Self { data, text_size: None }
+        Self {
+            data,
+            text_size: None,
+            columns_max_width: OnceCell::new(),
+        }
     }
 
     pub fn size(mut self, text_size: impl Into<Pixels>) -> Self {
@@ -55,8 +61,10 @@ where
     }
 
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
-        let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
+        let widths = self
+            .columns_max_width
+            .get_or_init(|| get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer));
+        let table = create_table::<Message, Renderer>(&self.data, self.text_size, widths);
         table.as_widget().layout(renderer, limits)
     }
 
@@ -70,8 +78,8 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        let columns_max_width = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
-        let table = create_table::<Message, Renderer>(&self.data, self.text_size, &columns_max_width);
+        let widths = self.columns_max_width.get().unwrap();
+        let table = create_table::<Message, Renderer>(&self.data, self.text_size, widths);
         let widget = table.as_widget();
         let state = Tree::new(widget);
         widget.draw(&state, renderer, theme, style, layout, cursor, viewport);
