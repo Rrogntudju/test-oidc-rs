@@ -31,7 +31,8 @@ const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 const ICON: &[u8; 1612] = include_bytes!("../openid.png");
-const CONTAINER: Lazy<id::Container> = Lazy::new(id::Container::unique);
+
+static CONTAINER: Lazy<id::Container> = Lazy::new(id::Container::unique);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fournisseur {
