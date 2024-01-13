@@ -1,15 +1,20 @@
 use crate::Fournisseur;
-use anyhow::{Context, Error};
+use anyhow::{anyhow, Context, Error};
 use oauth2::basic::BasicClient;
 use oauth2::ureq::http_client;
 use oauth2::{
     AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse,
     TokenUrl,
 };
-use std::io::{BufRead, BufReader, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{sync_channel, Receiver};
+use std::sync::Arc;
+use std::io::{BufRead, BufReader};
 use std::net::TcpListener;
 use std::time::{Duration, Instant};
 use url::Url;
+use tokio::task::spawn_blocking;
+
 
 #[derive(Debug, Clone)]
 pub struct Pkce {
@@ -19,7 +24,7 @@ pub struct Pkce {
 }
 
 impl Pkce {
-    pub fn new(f: &Fournisseur) -> Result<Self, Error> {
+    pub async fn new(f: &Fournisseur) -> Result<Self, Error> {
         let (id, secret) = f.secrets();
         let id = ClientId::new(id.to_owned());
         let secret = ClientSecret::new(secret.to_owned());
@@ -34,7 +39,7 @@ impl Pkce {
 
         let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
 
-        let (authorize_url, csrf_state) = client
+        let (authorize_url, csrf) = client
             .authorize_url(CsrfToken::new_random)
             .add_scope(Scope::new("openid".to_owned()))
             .add_scope(Scope::new("email".to_owned()))
@@ -43,42 +48,19 @@ impl Pkce {
             .url();
 
         let listener = TcpListener::bind("[::1]:86").context("TCP bind")?;
-        webbrowser::open(authorize_url.as_ref()).context("open browser")?;
-
-        let mut code = AuthorizationCode::new(String::new());
-        if let Some(mut stream) = listener.incoming().flatten().next() {
-            let mut request_line = String::new();
-            let mut reader = BufReader::new(&stream);
-            reader.read_line(&mut request_line)?;
-
-            let redirect_url = request_line.split_whitespace().nth(1).unwrap();
-            let url = Url::parse(&(format!("http://localhost{redirect_url}")))?;
-            let code_pair = url
-                .query_pairs()
-                .find(|pair| {
-                    let (key, _) = pair;
-                    key == "code"
-                })
-                .expect("Le code d'autorisation doit être présent");
-
-            let (_, value) = code_pair;
-            code = AuthorizationCode::new(value.into_owned());
-
-            let state_pair = url
-                .query_pairs()
-                .find(|pair| {
-                    let (key, _) = pair;
-                    key == "state"
-                })
-                .expect("Le jeton csrf doit être présent");
-
-            let (_, value) = state_pair;
-            assert_eq!(csrf_state.secret(), value.as_ref());
-
-            let message = "<p>Retournez dans l'application &#128526;</p>";
-            let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
-            stream.write_all(response.as_bytes())?;
+        let (rx, stop_signal) = start_listening(listener, csrf)?;
+        match webbrowser::open(authorize_url.as_ref()).context("open browser") {
+            Ok(_) => (),
+            Err(e) => {
+                stop_signal.store(true, Ordering::Relaxed);
+                return Err(e);
+            }
         }
+
+        let code = spawn_blocking(move || match rx.recv() {
+            Ok(code) => Ok(code),
+            Err(_) => Err(anyhow!("Vous devez vous authentifier"))
+        }).await??;
 
         let creation = Instant::now();
         let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(http_client)?;
@@ -94,4 +76,62 @@ impl Pkce {
     pub fn secret(&self) -> &String {
         self.token.secret()
     }
+}
+
+fn start_listening(listener: TcpListener, csrf: CsrfToken) -> Result<(Receiver<AuthorizationCode>, Arc<AtomicBool>), Error> {
+    let (tx, rx) = sync_channel::<AuthorizationCode>(1);
+    let stop_signal = Arc::new(AtomicBool::new(false));
+    let stop_signal2 = stop_signal.clone();
+    listener.set_nonblocking(true).expect("set_nonblocking a retourné une erreur");
+
+    std::thread::spawn(move || {
+        let now = Instant::now();
+        while !stop_signal2.load(Ordering::Relaxed) {
+            let stream = listener.accept();
+            match stream {
+                Ok((ref stream, _)) => {
+                    let mut request_line = String::new();
+                    let mut reader = BufReader::new(stream);
+                    reader.read_line(&mut request_line).unwrap();
+
+                    let redirect_url = request_line.split_whitespace().nth(1).unwrap();
+                    let url = Url::parse(&(format!("http://localhost{redirect_url}"))).unwrap();
+                    let code_pair = url
+                        .query_pairs()
+                        .find(|pair| {
+                            let (key, _) = pair;
+                            key == "code"
+                        })
+                        .expect("Le code d'autorisation doit être présent");
+
+                    let (_, value) = code_pair;
+                    let code = AuthorizationCode::new(value.into_owned());
+
+                    let state_pair = url
+                        .query_pairs()
+                        .find(|pair| {
+                            let (key, _) = pair;
+                            key == "state"
+                        })
+                        .expect("Le jeton csrf doit être présent");
+
+                    let (_, value) = state_pair;
+                    assert_eq!(csrf.secret(), value.as_ref());
+
+                    let _ = tx.send(code);
+                    break;
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    if now.elapsed().as_secs() >= 150 {
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_millis(100));
+                    continue;
+                }
+                Err(e) => panic!("accept IO error: {e}"),
+            }
+        }
+    });
+
+    Ok((rx, stop_signal))
 }
