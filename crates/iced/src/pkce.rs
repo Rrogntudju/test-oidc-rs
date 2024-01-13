@@ -79,7 +79,7 @@ fn start_listening(listener: TcpListener, csrf: CsrfToken) -> Result<(Receiver<A
     let (tx, rx) = sync_channel::<AuthorizationCode>(1);
     let stop_signal = Arc::new(AtomicBool::new(false));
     let stop_signal2 = stop_signal.clone();
-    listener.set_nonblocking(true).expect("set_nonblocking a retourné une erreur");
+    listener.set_nonblocking(true).expect("Erreur set_nonblocking");
 
     std::thread::spawn(move || {
         let now = Instant::now();
