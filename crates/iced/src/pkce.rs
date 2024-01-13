@@ -84,8 +84,7 @@ fn start_listening(listener: TcpListener, csrf: CsrfToken) -> Result<(Receiver<A
     std::thread::spawn(move || {
         let now = Instant::now();
         while !stop_signal2.load(Ordering::Relaxed) {
-            let connection = listener.accept();
-            match connection {
+            match listener.accept() {
                 Ok((mut stream, _)) => {
                     let mut request_line = String::new();
                     let mut reader = BufReader::new(&stream);
