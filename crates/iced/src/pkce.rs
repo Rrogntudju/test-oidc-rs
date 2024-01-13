@@ -6,15 +6,14 @@ use oauth2::{
     AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse,
     TokenUrl,
 };
+use std::io::{BufRead, BufReader};
+use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, Receiver};
 use std::sync::Arc;
-use std::io::{BufRead, BufReader};
-use std::net::TcpListener;
 use std::time::{Duration, Instant};
-use url::Url;
 use tokio::task::spawn_blocking;
-
+use url::Url;
 
 #[derive(Debug, Clone)]
 pub struct Pkce {
@@ -49,18 +48,16 @@ impl Pkce {
 
         let listener = TcpListener::bind("[::1]:86").context("TCP bind")?;
         let (rx, stop_signal) = start_listening(listener, csrf)?;
-        match webbrowser::open(authorize_url.as_ref()).context("open browser") {
-            Ok(_) => (),
-            Err(e) => {
-                stop_signal.store(true, Ordering::Relaxed);
-                return Err(e);
-            }
+        if let Err(e) = webbrowser::open(authorize_url.as_ref()).context("open browser") {
+            stop_signal.store(true, Ordering::Relaxed);
+            return Err(e);
         }
 
         let code = spawn_blocking(move || match rx.recv() {
             Ok(code) => Ok(code),
-            Err(_) => Err(anyhow!("Vous devez vous authentifier"))
-        }).await??;
+            Err(_) => Err(anyhow!("Vous devez vous authentifier")),
+        })
+        .await??;
 
         let creation = Instant::now();
         let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(http_client)?;

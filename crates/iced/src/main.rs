@@ -147,7 +147,7 @@ impl Application for App {
                 }
                 let fournisseur = self.radio_fournisseur;
                 let secret = self.secret.clone();
-                let task = async move { get_infos(fournisseur, secret) };
+                let task = get_infos(fournisseur, secret);
                 self.erreur = String::new();
                 self.en_traitement = true;
                 Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
@@ -261,11 +261,11 @@ impl Application for App {
     }
 }
 
-fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
+async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
     let secret = match secret {
-        Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur)?),
+        Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur).await?),
         Some(pkce) => Some(pkce),
-        None => Some(Pkce::new(&fournisseur)?),
+        None => Some(Pkce::new(&fournisseur).await?),
     };
     let value = ureq::get(fournisseur.userinfos())
         .set("Authorization", &format!("Bearer {}", secret.clone().unwrap().secret()))
