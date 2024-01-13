@@ -6,7 +6,7 @@ use oauth2::{
     AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse,
     TokenUrl,
 };
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, Receiver};
@@ -84,11 +84,11 @@ fn start_listening(listener: TcpListener, csrf: CsrfToken) -> Result<(Receiver<A
     std::thread::spawn(move || {
         let now = Instant::now();
         while !stop_signal2.load(Ordering::Relaxed) {
-            let stream = listener.accept();
-            match stream {
-                Ok((ref stream, _)) => {
+            let connection = listener.accept();
+            match connection {
+                Ok((mut stream, _)) => {
                     let mut request_line = String::new();
-                    let mut reader = BufReader::new(stream);
+                    let mut reader = BufReader::new(&stream);
                     reader.read_line(&mut request_line).unwrap();
 
                     let redirect_url = request_line.split_whitespace().nth(1).unwrap();
@@ -114,6 +114,10 @@ fn start_listening(listener: TcpListener, csrf: CsrfToken) -> Result<(Receiver<A
 
                     let (_, value) = state_pair;
                     assert_eq!(csrf.secret(), value.as_ref());
+
+                    let message = "<p>Retournez dans l'application &#128526;</p>";
+                    let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
+                    stream.write_all(response.as_bytes()).expect("Erreur write_all");
 
                     let _ = tx.send(code);
                     break;
