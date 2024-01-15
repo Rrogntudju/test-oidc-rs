@@ -7,7 +7,6 @@ use iced::window::icon;
 use iced::{executor, window, Event, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
-use once_cell::sync::Lazy;
 use serde_json::value::Value;
 use std::fmt;
 use table::{Table, TableData};
@@ -31,8 +30,6 @@ const TOKEN_GG: &str = "https://oauth2.googleapis.com/token";
 const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 const ICON: &[u8; 1612] = include_bytes!("../openid.png");
-
-static CONTAINER: Lazy<id::Container> = Lazy::new(id::Container::unique);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fournisseur {
@@ -105,6 +102,7 @@ struct App {
     erreur: String,
     mode: ModeCouleur,
     timeline: Timeline,
+    container: id::Container,
 }
 
 impl Application for App {
@@ -124,6 +122,7 @@ impl Application for App {
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
                 timeline: Timeline::new(),
+                container: id::Container::unique(),
             },
             Command::none(),
         )
@@ -160,14 +159,14 @@ impl Application for App {
                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
                             chain![
-                                CONTAINER,
+                                self.container,
                                 cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 200]),
                                 cosmic_time::container(Duration::from_millis(600))
                                     .padding([15, 0, 0, 20])
                                     .ease(Exponential::Out),
                             ]
                         } else {
-                            chain![CONTAINER, cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 20]),]
+                            chain![self.container, cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 20]),]
                         };
                         self.timeline.set_chain(animation).start();
                     }
@@ -236,7 +235,7 @@ impl Application for App {
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
-                anim!(CONTAINER, &self.timeline, infos)
+                anim!(self.container, &self.timeline, infos)
             ]
             .spacing(10),
         )
