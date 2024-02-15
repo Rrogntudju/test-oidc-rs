@@ -5,7 +5,7 @@ use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
 use iced::widget::{container, text, Column, Row};
 use iced::{mouse, Pixels};
-use iced::{Element, Length, Rectangle, Size, Theme};
+use iced::{Element, Rectangle, Size, Theme};
 use std::cell::OnceCell;
 use std::iter;
 
@@ -57,8 +57,11 @@ impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> for Table<'a, Theme
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
+    fn size(&self) -> Size<iced_core::Length> {
+
+    }
+    
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
             let widths = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
@@ -84,12 +87,12 @@ where
     }
 }
 
-impl<'a, Message, Renderer> From<Table<'a, Message, Renderer>> for Element<'a, Message, Renderer>
+impl<'a, Message, Renderer> From<Table<'a, Message, Theme, Renderer>> for Element<'a, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
 {
-    fn from(table: Table<'a, Message, Renderer>) -> Element<'a, Message, Renderer> {
+    fn from(table: Table<'a, Message, Theme, Renderer>) -> Element<'a, Message, Renderer> {
         Element::new(table)
     }
 }
