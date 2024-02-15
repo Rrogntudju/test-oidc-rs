@@ -5,7 +5,7 @@ use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
 use iced::widget::{container, text, Column, Row};
 use iced::{mouse, Pixels};
-use iced::{Element, Length, Rectangle, Size};
+use iced::{Element, Length, Rectangle, Size, Theme};
 use std::cell::OnceCell;
 use std::iter;
 
@@ -15,20 +15,18 @@ pub struct TableData {
     pub rows: Vec<Vec<String>>,
 }
 
-pub struct Table<'a, Message, Renderer>
+pub struct Table<'a, Message, Theme, Renderer>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     data: Vec<Vec<String>>,
     text_size: Option<f32>,
     inner: OnceCell<Element<'a, Message, Renderer>>,
 }
 
-impl<'a, Message, Renderer> Table<'a, Message, Renderer>
+impl<'a, Message, Renderer> Table<'a, Message, Theme, Renderer>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     pub fn new(data: &TableData) -> Self {
         let last_col = data.header.len() - 1;
@@ -55,20 +53,12 @@ where
     }
 }
 
-impl<'a, Message, Renderer> Widget<Message, Renderer> for Table<'a, Message, Renderer>
+impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> for Table<'a, Theme, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
+    Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
-    fn width(&self) -> Length {
-        Length::Shrink
-    }
-
-    fn height(&self) -> Length {
-        Length::Shrink
-    }
-
     fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
             let widths = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
@@ -81,7 +71,7 @@ where
         &self,
         _state: &widget::Tree,
         renderer: &mut Renderer,
-        theme: &Renderer::Theme,
+        theme: &Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
@@ -98,7 +88,6 @@ impl<'a, Message, Renderer> From<Table<'a, Message, Renderer>> for Element<'a, M
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     fn from(table: Table<'a, Message, Renderer>) -> Element<'a, Message, Renderer> {
         Element::new(table)
@@ -108,7 +97,6 @@ where
 fn get_max_width<Message, Renderer>(data: &[Vec<String>], text_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    Renderer::Theme: text::StyleSheet,
 {
     let limits = Limits::new(Size::ZERO, Size::INFINITY);
     data.iter().fold(vec![0.0; data[0].len()], |acc, row| {
@@ -135,7 +123,6 @@ fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: Option<f
 where
     Message: 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    Renderer::Theme: text::StyleSheet + container::StyleSheet<Style = iced::theme::Container>,
 {
     let mut flip = false;
     let infos = data

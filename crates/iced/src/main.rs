@@ -189,7 +189,7 @@ impl Application for App {
         }
     }
 
-    fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
+    fn view(&self) -> Element<'_, Message, Theme, Renderer> {
         let image = Image::new(Handle::from_memory(ICON));
 
         let titre = text("OpenID Connect").size(26);
