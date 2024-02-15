@@ -21,10 +21,10 @@ where
 {
     data: Vec<Vec<String>>,
     text_size: Option<f32>,
-    inner: OnceCell<Element<'a, Message, Renderer>>,
+    inner: OnceCell<Element<'a, Message, Theme, Renderer>>,
 }
 
-impl<'a, Message, Renderer> Table<'a, Message, Theme, Renderer>
+impl<'a, Message, Theme, Renderer> Table<'a, Message, Theme, Renderer>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
 {
@@ -53,21 +53,23 @@ where
     }
 }
 
-impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> for Table<'a, Theme, Message, Renderer>
+impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Table<'a, Message, Theme, Renderer>
 where
     Message: 'a,
+    Theme: container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>
 {
     fn size(&self) -> Size<iced_core::Length> {
-
+        Size { width: iced_core::Length::Shrink, height: iced_core::Length::Shrink }
     }
-    
-    fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+
+    fn layout(&self, state: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
-            let widths = get_max_width::<Message, Renderer>(&self.data, self.text_size, renderer);
-            create_table::<Message, Renderer>(&self.data, self.text_size, &widths)
+            let widths = get_max_width::<Message, Renderer>(state, &self.data, self.text_size, renderer);
+            create_table::<Message, Theme, Renderer>(&self.data, self.text_size, &widths)
         });
-        table.as_widget().layout(renderer, limits)
+        table.as_widget().layout(state, renderer, limits)
     }
 
     fn draw(
@@ -87,17 +89,19 @@ where
     }
 }
 
-impl<'a, Message, Renderer> From<Table<'a, Message, Theme, Renderer>> for Element<'a, Message, Renderer>
+impl<'a, Message, Theme, Renderer> From<Table<'a, Message, Theme, Renderer>> for Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
+    Theme: container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>
 {
-    fn from(table: Table<'a, Message, Theme, Renderer>) -> Element<'a, Message, Renderer> {
+    fn from(table: Table<'a, Message, Theme, Renderer>) -> Element<'a, Message, Theme, Renderer> {
         Element::new(table)
     }
 }
 
-fn get_max_width<Message, Renderer>(data: &[Vec<String>], text_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
+fn get_max_width<Message, Renderer>(state: &mut widget::Tree, data: &[Vec<String>], text_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
 {
@@ -106,11 +110,11 @@ where
         acc.iter()
             .zip(row.iter())
             .map(|(max, s)| {
-                let text: Element<Message, Renderer> = match text_size {
+                let text: Element<Message, Theme, Renderer> = match text_size {
                     Some(size) => text(s.clone()).size(size).into(),
                     None => text(s.clone()).into(),
                 };
-                let layout = text.as_widget().layout(renderer, &limits);
+                let layout = text.as_widget().layout(state, renderer, &limits);
                 let width = layout.bounds().width;
                 if width > *max {
                     width
@@ -122,16 +126,18 @@ where
     })
 }
 
-fn create_table<'a, Message, Renderer>(data: &[Vec<String>], text_size: Option<f32>, columns_max_width: &[f32]) -> Element<'a, Message, Renderer>
+fn create_table<'a, Message, Theme, Renderer>(data: &[Vec<String>], text_size: Option<f32>, columns_max_width: &[f32]) -> Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    Theme: container::StyleSheet + iced::widget::text::StyleSheet,
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>
 {
     let mut flip = false;
-    let infos = data
+    let infos: Vec<Element<'_, Message, Theme, Renderer>> = data
         .iter()
         .map(|row| {
-            let info: Vec<Element<Message, Renderer>> = row
+            let info: Vec<Element<Message, Theme, Renderer>> = row
                 .iter()
                 .zip(columns_max_width)
                 .map(|(i, width)| {

@@ -83,7 +83,7 @@ fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let settings = Settings {
         window: window::Settings {
-            size: (880, 380),
+            size: iced_core::Size { width: 880.0, height: 380.0 },
             icon: Some(icon),
             ..Default::default()
         },
