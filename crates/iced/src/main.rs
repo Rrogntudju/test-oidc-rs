@@ -236,7 +236,7 @@ impl Application for App {
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
-                //                anim!(self.container, &self.timeline, infos)
+//                anim!(self.container, &self.timeline, infos)
             ]
             .spacing(10),
         )
@@ -257,7 +257,7 @@ impl Application for App {
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
-            //            self.timeline.as_subscription::<Event>().map(Message::Tick),
+//            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
     }
 }
