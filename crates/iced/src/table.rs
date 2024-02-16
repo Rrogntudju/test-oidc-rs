@@ -40,7 +40,7 @@ where
             })
             .collect();
 
-         Self {
+        Self {
             data,
             font_size: None,
             inner: OnceCell::new(),
@@ -57,10 +57,13 @@ impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Table<'a
 where
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>,
 {
     fn size(&self) -> Size<iced_core::Length> {
-        Size { width: iced_core::Length::Shrink, height: iced_core::Length::Shrink }
+        Size {
+            width: iced_core::Length::Shrink,
+            height: iced_core::Length::Shrink,
+        }
     }
 
     fn layout(&self, state: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
@@ -125,11 +128,15 @@ where
     })
 }
 
-fn create_table<'a, Message, Theme, Renderer>(data: &[Vec<String>], font_size: Option<f32>, columns_max_width: &[f32]) -> Element<'a, Message, Theme, Renderer>
+fn create_table<'a, Message, Theme, Renderer>(
+    data: &[Vec<String>],
+    font_size: Option<f32>,
+    columns_max_width: &[f32],
+) -> Element<'a, Message, Theme, Renderer>
 where
     Theme: container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>,
 {
     let mut flip = false;
     let infos: Vec<Element<Message, Theme, Renderer>> = data
