@@ -59,12 +59,12 @@ where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
     <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>,
 {
-    fn size(&self) -> Size<iced_core::Length> {
+/*     fn size(&self) -> Size<iced_core::Length> {
         Size {
             width: iced_core::Length::Shrink,
             height: iced_core::Length::Shrink,
         }
-    }
+    } */
 
     fn layout(&self, state: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
