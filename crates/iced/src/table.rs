@@ -20,7 +20,7 @@ where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
 {
     data: Vec<Vec<String>>,
-    text_size: Option<f32>,
+    font_size: Option<f32>,
     inner: OnceCell<Element<'a, Message, Theme, Renderer>>,
 }
 
@@ -40,15 +40,15 @@ where
             })
             .collect();
 
-        Self {
+         Self {
             data,
-            text_size: None,
+            font_size: None,
             inner: OnceCell::new(),
         }
     }
 
-    pub fn size(mut self, text_size: impl Into<Pixels>) -> Self {
-        self.text_size = Some(text_size.into().0);
+    pub fn size(mut self, font_size: impl Into<Pixels>) -> Self {
+        self.font_size = Some(font_size.into().0);
         self
     }
 }
@@ -65,8 +65,8 @@ where
 
     fn layout(&self, state: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
-            let widths = get_max_width::<Message, iced::Theme, Renderer>(state, &self.data, self.text_size, renderer);
-            create_table::<Message, Theme, Renderer>(&self.data, self.text_size, &widths)
+            let widths = get_max_width::<Message, Theme, Renderer>(state, &self.data, self.font_size, renderer);
+            create_table::<Message, Theme, Renderer>(&self.data, self.font_size, &widths)
         });
         table.as_widget().layout(state, renderer, limits)
     }
@@ -99,7 +99,7 @@ where
     }
 }
 
-fn get_max_width<Message, Theme, Renderer>(state: &mut widget::Tree, data: &[Vec<String>], text_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
+fn get_max_width<Message, Theme, Renderer>(state: &mut widget::Tree, data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
@@ -109,7 +109,7 @@ where
         acc.iter()
             .zip(row.iter())
             .map(|(max, s)| {
-                let text: Element<Message, Theme, Renderer> = match text_size {
+                let text: Element<Message, Theme, Renderer> = match font_size {
                     Some(size) => text(s.clone()).size(size).into(),
                     None => text(s.clone()).into(),
                 };
@@ -125,7 +125,7 @@ where
     })
 }
 
-fn create_table<'a, Message, Theme, Renderer>(data: &[Vec<String>], text_size: Option<f32>, columns_max_width: &[f32]) -> Element<'a, Message, Theme, Renderer>
+fn create_table<'a, Message, Theme, Renderer>(data: &[Vec<String>], font_size: Option<f32>, columns_max_width: &[f32]) -> Element<'a, Message, Theme, Renderer>
 where
     Theme: container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
@@ -139,7 +139,7 @@ where
                 .iter()
                 .zip(columns_max_width)
                 .map(|(i, width)| {
-                    container(match text_size {
+                    container(match font_size {
                         Some(size) => text(i).size(size),
                         None => text(i),
                     })
