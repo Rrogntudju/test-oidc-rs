@@ -6,6 +6,7 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{executor, window, Event, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
+use iced_core::window::Id;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
@@ -173,7 +174,7 @@ impl Application for App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Command::single(iced_runtime::command::Action::Window(window::Action::GainFocus))
+                Command::single(iced_runtime::command::Action::Window(window::Action::GainFocus(Id::MAIN)))
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
@@ -235,7 +236,7 @@ impl Application for App {
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
-                anim!(self.container, &self.timeline, infos)
+//                anim!(self.container, &self.timeline, infos)
             ]
             .spacing(10),
         )
@@ -248,14 +249,15 @@ impl Application for App {
             ModeCouleur::Sombre => Theme::Dark.palette(),
             ModeCouleur::Clair => Theme::Light.palette(),
         };
+
         palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32);
-        Theme::custom(palette)
+        Theme::custom("mode".to_string(), palette)
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
-            self.timeline.as_subscription::<Event>().map(Message::Tick),
+//            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
     }
 }
