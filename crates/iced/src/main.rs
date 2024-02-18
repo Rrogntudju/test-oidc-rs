@@ -236,7 +236,7 @@ impl Application for App {
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
-//                anim!(self.container, &self.timeline, infos)
+                infos, // anim!(self.container, &self.timeline, infos)
             ]
             .spacing(10),
         )
