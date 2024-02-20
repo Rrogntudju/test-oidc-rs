@@ -55,9 +55,10 @@ where
 
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Table<'a, Message, Theme, Renderer>
 where
-    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>,
+    Message: 'a,
+    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> +'a,
 {
     fn size(&self) -> Size<iced_core::Length> {
         Size {
@@ -93,9 +94,10 @@ where
 
 impl<'a, Message, Theme, Renderer> From<Table<'a, Message, Theme, Renderer>> for Element<'a, Message, Theme, Renderer>
 where
-    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>,
+    Message: 'a,
+    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> +'a,
 {
     fn from(table: Table<'a, Message, Theme, Renderer>) -> Element<'a, Message, Theme, Renderer> {
         Element::new(table)
@@ -134,9 +136,10 @@ fn create_table<'a, Message, Theme, Renderer>(
     columns_max_width: &[f32],
 ) -> Element<'a, Message, Theme, Renderer>
 where
-    Theme: container::StyleSheet + iced::widget::text::StyleSheet,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container>,
+    Message: 'a,
+    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
+    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> +'a,
 {
     let mut flip = false;
     let infos: Vec<Element<Message, Theme, Renderer>> = data

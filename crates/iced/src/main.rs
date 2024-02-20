@@ -77,7 +77,7 @@ enum Message {
     GetInfos,
     Infos(Result<(Option<TableData>, Option<Pkce>), String>),
     ModeCouleurChanged(Result<ModeCouleur, String>),
-    Tick(Instant),
+//    Tick(Instant),
 }
 
 fn main() -> iced::Result {
@@ -102,8 +102,8 @@ struct App {
     en_traitement: bool,
     erreur: String,
     mode: ModeCouleur,
-    timeline: Timeline,
-    container: id::Container,
+//    timeline: Timeline,
+//    container: id::Container,
 }
 
 impl Application for App {
@@ -122,8 +122,8 @@ impl Application for App {
                 en_traitement: false,
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
-                timeline: Timeline::new(),
-                container: id::Container::unique(),
+//               timeline: Timeline::new(),
+//                container: id::Container::unique(),
             },
             Command::none(),
         )
@@ -150,14 +150,15 @@ impl Application for App {
                 let task = get_infos(fournisseur, secret);
                 self.erreur = String::new();
                 self.en_traitement = true;
-                Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
+               // Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
+               Command::none()
             }
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-                        let prec = self.infos.clone();
+//                        let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
-                        self.timeline = Timeline::new();
+/*                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
                             chain![
                                 self.container,
@@ -169,7 +170,7 @@ impl Application for App {
                         } else {
                             chain![self.container, cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 20]),]
                         };
-                        self.timeline.set_chain(animation).start();
+                        self.timeline.set_chain(animation).start(); */
                     }
                     Err(e) => self.erreur = e,
                 }
@@ -183,10 +184,10 @@ impl Application for App {
                 }
                 Command::none()
             }
-            Message::Tick(now) => {
-                self.timeline.now(now);
-                Command::none()
-            }
+            // Message::Tick(now) => {
+            //     self.timeline.now(now);
+            //     Command::none()
+            // }
         }
     }
 
@@ -208,7 +209,7 @@ impl Application for App {
                     )
                     .size(18))
                     .map(Element::from)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .spacing(5)
         ]
@@ -226,7 +227,7 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                column![titre, Table::new(data).size(16)]
+                column![titre, /* Table::new(data).size(16) */]
             }
             _ => column![""],
         };
@@ -268,8 +269,10 @@ async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Op
         Some(pkce) => Some(pkce),
         None => Some(Pkce::new(&fournisseur).await?),
     };
+
     let value = ureq::get(fournisseur.userinfos())
         .set("Authorization", &format!("Bearer {}", secret.clone().unwrap().secret()))
+        .timeout(std::time::Duration::from_secs(20))
         .call()?
         .into_json::<Value>()?;
 
