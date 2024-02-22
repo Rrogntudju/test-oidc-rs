@@ -102,8 +102,8 @@ struct App {
     en_traitement: bool,
     erreur: String,
     mode: ModeCouleur,
-//    timeline: Timeline,
-//    container: id::Container,
+    timeline: Timeline,
+    container: id::Container,
 }
 
 impl Application for App {
@@ -122,8 +122,8 @@ impl Application for App {
                 en_traitement: false,
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
-//               timeline: Timeline::new(),
-//                container: id::Container::unique(),
+                timeline: Timeline::new(),
+                container: id::Container::unique(),
             },
             Command::none(),
         )
@@ -150,13 +150,12 @@ impl Application for App {
                 let task = get_infos(fournisseur, secret);
                 self.erreur = String::new();
                 self.en_traitement = true;
-               // Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
-               Command::none()
+                Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
             }
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-//                        let prec = self.infos.clone();
+                        let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
 /*                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
@@ -184,10 +183,10 @@ impl Application for App {
                 }
                 Command::none()
             }
-            // Message::Tick(now) => {
-            //     self.timeline.now(now);
-            //     Command::none()
-            // }
+/*             Message::Tick(now) => {
+                 self.timeline.now(now);
+                 Command::none()
+            } */
         }
     }
 
@@ -227,7 +226,7 @@ impl Application for App {
                     .size(24)
                     .style(Color::from_rgb8(255, 165, 0));
 
-                column![titre, /* Table::new(data).size(16) */]
+                column![titre, Table::new(data).size(16)]
             }
             _ => column![""],
         };
