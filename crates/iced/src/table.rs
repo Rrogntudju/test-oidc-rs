@@ -68,12 +68,14 @@ where
         }
     }
 
-    fn layout(&self, tree: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+    fn layout(&self, _tree: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
-            let widths = get_max_width::<Message, Theme, Renderer>(tree, &self.data, self.font_size, renderer);
+            let widths = get_max_width::<Message, Theme, Renderer>(&self.data, self.font_size, renderer);
             create_table::<Message, Theme, Renderer>(&self.data, self.font_size, &widths)
         });
-        table.as_widget().layout(tree, renderer, limits)
+        let widget = table.as_widget();
+        let mut tree = Tree::new(widget);
+        table.as_widget().layout(&mut tree, renderer, limits)
     }
 
     fn draw(
@@ -105,7 +107,7 @@ where
     }
 }
 
-fn get_max_width<Message, Theme, Renderer>(_tree: &mut widget::Tree, data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
+fn get_max_width<Message, Theme, Renderer>(data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
