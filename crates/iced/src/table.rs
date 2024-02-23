@@ -4,7 +4,7 @@ use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
 use iced::widget::{container, text, Column, Row};
-use iced::{Element, Length, mouse, Pixels, Rectangle, Size};
+use iced::{mouse, Element, Length, Pixels, Rectangle, Size};
 use std::cell::OnceCell;
 use std::iter;
 
@@ -57,7 +57,7 @@ where
     Message: 'a,
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> +'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> + 'a,
 {
     fn size(&self) -> Size<iced_core::Length> {
         Size {
@@ -96,7 +96,7 @@ where
     Message: 'a,
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> +'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> + 'a,
 {
     fn from(table: Table<'a, Message, Theme, Renderer>) -> Element<'a, Message, Theme, Renderer> {
         Element::new(table)
@@ -139,7 +139,7 @@ where
     Message: 'a,
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> +'a,
+    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> + 'a,
 {
     let mut flip = false;
     let infos: Vec<Element<Message, Theme, Renderer>> = data

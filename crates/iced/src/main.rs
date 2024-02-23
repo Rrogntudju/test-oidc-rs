@@ -77,7 +77,7 @@ enum Message {
     GetInfos,
     Infos(Result<(Option<TableData>, Option<Pkce>), String>),
     ModeCouleurChanged(Result<ModeCouleur, String>),
-//    Tick(Instant),
+    //    Tick(Instant),
 }
 
 fn main() -> iced::Result {
@@ -157,7 +157,7 @@ impl Application for App {
                     Ok(infos) => {
                         let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
-/*                         self.timeline = Timeline::new();
+                        /*                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
                             chain![
                                 self.container,
@@ -182,11 +182,10 @@ impl Application for App {
                     Err(e) => self.erreur = e,
                 }
                 Command::none()
-            }
-/*             Message::Tick(now) => {
-                 self.timeline.now(now);
-                 Command::none()
-            } */
+            } /*             Message::Tick(now) => {
+                   self.timeline.now(now);
+                   Command::none()
+              } */
         }
     }
 
@@ -250,14 +249,14 @@ impl Application for App {
             ModeCouleur::Clair => Theme::Light.palette(),
         };
 
-    palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32); // orange
-    Theme::custom("mode".to_string(), palette)
+        palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32); // orange
+        Theme::custom("mode".to_string(), palette)
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
-//            self.timeline.as_subscription::<Event>().map(Message::Tick),
+            //            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
     }
 }
