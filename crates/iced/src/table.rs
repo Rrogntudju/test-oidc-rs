@@ -89,9 +89,7 @@ where
         viewport: &Rectangle,
     ) {
         let table = self.inner.get().unwrap();
-        let widget = table.as_widget();
-//        let tree = Tree::new(widget);
-        widget.draw(tree, renderer, theme, style, layout, cursor, viewport);
+        table.as_widget().draw(tree, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
