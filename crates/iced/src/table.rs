@@ -1,12 +1,10 @@
-use iced::advanced::graphics::text::cosmic_text::rustybuzz::ttf_parser::svg::SvgDocumentsListIter;
 use iced::advanced::layout::Limits;
 use iced::advanced::layout::{self, Layout};
 use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
-use iced::widget::{container, text, Text, Column, Row};
+use iced::widget::{container, text, Column, Row};
 use iced::{Element, Length, mouse, Pixels, Rectangle, Size};
-use crate::table::widget::tree::State;
 use std::cell::OnceCell;
 use std::iter;
 
@@ -75,7 +73,7 @@ where
         });
         let widget = table.as_widget();
         *tree = Tree::new(widget);
-        table.as_widget().layout(tree, renderer, limits)
+        widget.layout(tree, renderer, limits)
     }
 
     fn draw(
