@@ -68,19 +68,19 @@ where
         }
     }
 
-    fn layout(&self, _tree: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+    fn layout(&self, tree: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
             let widths = get_max_width::<Message, Theme, Renderer>(&self.data, self.font_size, renderer);
             create_table::<Message, Theme, Renderer>(&self.data, self.font_size, &widths)
         });
         let widget = table.as_widget();
-        let mut tree = Tree::new(widget);
-        table.as_widget().layout(&mut tree, renderer, limits)
+        *tree = Tree::new(widget);
+        table.as_widget().layout(tree, renderer, limits)
     }
 
     fn draw(
         &self,
-        _tree: &widget::Tree,
+        tree: &widget::Tree,
         renderer: &mut Renderer,
         theme: &Theme,
         style: &renderer::Style,
@@ -90,8 +90,8 @@ where
     ) {
         let table = self.inner.get().unwrap();
         let widget = table.as_widget();
-        let tree = Tree::new(widget);
-        widget.draw(&tree, renderer, theme, style, layout, cursor, viewport);
+//        let tree = Tree::new(widget);
+        widget.draw(tree, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
