@@ -1,11 +1,12 @@
+use iced::advanced::graphics::text::cosmic_text::rustybuzz::ttf_parser::svg::SvgDocumentsListIter;
 use iced::advanced::layout::Limits;
 use iced::advanced::layout::{self, Layout};
 use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
 use iced::widget::{container, text, Text, Column, Row};
-use iced::{mouse, Pixels};
-use iced::{Element, Rectangle, Size};
+use iced::{Element, Length, mouse, Pixels, Rectangle, Size};
+use crate::table::widget::tree::State;
 use std::cell::OnceCell;
 use std::iter;
 
@@ -62,19 +63,17 @@ where
 {
     fn size(&self) -> Size<iced_core::Length> {
         Size {
-            width: iced_core::Length::Shrink,
-            height: iced_core::Length::Shrink,
+            width: Length::Shrink,
+            height: Length::Shrink,
         }
     }
 
-    fn layout(&self, _tree: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-        let mut tree = Tree::new(self);
+    fn layout(&self, tree: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let table = self.inner.get_or_init(|| {
-            let widths = get_max_width::<Message, Theme, Renderer>(&mut tree, &self.data, self.font_size, renderer);
+            let widths = get_max_width::<Message, Theme, Renderer>(tree, &self.data, self.font_size, renderer);
             create_table::<Message, Theme, Renderer>(&self.data, self.font_size, &widths)
         });
-        let mut tree = Tree::new(table.as_widget());
-        table.as_widget().layout(&mut tree, renderer, limits)
+        table.as_widget().layout(tree, renderer, limits)
     }
 
     fn draw(
@@ -106,7 +105,7 @@ where
     }
 }
 
-fn get_max_width<Message, Theme, Renderer>(tree: &mut widget::Tree, data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
+fn get_max_width<Message, Theme, Renderer>(_tree: &mut widget::Tree, data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
@@ -120,7 +119,8 @@ where
                     Some(size) => text(s.clone()).size(size).into(),
                     None => text(s.clone()).into(),
                 };
-                let layout = text.as_widget().layout(tree, renderer, &limits);
+                let mut tree = Tree::new(text.as_widget());
+                let layout = text.as_widget().layout(&mut tree, renderer, &limits);
                 let width = layout.bounds().width;
                 if width > *max {
                     width
