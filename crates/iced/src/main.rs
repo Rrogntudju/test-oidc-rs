@@ -6,6 +6,7 @@ use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{executor, window, Event, Renderer};
 use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
+use iced_core::window::Id;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
@@ -76,14 +77,14 @@ enum Message {
     GetInfos,
     Infos(Result<(Option<TableData>, Option<Pkce>), String>),
     ModeCouleurChanged(Result<ModeCouleur, String>),
-    Tick(Instant),
+    //    Tick(Instant),
 }
 
 fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let settings = Settings {
         window: window::Settings {
-            size: (880, 380),
+            size: iced_core::Size { width: 880.0, height: 380.0 },
             icon: Some(icon),
             ..Default::default()
         },
@@ -156,7 +157,7 @@ impl Application for App {
                     Ok(infos) => {
                         let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
-                        self.timeline = Timeline::new();
+                        /*                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
                             chain![
                                 self.container,
@@ -168,12 +169,12 @@ impl Application for App {
                         } else {
                             chain![self.container, cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 20]),]
                         };
-                        self.timeline.set_chain(animation).start();
+                        self.timeline.set_chain(animation).start(); */
                     }
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Command::single(iced_runtime::command::Action::Window(window::Action::GainFocus))
+                Command::single(iced_runtime::command::Action::Window(window::Action::GainFocus(Id::MAIN)))
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
@@ -181,15 +182,14 @@ impl Application for App {
                     Err(e) => self.erreur = e,
                 }
                 Command::none()
-            }
-            Message::Tick(now) => {
-                self.timeline.now(now);
-                Command::none()
-            }
+            } /*             Message::Tick(now) => {
+                   self.timeline.now(now);
+                   Command::none()
+              } */
         }
     }
 
-    fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
+    fn view(&self) -> Element<'_, Message, Theme, Renderer> {
         let image = Image::new(Handle::from_memory(ICON));
 
         let titre = text("OpenID Connect").size(26);
@@ -207,7 +207,7 @@ impl Application for App {
                     )
                     .size(18))
                     .map(Element::from)
-                    .collect()
+                    .collect::<Vec<_>>()
             )
             .spacing(5)
         ]
@@ -235,7 +235,7 @@ impl Application for App {
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
-                anim!(self.container, &self.timeline, infos)
+                infos, // anim!(self.container, &self.timeline, infos)
             ]
             .spacing(10),
         )
@@ -248,14 +248,15 @@ impl Application for App {
             ModeCouleur::Sombre => Theme::Dark.palette(),
             ModeCouleur::Clair => Theme::Light.palette(),
         };
-        palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32);
-        Theme::custom(palette)
+
+        palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32); // orange
+        Theme::custom("mode".to_string(), palette)
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch([
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
-            self.timeline.as_subscription::<Event>().map(Message::Tick),
+            //            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
     }
 }
@@ -266,8 +267,10 @@ async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Op
         Some(pkce) => Some(pkce),
         None => Some(Pkce::new(&fournisseur).await?),
     };
+
     let value = ureq::get(fournisseur.userinfos())
         .set("Authorization", &format!("Bearer {}", secret.clone().unwrap().secret()))
+        .timeout(std::time::Duration::from_secs(20))
         .call()?
         .into_json::<Value>()?;
 
