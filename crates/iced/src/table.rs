@@ -70,10 +70,9 @@ where
         let table = self.inner.get_or_init(|| {
             let widths = get_max_width::<Message, Theme, Renderer>(&self.data, self.font_size, renderer);
             create_table::<Message, Theme, Renderer>(&self.data, self.font_size, &widths)
-        });
-        let widget = table.as_widget();
-        *tree = Tree::new(widget);
-        widget.layout(tree, renderer, limits)
+        }).as_widget();
+        *tree = Tree::new(table);
+        table.layout(tree, renderer, limits)
     }
 
     fn draw(
@@ -86,8 +85,8 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        let table = self.inner.get().unwrap();
-        table.as_widget().draw(tree, renderer, theme, style, layout, cursor, viewport);
+        let table = self.inner.get().unwrap().as_widget();
+        table.draw(tree, renderer, theme, style, layout, cursor, viewport);
     }
 }
 
