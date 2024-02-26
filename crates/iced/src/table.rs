@@ -67,10 +67,13 @@ where
     }
 
     fn layout(&self, tree: &mut widget::Tree, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-        let table = self.inner.get_or_init(|| {
-            let widths = get_max_width::<Message, Theme, Renderer>(&self.data, self.font_size, renderer);
-            create_table::<Message, Theme, Renderer>(&self.data, self.font_size, &widths)
-        }).as_widget();
+        let table = self
+            .inner
+            .get_or_init(|| {
+                let widths = get_max_width::<Message, Theme, Renderer>(&self.data, self.font_size, renderer);
+                create_table::<Message, Theme, Renderer>(&self.data, self.font_size, &widths)
+            })
+            .as_widget();
         *tree = Tree::new(table);
         table.layout(tree, renderer, limits)
     }
