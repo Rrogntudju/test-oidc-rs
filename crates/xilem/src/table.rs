@@ -24,7 +24,7 @@ impl Default for TableData {
 }
 
 // Find out the maximum layout width of each column
-fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -> Option<Vec<f64>> {
+fn layout_columns_width(ctx: &mut LayoutCtx, data: &TableData) -> Option<Vec<f64>> {
     let mut columns_width = Vec::new();
     for j in 0_usize.. {
         let mut end_of_cols = true;
@@ -34,8 +34,8 @@ fn layout_columns_width(ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) -
             if let Some(text) = row.get(j) {
                 end_of_cols = false;
                 if !text.is_empty() {
-                    let mut layout = TextLayout::<String>::new(text.clone());
-                    layout.rebuild(ctx.text(), env);
+                    let mut layout = TextLayout::<String>::new(text.clone(), ctx.);
+                    layout.rebuild(ctx.text());
                     let width = layout.size().width;
                     if width > max_width {
                         max_width = width;
@@ -73,10 +73,10 @@ impl Table {
         }
     }
 
-    fn build(&mut self, ctx: &mut UpdateCtx, data: &Arc<TableData>, env: &Env) {
+    fn build(&mut self, ctx: &mut LayoutCtx, data: &TableData) {
         let mut table = Flex::column().cross_axis_alignment(CrossAxisAlignment::Start);
 
-        if let Some(widths) = layout_columns_width(ctx, data, env) {
+        if let Some(widths) = layout_columns_width(ctx, data) {
             let last_col = widths.len() - 1;
             let (r, g, b, a) = env.get(theme::WINDOW_BACKGROUND_COLOR).as_rgba();
             let shade = if r + g + b < 1.5 {
@@ -125,52 +125,22 @@ impl Table {
         self.header_text_color = Some(color.into());
     }
 
-    pub fn with_header_text_color(mut self, color: Color>>) -> Self {
+    pub fn with_header_text_color(mut self, color: Color) -> Self {
         self.set_header_text_color(color);
         self
     }
 }
 
-// If this widget has any child widgets it should call its event, update and layout
-// (and lifecycle) methods as well to make sure it works. Some things can be filtered,
-// but a general rule is to just pass it through unless you really know you don't want it.
-impl Widget<Arc<TableData>> for Table {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut Arc<TableData>, env: &Env) {
-        self.inner.event(ctx, event, data, env);
-    }
-
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &Arc<TableData>, env: &Env) {
-        self.inner.lifecycle(ctx, event, data, env);
-    }
-
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Arc<TableData>, data: &Arc<TableData>, env: &Env) {
-        if !old_data.same(data) {
-            self.build(ctx, data, env);
-            ctx.children_changed();
-        }
-    }
-
-    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &Arc<TableData>, env: &Env) -> Size {
-        self.inner.layout(ctx, bc, data, env)
-    }
-
-    // The paint method gets called last, after an event flow.
-    // It goes event -> update -> layout -> paint, and each method can influence the next.
-    // Basically, anything that changes the appearance of a widget causes a paint.
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &Arc<TableData>, env: &Env) {
-        self.inner.paint(ctx, data, env);
-    }
-
+impl Widget for Table {
     fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent);
     fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent);
     fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent);
-    fn on_status_change(
-        &mut self,
-        ctx: &mut LifeCycleCtx<'_>,
-        event: &StatusChange
-    );
+    fn on_status_change(        &mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange);
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle);
-    fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size;
+    fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
+
+        self.inner.layout(ctx, bc)
+    }
     fn paint(&mut self, ctx: &mut PaintCtx<'_>, scene: &mut Scene);
     fn accessibility_role(&self) -> Role;
     fn accessibility(&mut self, ctx: &mut AccessCtx<'_>);
