@@ -103,7 +103,7 @@ impl Table {
                 }
                 header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
             });
-            table.with_child(header.padding(Insets::new(0.0, 0.0, 0.0, 5.0)));
+            table.with_child(header);
 
             data.rows.iter().enumerate().for_each(|(i, row)| {
                 let mut table_row = Flex::row();
