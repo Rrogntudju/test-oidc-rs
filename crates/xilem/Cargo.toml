@@ -1,0 +1,22 @@
+[package]
+name = "userinfos3"
+version = "0.1.0"
+authors = ["Rrogntudju"]
+edition = "2021"
+build = "build/build.rs"
+
+[dependencies]
+masonry = "0.2"
+accesskit = "0.14"
+smallvec = "1"
+tracing = "0.1"
+winit = "0.30"
+oauth2 = { version = "4", default-features = false, features = ["ureq"]}
+webbrowser = "0.8"
+url = "2"
+ureq = { version = "2", features = ["json"] }
+anyhow = "1"
+tokio = { version = "1", features = [ "sync" ] }
+
+[build-dependencies]
+winres = "0.1"
