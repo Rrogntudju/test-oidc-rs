@@ -38,8 +38,8 @@ fn layout_columns_width(ctx: &mut LayoutCtx, data: &TableData) -> Option<Vec<f64
             if let Some(text) = row.get(j) {
                 end_of_cols = false;
                 if !text.is_empty() {
-                    let mut layout = TextLayout::<String>::new(text.clone());
-                    layout.rebuild(ctx.text());
+                    let mut layout = TextLayout::<String>::new(text.clone(), theme::TEXT_SIZE_NORMAL as f32);
+                    layout.rebuild(ctx.font_ctx());
                     let width = layout.size().width;
                     if width > max_width {
                         max_width = width;
