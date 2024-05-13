@@ -23,6 +23,10 @@ impl Default for TableData {
     }
 }
 
+fn rgba_f64(Color { r, g, b, a }: Color) -> (f64, f64, f64, f64) {
+    (r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0, a as f64 / 255.0)
+}
+
 // Find out the maximum layout width of each column
 fn layout_columns_width(ctx: &mut LayoutCtx, data: &TableData) -> Option<Vec<f64>> {
     let mut columns_width = Vec::new();
@@ -34,7 +38,7 @@ fn layout_columns_width(ctx: &mut LayoutCtx, data: &TableData) -> Option<Vec<f64
             if let Some(text) = row.get(j) {
                 end_of_cols = false;
                 if !text.is_empty() {
-                    let mut layout = TextLayout::<String>::new(text.clone(), ctx.);
+                    let mut layout = TextLayout::<String>::new(text.clone(), ctx.font_ctx().collection.);
                     layout.rebuild(ctx.text());
                     let width = layout.size().width;
                     if width > max_width {
@@ -78,7 +82,7 @@ impl Table {
 
         if let Some(widths) = layout_columns_width(ctx, data) {
             let last_col = widths.len() - 1;
-            let (r, g, b, a) = env.get(theme::WINDOW_BACKGROUND_COLOR).as_rgba();
+            let (r, g, b, a) = rgba_f64(theme::WINDOW_BACKGROUND_COLOR);
             let shade = if r + g + b < 1.5 {
                 Color::rgba(
                     (r + SHADING).clamp(0.0, 1.0),
