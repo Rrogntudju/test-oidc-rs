@@ -38,7 +38,7 @@ fn layout_columns_width(ctx: &mut LayoutCtx, data: &TableData) -> Option<Vec<f64
             if let Some(text) = row.get(j) {
                 end_of_cols = false;
                 if !text.is_empty() {
-                    let mut layout = TextLayout::<String>::new(text.clone(), ctx.font_ctx().collection.);
+                    let mut layout = TextLayout::<String>::new(text.clone());
                     layout.rebuild(ctx.text());
                     let width = layout.size().width;
                     if width > max_width {
@@ -83,43 +83,40 @@ impl Table {
         if let Some(widths) = layout_columns_width(ctx, data) {
             let last_col = widths.len() - 1;
             let (r, g, b, a) = rgba_f64(theme::WINDOW_BACKGROUND_COLOR);
-            let shade = if r + g + b < 1.5 {
-                Color::rgba(
-                    (r + SHADING).clamp(0.0, 1.0),
+            let (r, g, b, a) = if r + g + b < 1.5 {
+                    ((r + SHADING).clamp(0.0, 1.0),
                     (g + SHADING).clamp(0.0, 1.0),
                     (b + SHADING).clamp(0.0, 1.0),
-                    a,
-                )
+                    a)
             } else {
-                Color::rgba(
-                    (r - SHADING).clamp(0.0, 1.0),
-                    (g - SHADING).clamp(0.0, 1.0),
-                    (b - SHADING).clamp(0.0, 1.0),
-                    a,
-                )
+                ((r - SHADING).clamp(0.0, 1.0),
+                (g - SHADING).clamp(0.0, 1.0),
+                (b - SHADING).clamp(0.0, 1.0),
+                a)
             };
+            let shade = Color::rgba(r, g, b, a);
 
             let mut header = Flex::row();
-            data.header.iter().enumerate().for_each(|(j, col_name)| {
+            for  (j, col_name) in data.header.iter().enumerate() {
                 let mut label = Label::new(col_name.clone());
                 if let Some(color) = &self.header_text_color {
-                    label.with_text_brush(color.clone());
+                    label = label.with_text_brush(color.clone());
                 }
-                header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
-            });
-            table.with_child(header);
+                header = header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
+            };
+            table = table.with_child(header);
 
-            data.rows.iter().enumerate().for_each(|(i, row)| {
+            for (i, row) in data.rows.iter().enumerate() {
                 let mut table_row = Flex::row();
-                row.iter().enumerate().for_each(|(j, text)| {
-                    table_row.with_child(SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
-                });
-                if i % 2 == 0 {
-                    table.with_child(table_row)
-                } else {
-                    table.with_child(table_row)
+                for (j, text) in row.iter().enumerate() {
+                    table_row = table_row.with_child(SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
                 };
-            });
+                if i % 2 == 0 {
+                    table = table.with_child(SizedBox::new(table_row).background(shade))
+                } else {
+                    table = table.with_child(table_row)
+                };
+            };
         }
 
         self.inner = WidgetPod::new(table);
