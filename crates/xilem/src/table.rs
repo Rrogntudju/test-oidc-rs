@@ -1,6 +1,9 @@
+use crate::Scene;
+use accesskit::Role;
 use masonry::text2::TextLayout;
-use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox};
-use masonry::{theme, Color, WidgetPod};
+use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox, WidgetRef};
+use masonry::{theme, AccessCtx, AccessEvent, Color, WidgetPod};
+use smallvec::{smallvec, SmallVec};
 
 use std::iter;
 
@@ -137,17 +140,32 @@ impl Table {
 }
 
 impl Widget for Table {
-    fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent);
-    fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent);
-    fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent);
-    fn on_status_change(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange);
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle);
+    fn on_pointer_event(&mut self, _ctx: &mut EventCtx<'_>, _event: &PointerEvent) {}
+
+    fn on_text_event(&mut self, _ctx: &mut EventCtx<'_>, _event: &TextEvent) {}
+
+    fn on_access_event(&mut self, _ctx: &mut EventCtx<'_>, _event: &AccessEvent) {}
+
+    fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx<'_>, _event: &StatusChange) {}
+
+    fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx<'_>, _event: &LifeCycle) {}
+
     fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
         self.build(ctx);
         self.inner.layout(ctx, bc)
     }
-    fn paint(&mut self, ctx: &mut PaintCtx<'_>, scene: &mut Scene);
-    fn accessibility_role(&self) -> Role;
-    fn accessibility(&mut self, ctx: &mut AccessCtx<'_>);
-    fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]>;
+
+    fn paint(&mut self, ctx: &mut PaintCtx<'_>, scene: &mut Scene) {
+        self.inner.paint(ctx, scene);
+    }
+
+    fn accessibility_role(&self) -> Role {
+        Role::Window
+    }
+
+    fn accessibility(&mut self, _ctx: &mut AccessCtx<'_>) {}
+
+    fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {
+        smallvec![self.inner.as_dyn()]
+    }
 }
