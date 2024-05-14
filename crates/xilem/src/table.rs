@@ -1,9 +1,8 @@
-use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox};
-use masonry::{Insets, theme, Color, WidgetPod};
 use masonry::text2::TextLayout;
+use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox};
+use masonry::{theme, Color, WidgetPod};
 
 use std::iter;
-use std::sync::Arc;
 
 const SPACING: f64 = 12.0;
 const LAST_SPACING: f64 = SPACING / 2.0;
@@ -77,46 +76,51 @@ impl Table {
         }
     }
 
-    fn build(&mut self, ctx: &mut LayoutCtx, data: &TableData) {
+    fn build(&mut self, ctx: &mut LayoutCtx) {
         let mut table = Flex::column().cross_axis_alignment(CrossAxisAlignment::Start);
 
-        if let Some(widths) = layout_columns_width(ctx, data) {
+        if let Some(widths) = layout_columns_width(ctx, &self.data) {
             let last_col = widths.len() - 1;
             let (r, g, b, a) = rgba_f64(theme::WINDOW_BACKGROUND_COLOR);
             let (r, g, b, a) = if r + g + b < 1.5 {
-                    ((r + SHADING).clamp(0.0, 1.0),
+                (
+                    (r + SHADING).clamp(0.0, 1.0),
                     (g + SHADING).clamp(0.0, 1.0),
                     (b + SHADING).clamp(0.0, 1.0),
-                    a)
+                    a,
+                )
             } else {
-                ((r - SHADING).clamp(0.0, 1.0),
-                (g - SHADING).clamp(0.0, 1.0),
-                (b - SHADING).clamp(0.0, 1.0),
-                a)
+                (
+                    (r - SHADING).clamp(0.0, 1.0),
+                    (g - SHADING).clamp(0.0, 1.0),
+                    (b - SHADING).clamp(0.0, 1.0),
+                    a,
+                )
             };
             let shade = Color::rgba(r, g, b, a);
 
             let mut header = Flex::row();
-            for  (j, col_name) in data.header.iter().enumerate() {
+            for (j, col_name) in self.data.header.iter().enumerate() {
                 let mut label = Label::new(col_name.clone());
                 if let Some(color) = &self.header_text_color {
                     label = label.with_text_brush(color.clone());
                 }
                 header = header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
-            };
+            }
             table = table.with_child(header);
 
-            for (i, row) in data.rows.iter().enumerate() {
+            for (i, row) in self.data.rows.iter().enumerate() {
                 let mut table_row = Flex::row();
                 for (j, text) in row.iter().enumerate() {
-                    table_row = table_row.with_child(SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
-                };
+                    table_row = table_row
+                        .with_child(SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
+                }
                 if i % 2 == 0 {
                     table = table.with_child(SizedBox::new(table_row).background(shade))
                 } else {
                     table = table.with_child(table_row)
                 };
-            };
+            }
         }
 
         self.inner = WidgetPod::new(table);
@@ -136,10 +140,10 @@ impl Widget for Table {
     fn on_pointer_event(&mut self, ctx: &mut EventCtx<'_>, event: &PointerEvent);
     fn on_text_event(&mut self, ctx: &mut EventCtx<'_>, event: &TextEvent);
     fn on_access_event(&mut self, ctx: &mut EventCtx<'_>, event: &AccessEvent);
-    fn on_status_change(        &mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange);
+    fn on_status_change(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &StatusChange);
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle);
     fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
-
+        self.build(ctx);
         self.inner.layout(ctx, bc)
     }
     fn paint(&mut self, ctx: &mut PaintCtx<'_>, scene: &mut Scene);

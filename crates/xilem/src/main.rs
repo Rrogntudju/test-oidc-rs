@@ -12,15 +12,14 @@ use std::sync::Arc;
 
 use accesskit::{DefaultActionVerb, Role};
 use masonry::app_driver::{AppDriver, DriverCtx};
+use masonry::vello::Scene;
 use masonry::widget::{Align, CrossAxisAlignment, Flex, Label, RootWidget, SizedBox, WidgetRef};
 use masonry::{
-    AccessCtx, AccessEvent, Action, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, Point, PointerEvent, Size, StatusChange, TextEvent, Widget, WidgetId,
-    WidgetPod,
+    AccessCtx, AccessEvent, Action, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, PointerEvent, Size,
+    StatusChange, TextEvent, Widget, WidgetId, WidgetPod,
 };
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, Span};
-use masonry::vello::Scene;
 use winit::dpi::LogicalSize;
 use winit::window::Window;
 
@@ -148,8 +147,7 @@ impl Widget for CalcButton {
         match event {
             PointerEvent::PointerDown(_, _) => {
                 if !ctx.is_disabled() {
-                    ctx.get_mut(&mut self.inner)
-                        .set_background(self.active_color);
+                    ctx.get_mut(&mut self.inner).set_background(self.active_color);
                     ctx.set_active(true);
                     ctx.request_paint();
                     trace!("CalcButton {:?} pressed", ctx.widget_id());
@@ -193,8 +191,7 @@ impl Widget for CalcButton {
                 ctx.request_paint();
             }
             StatusChange::HotChanged(false) => {
-                ctx.get_mut(&mut self.inner)
-                    .set_border(Color::TRANSPARENT, 3.0);
+                ctx.get_mut(&mut self.inner).set_border(Color::TRANSPARENT, 3.0);
                 ctx.request_paint();
             }
             _ => (),
@@ -227,8 +224,7 @@ impl Widget for CalcButton {
         };
         // We may want to add a name if it doesn't interfere with the child label
         // ctx.current_node().set_name(name);
-        ctx.current_node()
-            .set_default_action_verb(DefaultActionVerb::Click);
+        ctx.current_node().set_default_action_verb(DefaultActionVerb::Click);
 
         self.inner.accessibility(ctx);
     }
@@ -285,23 +281,16 @@ fn digit_button(digit: u8) -> CalcButton {
     const GRAY: Color = Color::rgb8(0x3a, 0x3a, 0x3a);
     const LIGHT_GRAY: Color = Color::rgb8(0x71, 0x71, 0x71);
     CalcButton::new(
-        SizedBox::new(Align::centered(
-            Label::new(format!("{digit}")).with_text_size(24.),
-        ))
-        .background(GRAY)
-        .expand(),
+        SizedBox::new(Align::centered(Label::new(format!("{digit}")).with_text_size(24.)))
+            .background(GRAY)
+            .expand(),
         CalcAction::Digit(digit),
         GRAY,
         LIGHT_GRAY,
     )
 }
 
-fn flex_row(
-    w1: impl Widget + 'static,
-    w2: impl Widget + 'static,
-    w3: impl Widget + 'static,
-    w4: impl Widget + 'static,
-) -> impl Widget {
+fn flex_row(w1: impl Widget + 'static, w2: impl Widget + 'static, w3: impl Widget + 'static, w4: impl Widget + 'static) -> impl Widget {
     Flex::row()
         .with_flex_child(w1, 1.0)
         .with_spacer(1.0)
@@ -329,45 +318,13 @@ fn build_calc() -> impl Widget {
             1.0,
         )
         .with_spacer(1.0)
-        .with_flex_child(
-            flex_row(
-                digit_button(7),
-                digit_button(8),
-                digit_button(9),
-                op_button('×'),
-            ),
-            1.0,
-        )
+        .with_flex_child(flex_row(digit_button(7), digit_button(8), digit_button(9), op_button('×')), 1.0)
         .with_spacer(1.0)
-        .with_flex_child(
-            flex_row(
-                digit_button(4),
-                digit_button(5),
-                digit_button(6),
-                op_button('−'),
-            ),
-            1.0,
-        )
+        .with_flex_child(flex_row(digit_button(4), digit_button(5), digit_button(6), op_button('−')), 1.0)
         .with_spacer(1.0)
-        .with_flex_child(
-            flex_row(
-                digit_button(1),
-                digit_button(2),
-                digit_button(3),
-                op_button('+'),
-            ),
-            1.0,
-        )
+        .with_flex_child(flex_row(digit_button(1), digit_button(2), digit_button(3), op_button('+')), 1.0)
         .with_spacer(1.0)
-        .with_flex_child(
-            flex_row(
-                op_button('±'),
-                digit_button(0),
-                op_button('.'),
-                op_button('='),
-            ),
-            1.0,
-        )
+        .with_flex_child(flex_row(op_button('±'), digit_button(0), op_button('.'), op_button('=')), 1.0)
 }
 
 pub fn main() {
@@ -385,6 +342,5 @@ pub fn main() {
         in_num: false,
     };
 
-    masonry::event_loop_runner::run(window_attributes, RootWidget::new(build_calc()), calc_state)
-        .unwrap();
+    masonry::event_loop_runner::run(window_attributes, RootWidget::new(build_calc()), calc_state).unwrap();
 }
