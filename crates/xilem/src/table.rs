@@ -11,6 +11,7 @@ const SPACING: f64 = 12.0;
 const LAST_SPACING: f64 = SPACING / 2.0;
 const SHADING: f64 = 0.1;
 
+#[derive(Clone)]
 pub struct TableData {
     pub header: Vec<String>,
     pub rows: Vec<Vec<String>>,

@@ -32,39 +32,31 @@ const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 #[derive(Clone)]
-struct AppData {
+struct AppState {
     radio_fournisseur: Fournisseur,
     label_fournisseur: String,
+    secret: Option<Pkce>,
     infos: TableData,
     en_traitement: bool,
     erreur: String,
 }
 
-impl AppData {
-    async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
-        let secret = match secret {
-            Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur).await?),
-            Some(pkce) => Some(pkce),
-            None => Some(Pkce::new(&fournisseur).await?),
-        };
-
-        let value = ureq::get(fournisseur.userinfos())
-            .set("Authorization", &format!("Bearer {}", secret.clone().unwrap().secret()))
-            .timeout(std::time::Duration::from_secs(20))
-            .call()?
-            .into_json::<Value>()?;
-
-        match value {
-            Value::Object(map) => {
-                let infos: Vec<Vec<String>> = map.iter().map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")]).collect();
-                let table = TableData {
-                    rows: infos,
-                    header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
-                };
-                Ok((Some(table), secret))
-            }
-            _ => Err(anyhow!("La valeur doit être un map")),
+impl AppDriver for AppState {
+    fn on_action(&mut self, ctx: &mut DriverCtx<'_>, _widget_id: WidgetId, action: Action) {
+        match action {
+            Action::Other(payload) => match payload.downcast_ref::<CalcAction>().unwrap() {
+                CalcAction::Digit(digit) => self.digit(*digit),
+                CalcAction::Op(op) => self.op(*op),
+            },
+            _ => unreachable!(),
         }
+
+        ctx.get_root::<RootWidget<Flex>>()
+            .get_element()
+            .child_mut(1)
+            .unwrap()
+            .downcast::<Label>()
+            .set_text(&*self.value);
     }
 }
 
@@ -150,7 +142,7 @@ fn ui_builder() -> impl Widget {
         .with_child(
             Table::new()
                 .with_header_text_color(Color::from_hex_str("FFA500").unwrap())
-                .lens(AppData:: infos),
+                .lens(AppData::infos),
         );
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
@@ -169,41 +161,48 @@ fn ui_builder() -> impl Widget {
     //    .debug_paint_layout()
 }
 
-impl AppDriver for AppData {
-    fn on_action(&mut self, ctx: &mut DriverCtx<'_>, _widget_id: WidgetId, action: Action) {
-        match action {
-            Action::Other(payload) => match payload.downcast_ref::<CalcAction>().unwrap() {
-                CalcAction::Digit(digit) => self.digit(*digit),
-                CalcAction::Op(op) => self.op(*op),
-            },
-            _ => unreachable!(),
-        }
+async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
+    let secret = match secret {
+        Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur).await?),
+        Some(pkce) => Some(pkce),
+        None => Some(Pkce::new(&fournisseur).await?),
+    };
 
-        ctx.get_root::<RootWidget<Flex>>()
-            .get_element()
-            .child_mut(1)
-            .unwrap()
-            .downcast::<Label>()
-            .set_text(&*self.value);
+    let value = ureq::get(fournisseur.userinfos())
+        .set("Authorization", &format!("Bearer {}", secret.clone().unwrap().secret()))
+        .timeout(std::time::Duration::from_secs(20))
+        .call()?
+        .into_json::<Value>()?;
+
+    match value {
+        Value::Object(map) => {
+            let infos: Vec<Vec<String>> = map.iter().map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")]).collect();
+            let table = TableData {
+                rows: infos,
+                header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
+            };
+            Ok((Some(table), secret))
+        }
+        _ => Err(anyhow!("La valeur doit être un map")),
     }
 }
 
-
-
 pub fn main() {
-    let window_size = LogicalSize::new(223., 300.);
+    let window_size = LogicalSize::new(1100., 600.);
 
     let window_attributes = Window::default_attributes()
-        .with_title("Simple Calculator")
+        .with_title("Userinfos")
         .with_resizable(true)
         .with_min_inner_size(window_size);
 
-    let calc_state = CalcState {
-        value: "0".to_string(),
-        operand: 0.0,
-        operator: 'C',
-        in_num: false,
+    let state = AppState {
+        radio_fournisseur: Fournisseur::Microsoft,
+        label_fournisseur: String::new(),
+        secret: None,
+        infos: TableData::default(),
+        en_traitement: false,
+        erreur: String::new(),
     };
 
-    masonry::event_loop_runner::run(window_attributes, RootWidget::new(build_calc()), calc_state).unwrap();
+    masonry::event_loop_runner::run(window_attributes, RootWidget::new(ui_builder()), state).unwrap();
 }
