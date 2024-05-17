@@ -1,7 +1,8 @@
 use accesskit::{DefaultActionVerb, Role};
 use masonry::app_driver::{AppDriver, DriverCtx};
+use masonry::vello::peniko::{Blob, Format, Image as ImageBuf};
 use masonry::vello::Scene;
-use masonry::widget::{Align, Button, CrossAxisAlignment, MainAxisAlignment, Flex, Label, RootWidget, Spinner, SizedBox, WidgetRef};
+use masonry::widget::{Image, Button, CrossAxisAlignment, MainAxisAlignment, Flex, Label, RootWidget, Spinner, SizedBox, WidgetRef};
 use masonry::{
     AccessCtx, AccessEvent, Action, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, PointerEvent, Size,
     StatusChange, TextEvent, Widget, WidgetId, WidgetPod,
@@ -9,6 +10,7 @@ use masonry::{
 use anyhow::{anyhow, Result};
 use winit::dpi::LogicalSize;
 use winit::window::Window;
+use std::sync::Arc;
 
 mod table;
 use serde_json::value::Value;
@@ -103,7 +105,7 @@ fn ui_builder() -> impl Widget {
         .cross_axis_alignment(CrossAxisAlignment::Start)
         .main_axis_alignment(MainAxisAlignment::Center);
 
-    let png_data = ImageBuf::from_data(include_bytes!("openid-icon-100x100.png")).unwrap();
+    let png_data = ImageBuf::new(Blob::new(Arc::new(include_bytes!("../openid.png"))), Format::Rgba8, 100, 100);
     oidc.with_child(Image::new(png_data)).with_child(Label::new("OpenID Connect").with_text_size(25.)).with_default_spacer();
 
     oidc.with_child(Label::new("Fournisseur:")).with_default_spacer();
