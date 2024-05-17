@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use accesskit::{DefaultActionVerb, Role};
 use masonry::app_driver::{AppDriver, DriverCtx};
 use masonry::vello::Scene;
-use masonry::widget::{Align, CrossAxisAlignment, MainAxisAlignment, Flex, Label, RootWidget, SizedBox, WidgetRef};
+use masonry::widget::{Align, Button, CrossAxisAlignment, MainAxisAlignment, Flex, Label, RootWidget, Spinner, SizedBox, WidgetRef};
 use masonry::{
     AccessCtx, AccessEvent, Action, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, PointerEvent, Size,
     StatusChange, TextEvent, Widget, WidgetId, WidgetPod,
@@ -106,43 +104,40 @@ fn ui_builder() -> impl Widget {
         .main_axis_alignment(MainAxisAlignment::Center);
 
     let png_data = ImageBuf::from_data(include_bytes!("openid-icon-100x100.png")).unwrap();
-    oidc.add_child(Image::new(png_data));
-    oidc.add_child(Label::new("OpenID Connect").with_text_size(25.));
-    oidc.add_default_spacer();
+    oidc.with_child(Image::new(png_data)).with_child(Label::new("OpenID Connect").with_text_size(25.)).with_default_spacer();
 
-    oidc.add_child(Label::new("Fournisseur:"));
-    oidc.add_default_spacer();
+    oidc.with_child(Label::new("Fournisseur:")).with_default_spacer();
+
     let mut fournisseurs = Vector::new();
     fournisseurs.push_back((Fournisseur::Microsoft.to_string(), Fournisseur::Microsoft));
     fournisseurs.push_back((Fournisseur::Google.to_string(), Fournisseur::Google));
-    oidc.add_child(RadioGroup::row(fournisseurs).lens(AppData::radio_fournisseur));
-    oidc.add_default_spacer();
+    oidc.with_child(RadioGroup::row(fournisseurs).lens(AppState::radio_fournisseur));
+    oidc.with_default_spacer();
 
-    let bouton = Button::new("UserInfos")
-        .on_click(|ctx, data: &mut AppData, _| {
+        /* .on_click(|ctx, data: &mut AppState, _| {
             data.erreur = String::new();
             data.label_fournisseur = data.radio_fournisseur.to_string();
             data.en_traitement = true;
             get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone());
-        })
-        .fix_height(30.0);
+        }) */
 
-    oidc.add_child(Either::new(|data, _env| data.en_traitement, Spinner::new(), bouton));
+
+    oidc.with_child(Flex::row().with_child(Button::new("UserInfos")).with_child(Spinner::new()));
 
     let infos = Flex::column()
         .must_fill_main_axis(true)
         .cross_axis_alignment(CrossAxisAlignment::Start)
         .main_axis_alignment(MainAxisAlignment::Center)
         .with_child(
-            Label::new(|data: &AppData, _env: &_| format!("UserInfos {}", data.label_fournisseur))
-                .with_text_size(18.)
-                .with_text_color(Color::from_hex_str("FFA500").unwrap()),
+            Label::empty().with_text_size(18.) .with_text_brush(Color::parse("FFA500").unwrap())
+                // |data: &AppState, _env: &_| format!("UserInfos {}", data.label_fournisseur))
+
         )
         .with_default_spacer()
         .with_child(
             Table::new()
-                .with_header_text_color(Color::from_hex_str("FFA500").unwrap())
-                .lens(AppData::infos),
+                .with_header_text_brush(Color::parse("FFA500").unwrap())
+ //               .lens(AppState::infos),
         );
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
@@ -153,12 +148,13 @@ fn ui_builder() -> impl Widget {
         .with_default_spacer()
         .with_child(
             Flex::row().with_default_spacer().with_child(
-                Label::new(|data: &AppData, _env: &_| data.erreur.clone())
-                    .with_text_color(Color::rgb(1., 0., 0.))
-                    .expand_width(),
+                Label::empty()
+
+/*                 new(|data: &AppState, _env: &_| data.erreur.clone())
+                    .with_text_brush(Color::rgb(1., 0., 0.))
+                    .expand_width() */,
             ),
         )
-    //    .debug_paint_layout()
 }
 
 async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {

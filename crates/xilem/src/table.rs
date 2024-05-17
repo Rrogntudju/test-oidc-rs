@@ -130,11 +130,11 @@ impl Table {
         self.inner = WidgetPod::new(table);
     }
 
-    pub fn set_header_text_color(&mut self, color: Color) {
+    pub fn set_header_text_brush(&mut self, color: Color) {
         self.header_text_color = Some(color.into());
     }
 
-    pub fn with_header_text_color(mut self, color: Color) -> Self {
+    pub fn with_header_text_brush(mut self, color: Color) -> Self {
         self.set_header_text_color(color);
         self
     }
