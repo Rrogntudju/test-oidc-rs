@@ -9,7 +9,6 @@ use masonry::{
 use anyhow::{anyhow, Result};
 use winit::dpi::LogicalSize;
 use winit::window::Window;
-use std::sync::Arc;
 
 mod table;
 use serde_json::value::Value;
@@ -49,8 +48,12 @@ impl AppDriver for AppState {
                 self.en_traitement = true;
                 let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
                 match rt.block_on(get_infos(self.radio_fournisseur, self.secret)) {
-                    Ok()
-                }
+                    Ok((secret, infos)) => {
+                        self.secret = secret;
+                        self.infos =
+                    }
+                    Err(err) => self.erreur
+                };
 
 
             },
@@ -111,7 +114,9 @@ fn ui_builder() -> impl Widget {
         .cross_axis_alignment(CrossAxisAlignment::Start)
         .main_axis_alignment(MainAxisAlignment::Center);
 
-    let png_data = ImageBuf::new(Blob::new(Arc::new(include_bytes!("../openid.png"))), Format::Rgba8, 100, 100);
+    let image_data = image::load_from_memory(include_bytes!("../openid.png")).unwrap().to_rgba8();
+    let (width, height) = image_data.dimensions();
+    let png_data = ImageBuf::new(image_data.to_vec().into(), Format::Rgba8, width, height);
     oidc = oidc.with_child(Image::new(png_data)).with_child(Label::new("OpenID Connect").with_text_size(25.)).with_default_spacer();
 
     oidc = oidc.with_child(Label::new("Fournisseur:")).with_default_spacer();
