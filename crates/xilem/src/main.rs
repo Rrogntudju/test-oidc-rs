@@ -1,4 +1,3 @@
-use accesskit::{DefaultActionVerb, Role};
 use masonry::app_driver::{AppDriver, DriverCtx};
 use masonry::vello::peniko::{Blob, Format, Image as ImageBuf};
 use masonry::vello::Scene;
@@ -44,9 +43,16 @@ struct AppState {
 impl AppDriver for AppState {
     fn on_action(&mut self, ctx: &mut DriverCtx<'_>, _widget_id: WidgetId, action: Action) {
         match action {
-            Action::Other(payload) => match payload.downcast_ref::<CalcAction>().unwrap() {
-                CalcAction::Digit(digit) => self.digit(*digit),
-                CalcAction::Op(op) => self.op(*op),
+            Action::ButtonPressed => {
+                self.erreur = String::new();
+                self.label_fournisseur = self.radio_fournisseur.to_string();
+                self.en_traitement = true;
+                let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+                match rt.block_on(get_infos(self.radio_fournisseur, self.secret)) {
+                    Ok()
+                }
+
+
             },
             _ => unreachable!(),
         }
@@ -106,25 +112,12 @@ fn ui_builder() -> impl Widget {
         .main_axis_alignment(MainAxisAlignment::Center);
 
     let png_data = ImageBuf::new(Blob::new(Arc::new(include_bytes!("../openid.png"))), Format::Rgba8, 100, 100);
-    oidc.with_child(Image::new(png_data)).with_child(Label::new("OpenID Connect").with_text_size(25.)).with_default_spacer();
+    oidc = oidc.with_child(Image::new(png_data)).with_child(Label::new("OpenID Connect").with_text_size(25.)).with_default_spacer();
 
-    oidc.with_child(Label::new("Fournisseur:")).with_default_spacer();
-
-    let mut fournisseurs = Vector::new();
-    fournisseurs.push_back((Fournisseur::Microsoft.to_string(), Fournisseur::Microsoft));
-    fournisseurs.push_back((Fournisseur::Google.to_string(), Fournisseur::Google));
-    oidc.with_child(RadioGroup::row(fournisseurs).lens(AppState::radio_fournisseur));
-    oidc.with_default_spacer();
-
-        /* .on_click(|ctx, data: &mut AppState, _| {
-            data.erreur = String::new();
-            data.label_fournisseur = data.radio_fournisseur.to_string();
-            data.en_traitement = true;
-            get_userinfos(ctx.get_external_handle(), data.radio_fournisseur.clone());
-        }) */
-
-
-    oidc.with_child(Flex::row().with_child(Button::new("UserInfos")).with_child(Spinner::new()));
+    oidc = oidc.with_child(Label::new("Fournisseur:")).with_default_spacer();
+    oidc = oidc.with_child(Flex::row().with_child(Label::new(Fournisseur::Microsoft.to_string())).with_child(Label::new(Fournisseur::Google.to_string())));
+    oidc = oidc.with_default_spacer();
+    oidc = oidc.with_child(Flex::row().with_child(Button::new("UserInfos")).with_child(Spinner::new()));
 
     let infos = Flex::column()
         .must_fill_main_axis(true)

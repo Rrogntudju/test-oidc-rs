@@ -66,7 +66,7 @@ fn layout_columns_width(ctx: &mut LayoutCtx, data: &TableData) -> Option<Vec<f64
 }
 
 pub struct Table {
-    header_text_color: Option<Color>,
+    header_text_brush: Option<Color>,
     data: TableData,
     inner: WidgetPod<Flex>,
 }
@@ -74,7 +74,7 @@ pub struct Table {
 impl Table {
     pub fn new() -> Self {
         Table {
-            header_text_color: None,
+            header_text_brush: None,
             data: TableData::default(),
             inner: WidgetPod::new(Flex::row()),
         }
@@ -106,7 +106,7 @@ impl Table {
             let mut header = Flex::row();
             for (j, col_name) in self.data.header.iter().enumerate() {
                 let mut label = Label::new(col_name.clone());
-                if let Some(color) = &self.header_text_color {
+                if let Some(color) = &self.header_text_brush {
                     label = label.with_text_brush(color.clone());
                 }
                 header = header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
@@ -131,11 +131,11 @@ impl Table {
     }
 
     pub fn set_header_text_brush(&mut self, color: Color) {
-        self.header_text_color = Some(color.into());
+        self.header_text_brush = Some(color.into());
     }
 
     pub fn with_header_text_brush(mut self, color: Color) -> Self {
-        self.set_header_text_color(color);
+        self.set_header_text_brush(color);
         self
     }
 }
