@@ -1,4 +1,4 @@
-use crate::Scene;
+use masonry::vello::Scene;
 use accesskit::Role;
 use masonry::text2::TextLayout;
 use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox, WidgetRef};

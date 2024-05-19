@@ -1,13 +1,8 @@
-use masonry::app_driver::{AppDriver, DriverCtx};
 use masonry::vello::peniko::{Format, Image as ImageBuf};
-use masonry::vello::Scene;
-use masonry::widget::{CrossAxisAlignment, MainAxisAlignment, Image};
+use masonry::widget::{CrossAxisAlignment, FillStrat, Image, MainAxisAlignment};
+use masonry::Color;
 use xilem::view::{button, flex, label, checkbox};
 
-use masonry::{
-    AccessCtx, AccessEvent, Action, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, PointerEvent, Size,
-    StatusChange, TextEvent, Widget, WidgetId, WidgetPod,
-};
 use anyhow::{anyhow, Result};
 use winit::dpi::LogicalSize;
 use winit::window::Window;
@@ -15,7 +10,7 @@ use xilem::{MasonryView, Xilem};
 
 mod table;
 use serde_json::value::Value;
-use std::{fmt, thread};
+use std::fmt;
 use table::{Table, TableData};
 
 mod pkce;
@@ -82,55 +77,10 @@ impl Fournisseur {
 }
 
 fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
+
+
+
 }
-
-    let mut oidc = Flex::column()
-        .must_fill_main_axis(true)
-        .cross_axis_alignment(CrossAxisAlignment::Start)
-        .main_axis_alignment(MainAxisAlignment::Center);
-
-    let image_data = image::load_from_memory(include_bytes!("../openid.png")).unwrap().to_rgba8();
-    let (width, height) = image_data.dimensions();
-    let png_data = ImageBuf::new(image_data.to_vec().into(), Format::Rgba8, width, height);
-    oidc = oidc.with_child(Image::new(png_data)).with_child(Label::new("OpenID Connect").with_text_size(25.)).with_default_spacer();
-
-    oidc = oidc.with_child(Label::new("Fournisseur:")).with_default_spacer();
-    oidc = oidc.with_child(Flex::row().with_child(Label::new(Fournisseur::Microsoft.to_string())).with_child(Label::new(Fournisseur::Google.to_string())));
-    oidc = oidc.with_default_spacer();
-    oidc = oidc.with_child(Flex::row().with_child(Button::new("UserInfos")).with_child(Spinner::new()));
-
-    let infos = Flex::column()
-        .must_fill_main_axis(true)
-        .cross_axis_alignment(CrossAxisAlignment::Start)
-        .main_axis_alignment(MainAxisAlignment::Center)
-        .with_child(
-            Label::empty().with_text_size(18.).with_text_brush(Color::parse("FFA500").unwrap())
-                // |data: &AppData, _env: &_| format!("UserInfos {}", data.label_fournisseur))
-
-        )
-        .with_default_spacer()
-        .with_child(
-            Table::new()
-                .with_header_text_brush(Color::parse("FFA500").unwrap())
- //               .lens(AppData::infos),
-        );
-
-    let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
-
-    Flex::column()
-        .cross_axis_alignment(CrossAxisAlignment::Start)
-        .with_child(main)
-        .with_default_spacer()
-        .with_child(
-            Flex::row().with_default_spacer().with_child(
-                Label::empty().
-
-/*                 new(|data: &AppData, _env: &_| data.erreur.clone())
-                    .with_text_brush(Color::rgb(1., 0., 0.))
-                    .expand_width() */,
-            ),
-        )
-
 
 async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
     let secret = match secret {
