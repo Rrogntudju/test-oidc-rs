@@ -1,7 +1,9 @@
 use masonry::app_driver::{AppDriver, DriverCtx};
-use masonry::vello::peniko::{Blob, Format, Image as ImageBuf};
+use masonry::vello::peniko::{Format, Image as ImageBuf};
 use masonry::vello::Scene;
-use masonry::widget::{Image, Button, CrossAxisAlignment, MainAxisAlignment, Flex, Label, RootWidget, Spinner, SizedBox, WidgetRef};
+use masonry::widget::{CrossAxisAlignment, MainAxisAlignment, Image};
+use xilem::view::{button, flex, label, checkbox};
+
 use masonry::{
     AccessCtx, AccessEvent, Action, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, PointerEvent, Size,
     StatusChange, TextEvent, Widget, WidgetId, WidgetPod,
@@ -9,6 +11,7 @@ use masonry::{
 use anyhow::{anyhow, Result};
 use winit::dpi::LogicalSize;
 use winit::window::Window;
+use xilem::{MasonryView};
 
 mod table;
 use serde_json::value::Value;
@@ -30,43 +33,13 @@ const INFOS_MS: &str = "https://graph.microsoft.com/oidc/userinfo";
 const INFOS_GG: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 
 #[derive(Clone)]
-struct AppState {
+struct AppData {
     radio_fournisseur: Fournisseur,
     label_fournisseur: String,
     secret: Option<Pkce>,
     infos: TableData,
     en_traitement: bool,
     erreur: String,
-}
-
-impl AppDriver for AppState {
-    fn on_action(&mut self, ctx: &mut DriverCtx<'_>, _widget_id: WidgetId, action: Action) {
-        match action {
-            Action::ButtonPressed => {
-                self.erreur = String::new();
-                self.label_fournisseur = self.radio_fournisseur.to_string();
-                self.en_traitement = true;
-                let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-                match rt.block_on(get_infos(self.radio_fournisseur, self.secret)) {
-                    Ok((secret, infos)) => {
-                        self.secret = secret;
-                        self.infos =
-                    }
-                    Err(err) => self.erreur
-                };
-
-
-            },
-            _ => unreachable!(),
-        }
-
-        ctx.get_root::<RootWidget<Flex>>()
-            .get_element()
-            .child_mut(1)
-            .unwrap()
-            .downcast::<Label>()
-            .set_text(&*self.value);
-    }
 }
 
 #[derive(Clone, PartialEq)]
@@ -108,7 +81,9 @@ impl Fournisseur {
     }
 }
 
-fn ui_builder() -> impl Widget {
+fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
+}
+
     let mut oidc = Flex::column()
         .must_fill_main_axis(true)
         .cross_axis_alignment(CrossAxisAlignment::Start)
@@ -129,15 +104,15 @@ fn ui_builder() -> impl Widget {
         .cross_axis_alignment(CrossAxisAlignment::Start)
         .main_axis_alignment(MainAxisAlignment::Center)
         .with_child(
-            Label::empty().with_text_size(18.) .with_text_brush(Color::parse("FFA500").unwrap())
-                // |data: &AppState, _env: &_| format!("UserInfos {}", data.label_fournisseur))
+            Label::empty().with_text_size(18.).with_text_brush(Color::parse("FFA500").unwrap())
+                // |data: &AppData, _env: &_| format!("UserInfos {}", data.label_fournisseur))
 
         )
         .with_default_spacer()
         .with_child(
             Table::new()
                 .with_header_text_brush(Color::parse("FFA500").unwrap())
- //               .lens(AppState::infos),
+ //               .lens(AppData::infos),
         );
 
     let main = Flex::row().with_default_spacer().with_child(oidc).with_spacer(40.).with_child(infos);
@@ -148,14 +123,14 @@ fn ui_builder() -> impl Widget {
         .with_default_spacer()
         .with_child(
             Flex::row().with_default_spacer().with_child(
-                Label::empty()
+                Label::empty().
 
-/*                 new(|data: &AppState, _env: &_| data.erreur.clone())
+/*                 new(|data: &AppData, _env: &_| data.erreur.clone())
                     .with_text_brush(Color::rgb(1., 0., 0.))
                     .expand_width() */,
             ),
         )
-}
+
 
 async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
     let secret = match secret {
@@ -191,7 +166,7 @@ pub fn main() {
         .with_resizable(true)
         .with_min_inner_size(window_size);
 
-    let state = AppState {
+    let data = AppData {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),
         secret: None,
@@ -200,5 +175,5 @@ pub fn main() {
         erreur: String::new(),
     };
 
-    masonry::event_loop_runner::run(window_attributes, RootWidget::new(ui_builder()), state).unwrap();
+    masonry::event_loop_runner::run(window_attributes, RootWidget::new(ui_builder()), data).unwrap();
 }
