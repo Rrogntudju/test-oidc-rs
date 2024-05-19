@@ -11,7 +11,7 @@ use masonry::{
 use anyhow::{anyhow, Result};
 use winit::dpi::LogicalSize;
 use winit::window::Window;
-use xilem::{MasonryView};
+use xilem::{MasonryView, Xilem};
 
 mod table;
 use serde_json::value::Value;
@@ -175,5 +175,6 @@ pub fn main() {
         erreur: String::new(),
     };
 
-    masonry::event_loop_runner::run(window_attributes, RootWidget::new(ui_builder()), data).unwrap();
+    let app = Xilem::new(data, app_logic);
+    app.run_windowed_in(window_attributes).unwrap();
 }
