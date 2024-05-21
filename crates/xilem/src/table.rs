@@ -182,7 +182,7 @@ use masonry::{widget::WidgetMut, WidgetPod};
 use xilem::{Color, MasonryView, MessageResult, TextAlignment, ViewCx, ViewId};
 use std::sync::Arc;
 
-pub fn table(data: Arc<widget::TableData>) -> self::widget::Table {
+pub fn table(data: Arc<widget::TableData>) -> Table {
     Table {
         label: label.into(),
         text_color: Color::WHITE,
@@ -192,26 +192,13 @@ pub fn table(data: Arc<widget::TableData>) -> self::widget::Table {
 }
 
 pub struct Table {
-    label: ArcStr,
-    text_color: Color,
-    alignment: TextAlignment,
-    disabled: bool,
-    // TODO: add more attributes of `masonry::widget::Label`
+    header_text_brush: Option<Color>,
+    data: Arc<TableData>,
 }
 
 impl Table {
-    pub fn color(mut self, color: Color) -> Self {
-        self.text_color = color;
-        self
-    }
-
-    pub fn alignment(mut self, alignment: TextAlignment) -> Self {
-        self.alignment = alignment;
-        self
-    }
-
-    pub fn disabled(mut self) -> Self {
-        self.disabled = true;
+    pub fn header_text_brush(mut self, color: Color) -> Self {
+        self.header_text_brush = Some(color);
         self
     }
 }
@@ -261,7 +248,7 @@ impl<State, Action> MasonryView<State, Action> for Table {
         message: Box<dyn std::any::Any>,
         _app_state: &mut State,
     ) -> MessageResult<Action> {
-        tracing::error!("Message arrived in Label::message, but Label doesn't consume any messages, this is a bug");
+        tracing::error!("Message arrived in Table::message, but Table doesn't consume any messages, this is a bug");
         MessageResult::Stale(message)
     }
 }
