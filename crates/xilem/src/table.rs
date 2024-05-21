@@ -179,15 +179,14 @@ mod widget {
 }
 
 use masonry::{widget::WidgetMut, WidgetPod};
-use xilem::{Color, MasonryView, MessageResult, TextAlignment, ViewCx, ViewId};
+use xilem::{Color, MasonryView, MessageResult, ViewCx, ViewId};
 use std::sync::Arc;
+pub use widget::TableData;
 
-pub fn table(data: Arc<widget::TableData>) -> Table {
+pub fn table(data: Arc<TableData>) -> Table {
     Table {
-        label: label.into(),
-        text_color: Color::WHITE,
-        alignment: TextAlignment::default(),
-        disabled: false,
+        header_text_brush: None,
+        data: data,
     }
 }
 
@@ -252,5 +251,3 @@ impl<State, Action> MasonryView<State, Action> for Table {
         MessageResult::Stale(message)
     }
 }
-
-pub use self::widget::TableData;
