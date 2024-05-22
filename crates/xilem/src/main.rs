@@ -1,7 +1,7 @@
 use masonry::vello::peniko::{Format, Image as ImageBuf};
 use masonry::widget::{CrossAxisAlignment, FillStrat, Image, MainAxisAlignment};
 use masonry::Color;
-use xilem::view::{button, flex, label, checkbox};
+use xilem::view::{button, checkbox, flex, label, Axis};
 
 use anyhow::{anyhow, Result};
 use winit::dpi::LogicalSize;
@@ -77,9 +77,18 @@ impl Fournisseur {
 }
 
 fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
-
-
-
+    let mut oidc = flex((
+        label("OpenID Connect").color(Color::ORANGE),
+        label("Fournisseurs:").color(Color::ORANGE),
+        checkbox("Microsoft", |data: &mut AppData, checked| {
+        data.active = checked;
+         }),
+        checkbox("Google", |data: &mut AppData, checked| {
+            data.active = checked;
+        }),
+        button("Userinfos", |data: &mut AppData| data.count += 1)
+    )).direction(Axis::Vertical);
+    oidc
 }
 
 async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
