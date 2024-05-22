@@ -207,11 +207,11 @@ impl<State, Action> MasonryView<State, Action> for Table {
     type ViewState = ();
 
     fn build(&self, _cx: &mut ViewCx) -> (WidgetPod<Self::Element>, Self::ViewState) {
-        let widget_pod = WidgetPod::new(
-            masonry::widget::Label::new(self.label.clone())
-                .with_text_brush(self.text_color)
-                .with_text_alignment(self.alignment),
-        );
+        let mut widget = widget::Table::new();
+        if let Some(color) = self.header_text_brush {
+            widget.set_header_text_brush(color);
+        }
+        let widget_pod = WidgetPod::new(widget);
         (widget_pod, ())
     }
 
@@ -226,16 +226,8 @@ impl<State, Action> MasonryView<State, Action> for Table {
             element.set_text(self.label.clone());
             cx.mark_changed();
         }
-        // if prev.disabled != self.disabled {
-        //     element.set_disabled(self.disabled);
-        //     cx.mark_changed();
-        // }
         if prev.text_color != self.text_color {
             element.set_text_brush(self.text_color);
-            cx.mark_changed();
-        }
-        if prev.alignment != self.alignment {
-            element.set_alignment(self.alignment);
             cx.mark_changed();
         }
     }
