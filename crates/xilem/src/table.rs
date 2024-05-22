@@ -13,7 +13,7 @@ mod widget {
     const LAST_SPACING: f64 = SPACING / 2.0;
     const SHADING: f64 = 0.1;
 
-    #[derive(Clone)]
+    #[derive(Clone, PartialEq)]
     pub struct TableData {
         pub header: Vec<String>,
         pub rows: Vec<Vec<String>>,
@@ -185,19 +185,19 @@ pub use widget::TableData;
 
 pub fn table(data: Arc<TableData>) -> Table {
     Table {
-        header_text_brush: None,
+        header_text_brush: Color::default(),
         data: data,
     }
 }
 
 pub struct Table {
-    header_text_brush: Option<Color>,
+    header_text_brush: Color,
     data: Arc<TableData>,
 }
 
 impl Table {
     pub fn header_text_brush(mut self, color: Color) -> Self {
-        self.header_text_brush = Some(color);
+        self.header_text_brush = color;
         self
     }
 }
@@ -207,10 +207,7 @@ impl<State, Action> MasonryView<State, Action> for Table {
     type ViewState = ();
 
     fn build(&self, _cx: &mut ViewCx) -> (WidgetPod<Self::Element>, Self::ViewState) {
-        let mut widget = widget::Table::new();
-        if let Some(color) = self.header_text_brush {
-            widget.set_header_text_brush(color);
-        }
+        let widget = widget::Table::new().with_header_text_brush(self.header_text_brush);
         let widget_pod = WidgetPod::new(widget);
         (widget_pod, ())
     }
@@ -220,14 +217,14 @@ impl<State, Action> MasonryView<State, Action> for Table {
         _view_state: &mut Self::ViewState,
         cx: &mut ViewCx,
         prev: &Self,
-        mut element: WidgetMut<Self::Element>,
+        element: WidgetMut<Self::Element>,
     ) {
-        if prev.label != self.label {
-            element.set_text(self.label.clone());
+        if prev.data != self.data {
+            element.widget.set_table_data(self.data.clone());
             cx.mark_changed();
         }
-        if prev.text_color != self.text_color {
-            element.set_text_brush(self.text_color);
+        if prev.header_text_brush != self.header_text_brush {
+            element.widget.set_header_text_brush(self.header_text_brush.clone());
             cx.mark_changed();
         }
     }
