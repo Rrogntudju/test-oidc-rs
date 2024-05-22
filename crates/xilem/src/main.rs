@@ -11,7 +11,7 @@ use xilem::{MasonryView, Xilem};
 mod table;
 use serde_json::value::Value;
 use std::fmt;
-use table::{Table, TableData};
+use table::TableData;
 
 mod pkce;
 use pkce::Pkce;

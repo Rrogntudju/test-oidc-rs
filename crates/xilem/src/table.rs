@@ -224,7 +224,7 @@ impl<State, Action> MasonryView<State, Action> for Table {
             cx.mark_changed();
         }
         if prev.header_text_brush != self.header_text_brush {
-            element.widget.set_header_text_brush(self.header_text_brush.clone());
+            element.widget.set_header_text_brush(self.header_text_brush);
             cx.mark_changed();
         }
     }
