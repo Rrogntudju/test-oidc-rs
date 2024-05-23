@@ -149,7 +149,7 @@ fn ui_builder() -> impl Widget<AppData> {
 
     let png_data = ImageBuf::from_data(include_bytes!("openid-icon-100x100.png")).unwrap();
     oidc.add_child(Image::new(png_data));
-    oidc.add_child(Label::new(  ).with_text_size(25.));
+    oidc.add_child(Label::new("OpenID Connect").with_text_size(25.));
     oidc.add_default_spacer();
 
     oidc.add_child(Label::new("Fournisseur:"));
