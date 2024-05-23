@@ -78,7 +78,7 @@ impl Fournisseur {
 }
 
 fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
-    let mut oidc = flex((
+    let oidc = flex((
         label("OpenID Connect").color(Color::ORANGE),
         label("Fournisseurs:").color(Color::ORANGE),
         checkbox("Microsoft / Google", true, |data: &mut AppData, checked| {
