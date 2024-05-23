@@ -81,7 +81,7 @@ fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
     let oidc = flex((
         label("OpenID Connect").color(Color::ORANGE),
         label("Fournisseurs:").color(Color::ORANGE),
-        checkbox("Microsoft / Google", true, |data: &mut AppData, checked| {
+        checkbox("Microsoft / Google", data.radio_fournisseur == Fournisseur::Microsoft, |data: &mut AppData, checked| {
             if checked {
                 data.radio_fournisseur = Fournisseur::Microsoft;
                 data.label_fournisseur = "Microsoft".to_string();
@@ -91,7 +91,15 @@ fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
             }
          }),
         button("Userinfos", |data: &mut AppData| {
-
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+            let infos = rt.block_on(get_infos(data.radio_fournisseur.clone(), data.secret.clone()));
+            match infos {
+                Ok((infos, secret)) => {
+                    data.infos = infos.expect("infos absentes");
+                    data.secret = secret;
+                },
+                Err(err) => data.erreur = err.to_string(),
+            }
         })
     )).direction(Axis::Vertical);
     oidc
