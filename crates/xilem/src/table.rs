@@ -1,7 +1,7 @@
 mod widget {
-    use masonry::vello::Scene;
     use accesskit::Role;
     use masonry::text2::TextLayout;
+    use masonry::vello::Scene;
     use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox, WidgetRef};
     use masonry::{theme, AccessCtx, AccessEvent, Color, WidgetPod};
     use smallvec::{smallvec, SmallVec};
@@ -44,7 +44,7 @@ mod widget {
                     end_of_cols = false;
                     if !text.is_empty() {
                         let mut layout = TextLayout::<String>::new(text.clone(), theme::TEXT_SIZE_NORMAL as f32);
-                        layout.rebuild(ctx.font_ctx());
+//                        layout.rebuild(ctx.font_ctx());
                         let width = layout.size().width;
                         if width > max_width {
                             max_width = width;
@@ -118,8 +118,9 @@ mod widget {
                 for (i, row) in self.data.rows.iter().enumerate() {
                     let mut table_row = Flex::row();
                     for (j, text) in row.iter().enumerate() {
-                        table_row = table_row
-                            .with_child(SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
+                        table_row = table_row.with_child(
+                            SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }),
+                        );
                     }
                     if i % 2 == 0 {
                         table = table.with_child(SizedBox::new(table_row).background(shade))
@@ -155,7 +156,9 @@ mod widget {
 
         fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx<'_>, _event: &StatusChange) {}
 
-        fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx<'_>, _event: &LifeCycle) {}
+        fn lifecycle(&mut self, ctx: &mut LifeCycleCtx<'_>, event: &LifeCycle) {
+            self.inner.lifecycle(ctx, event);
+        }
 
         fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
             self.build(ctx);
@@ -179,9 +182,9 @@ mod widget {
 }
 
 use masonry::{widget::WidgetMut, WidgetPod};
-use xilem::{Color, MasonryView, MessageResult, ViewCx, ViewId};
 use std::sync::Arc;
 pub use widget::TableData;
+use xilem::{Color, MasonryView, MessageResult, ViewCx, ViewId};
 
 pub fn table(data: Arc<TableData>) -> Table {
     Table {
@@ -212,13 +215,7 @@ impl<State, Action> MasonryView<State, Action> for Table {
         (widget_pod, ())
     }
 
-    fn rebuild(
-        &self,
-        _view_state: &mut Self::ViewState,
-        cx: &mut ViewCx,
-        prev: &Self,
-        element: WidgetMut<Self::Element>,
-    ) {
+    fn rebuild(&self, _view_state: &mut Self::ViewState, cx: &mut ViewCx, prev: &Self, element: WidgetMut<Self::Element>) {
         if prev.data != self.data {
             element.widget.set_table_data(self.data.clone());
             cx.mark_changed();

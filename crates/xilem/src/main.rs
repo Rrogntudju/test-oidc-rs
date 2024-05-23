@@ -1,5 +1,5 @@
-use masonry::vello::peniko::{Format, Image as ImageBuf};
-use masonry::widget::{CrossAxisAlignment, FillStrat, Image, MainAxisAlignment};
+//use masonry::vello::peniko::{Format, Image as ImageBuf};
+//use masonry::widget::{CrossAxisAlignment, FillStrat, Image, MainAxisAlignment};
 use masonry::Color;
 use xilem::view::{button, checkbox, flex, label};
 use xilem::Axis;
@@ -11,8 +11,8 @@ use xilem::{MasonryView, Xilem};
 
 mod table;
 use serde_json::value::Value;
-use std::fmt;
-use table::TableData;
+use std::{fmt, sync::Arc};
+use table::{table, TableData};
 
 mod pkce;
 use pkce::Pkce;
@@ -33,8 +33,8 @@ struct AppData {
     radio_fournisseur: Fournisseur,
     label_fournisseur: String,
     secret: Option<Pkce>,
-    infos: TableData,
-    en_traitement: bool,
+    infos: Arc<TableData>,
+//    en_traitement: bool,
     erreur: String,
 }
 
@@ -81,28 +81,46 @@ fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
     let oidc = flex((
         label("OpenID Connect").color(Color::ORANGE),
         label("Fournisseurs:").color(Color::ORANGE),
-        checkbox("Microsoft / Google", data.radio_fournisseur == Fournisseur::Microsoft, |data: &mut AppData, checked| {
-            if checked {
-                data.radio_fournisseur = Fournisseur::Microsoft;
-                data.label_fournisseur = "Microsoft".to_string();
-            } else {
-                data.radio_fournisseur = Fournisseur::Google;
-                data.label_fournisseur = "Google".to_string();
-            }
-         }),
+        checkbox(
+            "Microsoft / Google",
+            data.radio_fournisseur == Fournisseur::Microsoft,
+            |data: &mut AppData, checked| {
+                if checked {
+                    data.radio_fournisseur = Fournisseur::Microsoft;
+                    data.label_fournisseur = "Microsoft".to_string();
+                } else {
+                    data.radio_fournisseur = Fournisseur::Google;
+                    data.label_fournisseur = "Google".to_string();
+                }
+            },
+        ),
         button("Userinfos", |data: &mut AppData| {
             let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
             let infos = rt.block_on(get_infos(data.radio_fournisseur.clone(), data.secret.clone()));
             match infos {
                 Ok((infos, secret)) => {
-                    data.infos = infos.expect("infos absentes");
+                    data.infos = Arc::new(infos.expect("infos absentes"));
                     data.secret = secret;
-                },
-                Err(err) => data.erreur = err.to_string(),
+                }
+                Err(err) => {
+                    data.erreur = err.to_string();
+                    data.infos = Arc::new(TableData::default());
+                }
             }
-        })
-    )).direction(Axis::Vertical);
-    oidc
+        }),
+    ))
+    .direction(Axis::Vertical);
+
+    let infos = flex((
+        label(format!("Userinfos {}", data.label_fournisseur)).color(Color::ORANGE),
+        table(data.infos.clone()).header_text_brush(Color::ORANGE),
+    ))
+    .direction(Axis::Vertical);
+
+    flex((
+        flex((oidc, infos)).direction(Axis::Horizontal),
+        label(data.erreur.clone()).color(Color::RED),
+    )).direction(Axis::Vertical)
 }
 
 async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
@@ -143,8 +161,8 @@ pub fn main() {
         radio_fournisseur: Fournisseur::Microsoft,
         label_fournisseur: String::new(),
         secret: None,
-        infos: TableData::default(),
-        en_traitement: false,
+        infos: Arc::new(TableData::default()),
+//        en_traitement: false,
         erreur: String::new(),
     };
 
