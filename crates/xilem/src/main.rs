@@ -34,7 +34,7 @@ struct AppData {
     label_fournisseur: String,
     secret: Option<Pkce>,
     infos: Arc<TableData>,
-//    en_traitement: bool,
+    //    en_traitement: bool,
     erreur: String,
 }
 
@@ -120,7 +120,8 @@ fn app_logic(data: &mut AppData) -> impl MasonryView<AppData> {
     flex((
         flex((oidc, infos)).direction(Axis::Horizontal),
         label(data.erreur.clone()).color(Color::RED),
-    )).direction(Axis::Vertical)
+    ))
+    .direction(Axis::Vertical)
 }
 
 async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
@@ -162,7 +163,7 @@ pub fn main() {
         label_fournisseur: String::new(),
         secret: None,
         infos: Arc::new(TableData::default()),
-//        en_traitement: false,
+        //        en_traitement: false,
         erreur: String::new(),
     };
 

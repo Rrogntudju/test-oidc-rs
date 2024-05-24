@@ -44,7 +44,7 @@ mod widget {
                     end_of_cols = false;
                     if !text.is_empty() {
                         let mut layout = TextLayout::<String>::new(text.clone(), theme::TEXT_SIZE_NORMAL as f32);
-//                        layout.rebuild(ctx.font_ctx());
+                        layout.rebuild(ctx.font_ctx());
                         let width = layout.size().width;
                         if width > max_width {
                             max_width = width;
@@ -71,6 +71,7 @@ mod widget {
         header_text_brush: Option<Color>,
         data: Arc<TableData>,
         inner: WidgetPod<Flex>,
+        hack: bool,
     }
 
     impl Table {
@@ -79,6 +80,7 @@ mod widget {
                 header_text_brush: None,
                 data: Arc::new(TableData::default()),
                 inner: WidgetPod::new(Flex::row()),
+                hack: true,
             }
         }
 
@@ -135,6 +137,13 @@ mod widget {
 
         pub fn set_table_data(&mut self, data: Arc<TableData>) {
             self.data = data;
+            self.hack = true;
+        }
+
+        pub fn with_table_data(mut self, data: Arc<TableData>) -> Self {
+            self.data = data;
+            self.hack = true;
+            self
         }
 
         pub fn set_header_text_brush(&mut self, color: Color) {
@@ -161,7 +170,10 @@ mod widget {
         }
 
         fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
-            self.build(ctx);
+            if self.hack == true {
+                self.build(ctx);
+                self.hack = false;
+            }
             self.inner.layout(ctx, bc)
         }
 
@@ -210,7 +222,9 @@ impl<State, Action> MasonryView<State, Action> for Table {
     type ViewState = ();
 
     fn build(&self, _cx: &mut ViewCx) -> (WidgetPod<Self::Element>, Self::ViewState) {
-        let widget = widget::Table::new().with_header_text_brush(self.header_text_brush);
+        let widget = widget::Table::new()
+            .with_table_data(self.data.clone())
+            .with_header_text_brush(self.header_text_brush);
         let widget_pod = WidgetPod::new(widget);
         (widget_pod, ())
     }
