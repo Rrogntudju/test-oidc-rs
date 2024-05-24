@@ -80,59 +80,63 @@ mod widget {
                 header_text_brush: None,
                 data: Arc::new(TableData::default()),
                 inner: WidgetPod::new(Flex::row()),
-                hack: true,
+                hack: false,
             }
         }
 
         fn build(&mut self, ctx: &mut LayoutCtx) {
-            let mut table = Flex::column().cross_axis_alignment(CrossAxisAlignment::Start);
+            if self.hack == true {
+                self.hack = false;
+                
+                let mut table = Flex::column().cross_axis_alignment(CrossAxisAlignment::Start);
 
-            if let Some(widths) = layout_columns_width(ctx, &self.data) {
-                let last_col = widths.len() - 1;
-                let (r, g, b, a) = rgba_f64(theme::WINDOW_BACKGROUND_COLOR);
-                let (r, g, b, a) = if r + g + b < 1.5 {
-                    (
-                        (r + SHADING).clamp(0.0, 1.0),
-                        (g + SHADING).clamp(0.0, 1.0),
-                        (b + SHADING).clamp(0.0, 1.0),
-                        a,
-                    )
-                } else {
-                    (
-                        (r - SHADING).clamp(0.0, 1.0),
-                        (g - SHADING).clamp(0.0, 1.0),
-                        (b - SHADING).clamp(0.0, 1.0),
-                        a,
-                    )
-                };
-                let shade = Color::rgba(r, g, b, a);
-
-                let mut header = Flex::row();
-                for (j, col_name) in self.data.header.iter().enumerate() {
-                    let mut label = Label::new(col_name.clone());
-                    if let Some(color) = &self.header_text_brush {
-                        label = label.with_text_brush(color.clone());
-                    }
-                    header = header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
-                }
-                table = table.with_child(header);
-
-                for (i, row) in self.data.rows.iter().enumerate() {
-                    let mut table_row = Flex::row();
-                    for (j, text) in row.iter().enumerate() {
-                        table_row = table_row.with_child(
-                            SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }),
-                        );
-                    }
-                    if i % 2 == 0 {
-                        table = table.with_child(SizedBox::new(table_row).background(shade))
+                if let Some(widths) = layout_columns_width(ctx, &self.data) {
+                    let last_col = widths.len() - 1;
+                    let (r, g, b, a) = rgba_f64(theme::WINDOW_BACKGROUND_COLOR);
+                    let (r, g, b, a) = if r + g + b < 1.5 {
+                        (
+                            (r + SHADING).clamp(0.0, 1.0),
+                            (g + SHADING).clamp(0.0, 1.0),
+                            (b + SHADING).clamp(0.0, 1.0),
+                            a,
+                        )
                     } else {
-                        table = table.with_child(table_row)
+                        (
+                            (r - SHADING).clamp(0.0, 1.0),
+                            (g - SHADING).clamp(0.0, 1.0),
+                            (b - SHADING).clamp(0.0, 1.0),
+                            a,
+                        )
                     };
-                }
-            }
+                    let shade = Color::rgba(r, g, b, a);
 
-            self.inner = WidgetPod::new(table);
+                    let mut header = Flex::row();
+                    for (j, col_name) in self.data.header.iter().enumerate() {
+                        let mut label = Label::new(col_name.clone());
+                        if let Some(color) = &self.header_text_brush {
+                            label = label.with_text_brush(color.clone());
+                        }
+                        header = header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
+                    }
+                    table = table.with_child(header);
+
+                    for (i, row) in self.data.rows.iter().enumerate() {
+                        let mut table_row = Flex::row();
+                        for (j, text) in row.iter().enumerate() {
+                            table_row = table_row.with_child(
+                                SizedBox::new(Label::new(text.clone())).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }),
+                            );
+                        }
+                        if i % 2 == 0 {
+                            table = table.with_child(SizedBox::new(table_row).background(shade))
+                        } else {
+                            table = table.with_child(table_row)
+                        };
+                    }
+                }
+
+                self.inner = WidgetPod::new(table);
+            }
         }
 
         pub fn set_table_data(&mut self, data: Arc<TableData>) {
@@ -170,10 +174,7 @@ mod widget {
         }
 
         fn layout(&mut self, ctx: &mut LayoutCtx<'_>, bc: &BoxConstraints) -> Size {
-            if self.hack == true {
-                self.build(ctx);
-                self.hack = false;
-            }
+            self.build(ctx);
             self.inner.layout(ctx, bc)
         }
 
