@@ -28,6 +28,7 @@ where
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
 {
     pub fn new(data: &TableData) -> Self {
+        // Formatter les rangées de la table en colonnes (y compris l'entête)
         let last_col = data.header.len() - 1;
         let data = iter::once(&data.header)
             .chain(&data.rows)
@@ -105,6 +106,7 @@ where
     }
 }
 
+// Obtenir la largeur maximale de chaque colonne de la table
 fn get_max_width<Message, Theme, Renderer>(data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
     Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
