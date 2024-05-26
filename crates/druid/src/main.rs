@@ -133,7 +133,7 @@ impl AppDelegate<AppData> for Delegate {
             }
             Some(Err(e)) => {
                 data.en_traitement = false;
-                data.erreur = e.to_owned();
+                data.erreur = e.clone();
                 Handled::Yes
             }
             None => Handled::No,
