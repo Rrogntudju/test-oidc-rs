@@ -3,8 +3,8 @@ mod widget {
     use masonry::text2::TextLayout;
     use masonry::vello::Scene;
     use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox, WidgetRef};
-    use masonry::{theme, AccessCtx, AccessEvent, Color, WidgetPod};
-    use smallvec::{smallvec, SmallVec};
+    use masonry::{theme, AccessCtx, AccessEvent, Color};
+    use smallvec::{SmallVec};
     use std::sync::Arc;
 
     use std::iter;
@@ -70,7 +70,7 @@ mod widget {
     pub struct Table {
         header_text_brush: Option<Color>,
         data: Arc<TableData>,
-        inner: WidgetPod<Flex>,
+        inner: Flex,
         hack: bool,
     }
 
@@ -79,7 +79,7 @@ mod widget {
             Table {
                 header_text_brush: None,
                 data: Arc::new(TableData::default()),
-                inner: WidgetPod::new(Flex::row()),
+                inner: Flex::row(),
                 hack: false,
             }
         }
@@ -135,7 +135,7 @@ mod widget {
                     }
                 }
 
-                self.inner = WidgetPod::new(table);
+                self.inner = table;
             }
         }
 
@@ -189,7 +189,7 @@ mod widget {
         fn accessibility(&mut self, _ctx: &mut AccessCtx<'_>) {}
 
         fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {
-            smallvec![self.inner.as_dyn()]
+            self.inner.children()
         }
     }
 }
