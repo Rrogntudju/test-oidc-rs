@@ -85,9 +85,9 @@ mod widget {
         }
 
         fn build(&mut self, ctx: &mut LayoutCtx) {
-            if self.hack == true {
+            if self.hack {
                 self.hack = false;
-                
+
                 let mut table = Flex::column().cross_axis_alignment(CrossAxisAlignment::Start);
 
                 if let Some(widths) = layout_columns_width(ctx, &self.data) {
@@ -114,7 +114,7 @@ mod widget {
                     for (j, col_name) in self.data.header.iter().enumerate() {
                         let mut label = Label::new(col_name.clone());
                         if let Some(color) = &self.header_text_brush {
-                            label = label.with_text_brush(color.clone());
+                            label = label.with_text_brush(*color);
                         }
                         header = header.with_child(SizedBox::new(label).width(widths[j] + if j == last_col { LAST_SPACING } else { SPACING }));
                     }
@@ -151,7 +151,7 @@ mod widget {
         }
 
         pub fn set_header_text_brush(&mut self, color: Color) {
-            self.header_text_brush = Some(color.into());
+            self.header_text_brush = Some(color);
         }
 
         pub fn with_header_text_brush(mut self, color: Color) -> Self {
@@ -202,7 +202,7 @@ use xilem::{Color, MasonryView, MessageResult, ViewCx, ViewId};
 pub fn table(data: Arc<TableData>) -> Table {
     Table {
         header_text_brush: Color::default(),
-        data: data,
+        data,
     }
 }
 
