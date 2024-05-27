@@ -4,7 +4,7 @@ mod widget {
     use masonry::vello::Scene;
     use masonry::widget::{prelude::*, CrossAxisAlignment, Flex, Label, SizedBox, WidgetRef};
     use masonry::{theme, AccessCtx, AccessEvent, Color};
-    use smallvec::{SmallVec};
+    use smallvec::SmallVec;
     use std::sync::Arc;
 
     use std::iter;
