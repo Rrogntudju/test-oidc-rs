@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use iced::{subscription, Subscription};
+use iced::Subscription;
 use iced_futures::futures;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use windows::Foundation::{EventRegistrationToken, TypedEventHandler};
@@ -61,7 +61,7 @@ fn mode_couleur(settings: &UISettings) -> Result<ModeCouleur> {
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
     struct EventModeCouleurId;
 
-    subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
+    Subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
         futures::stream::unfold(State::Init, |state| async {
             match state {
                 State::Init => {

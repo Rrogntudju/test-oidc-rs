@@ -6,10 +6,10 @@ edition = "2021"
 build = "build/build.rs"
 
 [dependencies]
-iced = { version = "0.12", features = ["tokio", "image", "advanced"] }
-iced_runtime = "0.12"
-iced_core = "0.12"
-iced_futures = "0.12"
+iced = { version = "0.13", features = ["tokio", "image", "advanced"] }
+iced_runtime = "0.13"
+iced_core = "0.13"
+iced_futures = "0.13"
 cosmic-time = { git = "https://github.com/pop-os/cosmic-time", rev = "5709ea7" }
 serde_json = "1"
 oauth2 = { version = "4", default-features = false, features = ["ureq"]}
