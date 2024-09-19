@@ -170,7 +170,7 @@ impl App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Task::future(async {iced_runtime::Action::Window(window::Action::GainFocus(Id::))});
+                //    Task::future(async {iced_runtime::Action::Window(window::Action::GainFocus(Id::MAIN))});
                 Task::none()
             }
             Message::ModeCouleurChanged(mode) => {
@@ -220,14 +220,14 @@ impl App {
             Some(data) => {
                 let titre = text(format!("Userinfos {}", &self.fournisseur))
                     .size(24)
-                    .style(Color::from_rgb8(255, 165, 0));
+                    .color(Color::from_rgb8(255, 165, 0));
 
                 column![titre, Table::new(data).size(16)]
             }
             _ => column![""],
         };
 
-        let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
+        let erreur = text(&self.erreur).color(Color::from([1.0, 0.0, 0.0]));
 
         container(
             row![

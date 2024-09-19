@@ -152,10 +152,10 @@ where
                 .zip(columns_max_width)
                 .map(|(i, width)| {
                     container(match font_size {
-                        Some(size) => text(i).size(size),
-                        None => text(i),
+                        Some(size) => text(i.to_owned()).size(size),
+                        None => text(i.to_owned()),
                     })
-                    .style(style(flip))
+ //                   .style(style(flip))
                     .width(*width)
                     .padding([5, 0])
                     .into()
