@@ -4,7 +4,7 @@ use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
 use iced::widget::{container, text, Column, Row};
-use iced::{mouse, Element, Length, Pixels, Rectangle, Size};
+use iced::{mouse, Element, Length, Pixels, Rectangle, Size, Theme};
 use std::cell::OnceCell;
 use std::iter;
 
@@ -56,9 +56,8 @@ where
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Table<'a, Message, Theme, Renderer>
 where
     Message: 'a,
-    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
+    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog + 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> + 'a,
 {
     fn size(&self) -> Size<iced_core::Length> {
         Size {
@@ -97,9 +96,9 @@ where
 impl<'a, Message, Theme, Renderer> From<Table<'a, Message, Theme, Renderer>> for Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
-    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
+    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog + 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> + 'a,
+    //    <Theme as iced::widget::container::Catalog>::Style: From<iced::theme::Container> + 'a,
 {
     fn from(table: Table<'a, Message, Theme, Renderer>) -> Element<'a, Message, Theme, Renderer> {
         Element::new(table)
@@ -109,7 +108,7 @@ where
 // Obtenir la largeur maximale de chaque colonne de la table
 fn get_max_width<Message, Theme, Renderer>(data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
-    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet,
+    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
 {
     let limits = Limits::new(Size::ZERO, Size::INFINITY);
@@ -141,9 +140,8 @@ fn create_table<'a, Message, Theme, Renderer>(
 ) -> Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
-    Theme: iced::widget::container::StyleSheet + iced::widget::text::StyleSheet + 'a,
+    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog + 'a,
     Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    <Theme as iced::widget::container::StyleSheet>::Style: From<iced::theme::Container> + 'a,
 {
     let mut flip = false;
     let infos: Vec<Element<Message, Theme, Renderer>> = data
@@ -159,7 +157,7 @@ where
                     })
                     .style(style(flip))
                     .width(*width)
-                    .padding([5, 0, 5, 0])
+                    .padding([5, 0])
                     .into()
                 })
                 .collect();
@@ -171,10 +169,10 @@ where
     Column::with_children(infos).into()
 }
 
-fn style(flip: bool) -> iced::theme::Container {
+fn style(flip: bool) -> impl Fn(&Theme) -> iced::widget::container::Style {
     if flip {
-        iced::theme::Container::Box
+        iced::widget::container::rounded_box
     } else {
-        iced::theme::Container::default()
+        iced::widget::container::transparent
     }
 }

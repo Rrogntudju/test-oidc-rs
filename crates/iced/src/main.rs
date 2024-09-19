@@ -10,6 +10,7 @@ use iced_core::window::Id;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
+use std::io::Read;
 use table::{Table, TableData};
 
 mod pkce;
@@ -82,17 +83,14 @@ enum Message {
 
 fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
-    let settings = Settings {
-        window: window::Settings {
-            size: iced_core::Size { width: 880.0, height: 380.0 },
-            icon: Some(icon),
-            ..Default::default()
-        },
+    let window = window::Settings {
+        size: iced_core::Size { width: 880.0, height: 380.0 },
+        icon: Some(icon),
         ..Default::default()
     };
     application(App::title, App::update, App::view)
         .subscription(App::subscription)
-        .settings(settings)
+        .window(window)
         .run_with(App::new)
 }
 
@@ -110,18 +108,21 @@ struct App {
 }
 
 impl App {
-    fn new() -> Self {
-        Self {
-            radio_fournisseur: Fournisseur::Microsoft,
-            fournisseur: String::new(),
-            secret: None,
-            infos: None,
-            en_traitement: false,
-            erreur: String::new(),
-            mode: ModeCouleur::Clair,
-            timeline: Timeline::new(),
-            container: id::Container::unique(),
-        }
+    fn new() -> (Self, Task<Message>) {
+        (
+            Self {
+                radio_fournisseur: Fournisseur::Microsoft,
+                fournisseur: String::new(),
+                secret: None,
+                infos: None,
+                en_traitement: false,
+                erreur: String::new(),
+                mode: ModeCouleur::Clair,
+                timeline: Timeline::new(),
+                container: id::Container::unique(),
+            },
+            Task::none(),
+        )
     }
 
     fn title(&self) -> String {
@@ -169,7 +170,8 @@ impl App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Task::single(iced_runtime::Action::Window(window::Action::GainFocus(Id::MAIN)))
+                Task::future(async {iced_runtime::Action::Window(window::Action::GainFocus(Id::))});
+                Task::none()
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
@@ -185,7 +187,7 @@ impl App {
     }
 
     fn view(&self) -> Element<'_, Message, Theme, Renderer> {
-        let image = Image::new(Handle::from_memory(ICON));
+        let image = Image::new(Handle::from_bytes(ICON.as_slice()));
 
         let titre = text("OpenID Connect").size(26);
 
@@ -234,7 +236,7 @@ impl App {
             ]
             .spacing(10),
         )
-        .padding([10, 0, 0, 10])
+        .padding([10, 0])
         .into()
     }
 
