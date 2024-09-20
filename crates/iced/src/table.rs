@@ -155,7 +155,7 @@ where
                         Some(size) => text(i.to_owned()).size(size),
                         None => text(i.to_owned()),
                     })
- //                   .style(style(flip))
+                    //                   .style(style(flip))
                     .width(*width)
                     .padding([5, 0])
                     .into()

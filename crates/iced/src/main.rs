@@ -1,5 +1,6 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
+use cosmic_time::reexports::iced::window::UserAttention;
 use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
 use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
@@ -150,7 +151,7 @@ impl App {
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-                     //   let prec = self.infos.clone();
+                        //   let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
                         /* self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
@@ -169,8 +170,7 @@ impl App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                //    Task::future(async {iced_runtime::Action::Window(window::Action::GainFocus(Id::MAIN))});
-                Task::none()
+                iced_runtime::window::get_oldest().and_then(|id| window::request_user_attention(id, Some(window::UserAttention::Informational)))
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
@@ -226,16 +226,16 @@ impl App {
             _ => column![""],
         };
 
-        let erreur = text(&self.erreur).color(Color::from([1.0, 0.0, 0.0]));
+        let erreur = text(&self.erreur).color([1.0, 0.0, 0.0]);
 
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
                 infos, // anim!(self.container, &self.timeline, infos)
             ]
-            .spacing(10),
+            .spacing(30),
         )
-        .padding([10, 0])
+        .padding(10)
         .into()
     }
 
