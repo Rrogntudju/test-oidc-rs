@@ -4,13 +4,11 @@ use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
 use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
-use iced::{application, Color, Element, Settings, Subscription, Task, Theme};
+use iced::{application, Color, Element, Subscription, Task, Theme};
 use iced::{window, Event, Renderer};
-use iced_core::window::Id;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
-use std::io::Read;
 use table::{Table, TableData};
 
 mod pkce;
@@ -90,6 +88,7 @@ fn main() -> iced::Result {
     };
     application(App::title, App::update, App::view)
         .subscription(App::subscription)
+        .theme(App::theme)
         .window(window)
         .run_with(App::new)
 }
@@ -151,7 +150,7 @@ impl App {
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-                        let prec = self.infos.clone();
+                     //   let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
                         /* self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
