@@ -3,8 +3,9 @@ use iced::advanced::layout::{self, Layout};
 use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
+use iced::widget::container::bordered_box;
 use iced::widget::{container, text, Column, Row};
-use iced::{mouse, Element, Length, Pixels, Rectangle, Size, Theme};
+use iced::{advanced, mouse, padding, Element, Length, Pixels, Rectangle, Size, Theme};
 use std::cell::OnceCell;
 use std::iter;
 
@@ -16,7 +17,7 @@ pub struct TableData {
 
 pub struct Table<'a, Message, Theme, Renderer>
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Renderer: advanced::Renderer + advanced::text::Renderer,
 {
     data: Vec<Vec<String>>,
     font_size: Option<f32>,
@@ -25,7 +26,7 @@ where
 
 impl<'a, Message, Theme, Renderer> Table<'a, Message, Theme, Renderer>
 where
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Renderer: advanced::Renderer + advanced::text::Renderer,
 {
     pub fn new(data: &TableData) -> Self {
         // Formatter les rangées de la table en colonnes (y compris l'entête)
@@ -56,8 +57,10 @@ where
 impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Table<'a, Message, Theme, Renderer>
 where
     Message: 'a,
-    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog + 'a,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    Theme: container::Catalog + text::Catalog + 'a,
+    Renderer: advanced::Renderer + advanced::text::Renderer + 'a,
+    <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>>,
+
 {
     fn size(&self) -> Size<iced_core::Length> {
         Size {
@@ -96,9 +99,9 @@ where
 impl<'a, Message, Theme, Renderer> From<Table<'a, Message, Theme, Renderer>> for Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
-    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog + 'a,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
-    //    <Theme as iced::widget::container::Catalog>::Style: From<iced::theme::Container> + 'a,
+    Theme: container::Catalog + text::Catalog + 'a,
+    Renderer: advanced::Renderer + advanced::text::Renderer + 'a,
+    <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>>,
 {
     fn from(table: Table<'a, Message, Theme, Renderer>) -> Element<'a, Message, Theme, Renderer> {
         Element::new(table)
@@ -108,8 +111,8 @@ where
 // Obtenir la largeur maximale de chaque colonne de la table
 fn get_max_width<Message, Theme, Renderer>(data: &[Vec<String>], font_size: Option<f32>, renderer: &Renderer) -> Vec<f32>
 where
-    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer,
+    Theme: container::Catalog + text::Catalog,
+    Renderer: advanced::Renderer + advanced::text::Renderer,
 {
     let limits = Limits::new(Size::ZERO, Size::INFINITY);
     data.iter().fold(vec![0.0; data[0].len()], |acc, row| {
@@ -140,8 +143,10 @@ fn create_table<'a, Message, Theme, Renderer>(
 ) -> Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
-    Theme: iced::widget::container::Catalog + iced::widget::text::Catalog + 'a,
-    Renderer: iced::advanced::Renderer + iced::advanced::text::Renderer + 'a,
+    Theme: container::Catalog + text::Catalog + 'a,
+    Renderer: advanced::Renderer + advanced::text::Renderer + 'a,
+    <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>>,
+//    <Theme as container::Catalog>::Class<'a>: Into<Box<dyn Fn(&Theme) -> container::Style + 'a>>,
 {
     let mut flip = false;
     let infos: Vec<Element<Message, Theme, Renderer>> = data
@@ -155,7 +160,7 @@ where
                         Some(size) => text(i.to_owned()).size(size),
                         None => text(i.to_owned()),
                     })
-                    //                   .style(style(flip))
+                    .style(container::bordered_box)
                     .width(*width)
                     .padding([5, 0])
                     .into()
@@ -169,10 +174,45 @@ where
     Column::with_children(infos).into()
 }
 
-fn style(flip: bool) -> impl Fn(&Theme) -> iced::widget::container::Style {
+fn style(flip: bool) -> impl Fn(&Theme) -> container::Style {
     if flip {
-        iced::widget::container::rounded_box
+        container::rounded_box
     } else {
-        iced::widget::container::transparent
+        container::transparent
     }
 }
+
+fn example<'a, Message, Theme, Renderer>() -> Element<'a, Message, Theme, Renderer>
+where
+    Message: 'a,
+    Theme: container::Catalog + text::Catalog + 'a,
+    Renderer: advanced::Renderer + advanced::text::Renderer + 'a,
+    <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>> + From<Box<dyn std::ops::Fn(&'a Theme) -> container::Style>>,
+{
+    fn hrtb<F>(f: F) -> F
+    where
+        F: for<'b> Fn(&'b iced::Theme) -> container::Style,
+    {
+        f
+}
+    let elements: Vec<Element<'a, Message, Theme, Renderer>> = ["1", "2", "3"]
+        .iter()
+        .map(|s| {
+            let c: container::Container<'_, Message, Theme, Renderer> = container(text(s.to_owned()));
+
+            let f = |t: &'a iced::Theme| -> container::Style {container::bordered_box(t)};
+            let c = c.style(hrtb(f));
+
+            let style = container::Style::default();
+            let c = c.style(move |_| style);
+
+            let c = c.style(container::transparent);
+
+            let c = c.style(hrtb(|t: &'a iced::Theme| -> container::Style {container::bordered_box(t)}));
+            c.into()
+        })
+        .collect();
+
+    Row::with_children(elements).into()
+}
+

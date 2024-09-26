@@ -1,12 +1,12 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
-use cosmic_time::reexports::iced::window::UserAttention;
-use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
+//use cosmic_time::reexports::iced::window::UserAttention;
+//use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
 use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{application, Color, Element, Subscription, Task, Theme};
-use iced::{window, Event, Renderer};
+use iced::{window /*, Event */, Renderer};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
@@ -103,8 +103,8 @@ struct App {
     en_traitement: bool,
     erreur: String,
     mode: ModeCouleur,
-    timeline: Timeline,
-    container: id::Container,
+//    timeline: Timeline,
+//    container: id::Container,
 }
 
 impl App {
@@ -118,8 +118,8 @@ impl App {
                 en_traitement: false,
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
-                timeline: Timeline::new(),
-                container: id::Container::unique(),
+//                timeline: Timeline::new(),
+//                container: id::Container::unique(),
             },
             Task::none(),
         )
@@ -254,6 +254,19 @@ impl App {
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
             //            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
+    }
+
+    fn example() -> Element<'static, Message, Theme, Renderer> {
+        let elements: Vec<Element<Message, Theme, Renderer>> = ["1", "2", "3"]
+            .iter()
+            .map(|s| {
+                let c = container(text(s.to_owned()));
+                let c = c.style(iced::widget::container::bordered_box);
+                c.into()
+            })
+            .collect();
+
+        iced::widget::Row::with_children(elements).into()
     }
 }
 
