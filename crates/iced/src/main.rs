@@ -1,10 +1,10 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
-use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
+// use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
 use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
-use iced::{executor, window, Event, Renderer};
+use iced::{executor, window, /* Event, */ Renderer};
 use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
 use iced_core::window::Id;
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
@@ -102,8 +102,8 @@ struct App {
     en_traitement: bool,
     erreur: String,
     mode: ModeCouleur,
-    timeline: Timeline,
-    container: id::Container,
+//    timeline: Timeline,
+//    container: id::Container,
 }
 
 impl Application for App {
@@ -122,8 +122,8 @@ impl Application for App {
                 en_traitement: false,
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
-                timeline: Timeline::new(),
-                container: id::Container::unique(),
+//                timeline: Timeline::new(),
+//                container: id::Container::unique(),
             },
             Command::none(),
         )
@@ -155,7 +155,7 @@ impl Application for App {
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-                        let prec = self.infos.clone();
+    //                    let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
                         /*                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
