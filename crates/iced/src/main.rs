@@ -102,8 +102,8 @@ struct App {
     en_traitement: bool,
     erreur: String,
     mode: ModeCouleur,
-//    timeline: Timeline,
-//    container: id::Container,
+    //    timeline: Timeline,
+    //    container: id::Container,
 }
 
 impl Application for App {
@@ -122,8 +122,8 @@ impl Application for App {
                 en_traitement: false,
                 erreur: String::new(),
                 mode: ModeCouleur::Clair,
-//                timeline: Timeline::new(),
-//                container: id::Container::unique(),
+                //                timeline: Timeline::new(),
+                //                container: id::Container::unique(),
             },
             Command::none(),
         )
@@ -155,7 +155,7 @@ impl Application for App {
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-    //                    let prec = self.infos.clone();
+                        //                    let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
                         /*                         self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
