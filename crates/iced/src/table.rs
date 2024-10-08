@@ -3,9 +3,8 @@ use iced::advanced::layout::{self, Layout};
 use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
-use iced::widget::container::bordered_box;
 use iced::widget::{container, text, Column, Row};
-use iced::{advanced, mouse, padding, Element, Length, Pixels, Rectangle, Size, Theme};
+use iced::{advanced, mouse, Element, Length, Pixels, Rectangle, Size, Theme};
 use std::cell::OnceCell;
 use std::iter;
 
@@ -146,7 +145,6 @@ where
     Theme: container::Catalog + text::Catalog + 'a,
     Renderer: advanced::Renderer + advanced::text::Renderer + 'a,
     <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>>,
-//    <Theme as container::Catalog>::Class<'a>: Into<Box<dyn Fn(&Theme) -> container::Style + 'a>>,
 {
     let mut flip = false;
     let infos: Vec<Element<Message, Theme, Renderer>> = data
@@ -160,7 +158,6 @@ where
                         Some(size) => text(i.to_owned()).size(size),
                         None => text(i.to_owned()),
                     })
-                    .style(container::bordered_box)
                     .width(*width)
                     .padding([5, 0])
                     .into()
@@ -182,37 +179,4 @@ fn style(flip: bool) -> impl Fn(&Theme) -> container::Style {
     }
 }
 
-fn example<'a, Message, Theme, Renderer>() -> Element<'a, Message, Theme, Renderer>
-where
-    Message: 'a,
-    Theme: container::Catalog + text::Catalog + 'a,
-    Renderer: advanced::Renderer + advanced::text::Renderer + 'a,
-    <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>> + From<Box<dyn std::ops::Fn(&'a Theme) -> container::Style>>,
-{
-    fn hrtb<F>(f: F) -> F
-    where
-        F: for<'b> Fn(&'b iced::Theme) -> container::Style,
-    {
-        f
-}
-    let elements: Vec<Element<'a, Message, Theme, Renderer>> = ["1", "2", "3"]
-        .iter()
-        .map(|s| {
-            let c: container::Container<'_, Message, Theme, Renderer> = container(text(s.to_owned()));
-
-            let f = |t: &'a iced::Theme| -> container::Style {container::bordered_box(t)};
-            let c = c.style(hrtb(f));
-
-            let style = container::Style::default();
-            let c = c.style(move |_| style);
-
-            let c = c.style(container::transparent);
-
-            let c = c.style(hrtb(|t: &'a iced::Theme| -> container::Style {container::bordered_box(t)}));
-            c.into()
-        })
-        .collect();
-
-    Row::with_children(elements).into()
-}
 

@@ -255,19 +255,6 @@ impl App {
             //            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
     }
-
-    fn example() -> Element<'static, Message, Theme, Renderer> {
-        let elements: Vec<Element<Message, Theme, Renderer>> = ["1", "2", "3"]
-            .iter()
-            .map(|s| {
-                let c = container(text(s.to_owned()));
-                let c = c.style(iced::widget::container::bordered_box);
-                c.into()
-            })
-            .collect();
-
-        iced::widget::Row::with_children(elements).into()
-    }
 }
 
 async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
