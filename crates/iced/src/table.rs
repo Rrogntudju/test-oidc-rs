@@ -147,10 +147,10 @@ where
     <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>>
 {
     let mut flip = false;
-    let infos: Vec<Element<_, _, _>> = data
+    let infos: Vec<Element<Message, Theme, Renderer>> = data
         .iter()
         .map(|row| {
-            let info: Vec<Element<_, _, _>> = row
+            let info: Vec<Element<Message, Theme, Renderer>> = row
                 .iter()
                 .zip(columns_max_width)
                 .map(|(i, width)| {
@@ -172,11 +172,11 @@ where
     Column::with_children(infos).into()
 }
 
-fn style(flip: bool) -> impl Fn(&Theme) -> container::Style {
+fn style(flip: bool) -> Box<dyn Fn(&Theme) -> container::Style> {
     if flip {
-        container::rounded_box
+        Box::new(container::rounded_box)
     } else {
-        container::transparent
+        Box::new(container::transparent)
     }
 }
 
