@@ -160,6 +160,7 @@ where
                     })
                     .width(*width)
                     .padding([5, 0])
+                    .style(style(flip))
                     .into()
                 })
                 .collect();
