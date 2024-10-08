@@ -174,7 +174,10 @@ impl App {
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
-                    Ok(mode) => self. = mode,
+                    Ok(mode) => match mode {
+                        ModeCouleur::Clair => self.theme = Theme::Light,
+                        ModeCouleur::Sombre => self.theme = Theme::Dark,
+                    },
                     Err(e) => self.erreur = e,
                 }
                 Task::none()
