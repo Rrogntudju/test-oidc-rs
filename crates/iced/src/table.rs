@@ -144,13 +144,13 @@ where
     Message: 'a,
     Theme: container::Catalog + text::Catalog + 'a,
     Renderer: advanced::Renderer + advanced::text::Renderer + 'a,
-    <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>>,
+    <Theme as container::Catalog>::Class<'a>: From<container::StyleFn<'a, Theme>>
 {
     let mut flip = false;
-    let infos: Vec<Element<Message, Theme, Renderer>> = data
+    let infos: Vec<Element<_, _, _>> = data
         .iter()
         .map(|row| {
-            let info: Vec<Element<Message, Theme, Renderer>> = row
+            let info: Vec<Element<_, _, _>> = row
                 .iter()
                 .zip(columns_max_width)
                 .map(|(i, width)| {
