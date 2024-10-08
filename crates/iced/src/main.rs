@@ -102,7 +102,7 @@ struct App {
     infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
-    mode: ModeCouleur,
+    theme: Theme,
 //    timeline: Timeline,
 //    container: id::Container,
 }
@@ -117,7 +117,7 @@ impl App {
                 infos: None,
                 en_traitement: false,
                 erreur: String::new(),
-                mode: ModeCouleur::Clair,
+                theme: Theme::Light,
 //                timeline: Timeline::new(),
 //                container: id::Container::unique(),
             },
@@ -174,7 +174,7 @@ impl App {
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
-                    Ok(mode) => self.mode = mode,
+                    Ok(mode) => self. = mode,
                     Err(e) => self.erreur = e,
                 }
                 Task::none()
@@ -240,11 +240,7 @@ impl App {
     }
 
     fn theme(&self) -> Theme {
-        let mut palette = match self.mode {
-            ModeCouleur::Sombre => Theme::Dark.palette(),
-            ModeCouleur::Clair => Theme::Light.palette(),
-        };
-
+        let mut palette = self.theme.palette();
         palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32); // orange
         Theme::custom("mode".to_string(), palette)
     }
