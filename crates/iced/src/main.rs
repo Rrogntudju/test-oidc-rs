@@ -1,12 +1,12 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
-// use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
+//use cosmic_time::reexports::iced::window::UserAttention;
+//// use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
 use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
-use iced::{executor, window, /* Event, */ Renderer};
-use iced::{Application, Color, Command, Element, Settings, Subscription, Theme};
-use iced_core::window::Id;
+use iced::{application, Color, Element, Subscription, Task, Theme};
+use iced::{window /*, Event */, Renderer};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::fmt;
@@ -82,15 +82,16 @@ enum Message {
 
 fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
-    let settings = Settings {
-        window: window::Settings {
-            size: iced_core::Size { width: 880.0, height: 380.0 },
-            icon: Some(icon),
-            ..Default::default()
-        },
+    let window = window::Settings {
+        size: iced_core::Size { width: 880.0, height: 380.0 },
+        icon: Some(icon),
         ..Default::default()
     };
-    App::run(settings)
+    application(App::title, App::update, App::view)
+        .subscription(App::subscription)
+        .theme(App::theme)
+        .window(window)
+        .run_with(App::new)
 }
 
 #[derive(Debug)]
@@ -101,18 +102,13 @@ struct App {
     infos: Option<TableData>,
     en_traitement: bool,
     erreur: String,
-    mode: ModeCouleur,
+    theme: Theme,
     //    timeline: Timeline,
     //    container: id::Container,
 }
 
-impl Application for App {
-    type Message = Message;
-    type Executor = executor::Default;
-    type Flags = ();
-    type Theme = Theme;
-
-    fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
+impl App {
+    fn new() -> (Self, Task<Message>) {
         (
             Self {
                 radio_fournisseur: Fournisseur::Microsoft,
@@ -121,11 +117,11 @@ impl Application for App {
                 infos: None,
                 en_traitement: false,
                 erreur: String::new(),
-                mode: ModeCouleur::Clair,
+                theme: Theme::Light,
                 //                timeline: Timeline::new(),
                 //                container: id::Container::unique(),
             },
-            Command::none(),
+            Task::none(),
         )
     }
 
@@ -133,11 +129,11 @@ impl Application for App {
         "Userinfos".to_owned()
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::FournisseurChanged(fournisseur) => {
                 self.radio_fournisseur = fournisseur;
-                Command::none()
+                Task::none()
             }
             Message::GetInfos => {
                 let fournisseur = self.radio_fournisseur.to_string();
@@ -150,14 +146,14 @@ impl Application for App {
                 let task = get_infos(fournisseur, secret);
                 self.erreur = String::new();
                 self.en_traitement = true;
-                Command::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
+                Task::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
             }
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-                        //                    let prec = self.infos.clone();
+                        //   let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
-                        /*                         self.timeline = Timeline::new();
+                        /* self.timeline = Timeline::new();
                         let animation = if prec != self.infos {
                             chain![
                                 self.container,
@@ -174,23 +170,26 @@ impl Application for App {
                     Err(e) => self.erreur = e,
                 }
                 self.en_traitement = false;
-                Command::single(iced_runtime::command::Action::Window(window::Action::GainFocus(Id::MAIN)))
+                iced_runtime::window::get_oldest().and_then(|id| window::request_user_attention(id, Some(window::UserAttention::Informational)))
             }
             Message::ModeCouleurChanged(mode) => {
                 match mode {
-                    Ok(mode) => self.mode = mode,
+                    Ok(mode) => match mode {
+                        ModeCouleur::Clair => self.theme = Theme::Light,
+                        ModeCouleur::Sombre => self.theme = Theme::Dark,
+                    },
                     Err(e) => self.erreur = e,
                 }
-                Command::none()
-            } /*             Message::Tick(now) => {
+                Task::none()
+            } /* Message::Tick(now) => {
                    self.timeline.now(now);
-                   Command::none()
+                   Task::none()
               } */
         }
     }
 
     fn view(&self) -> Element<'_, Message, Theme, Renderer> {
-        let image = Image::new(Handle::from_memory(ICON));
+        let image = Image::new(Handle::from_bytes(ICON.as_slice()));
 
         let titre = text("OpenID Connect").size(26);
 
@@ -223,37 +222,33 @@ impl Application for App {
             Some(data) => {
                 let titre = text(format!("Userinfos {}", &self.fournisseur))
                     .size(24)
-                    .style(Color::from_rgb8(255, 165, 0));
+                    .color(Color::from_rgb8(255, 165, 0));
 
                 column![titre, Table::new(data).size(16)]
             }
             _ => column![""],
         };
 
-        let erreur = text(&self.erreur).style(Color::from([1.0, 0.0, 0.0]));
+        let erreur = text(&self.erreur).color([1.0, 0.0, 0.0]);
 
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
                 infos, // anim!(self.container, &self.timeline, infos)
             ]
-            .spacing(10),
+            .spacing(30),
         )
-        .padding([10, 0, 0, 10])
+        .padding(10)
         .into()
     }
 
-    fn theme(&self) -> Self::Theme {
-        let mut palette = match self.mode {
-            ModeCouleur::Sombre => Theme::Dark.palette(),
-            ModeCouleur::Clair => Theme::Light.palette(),
-        };
-
+    fn theme(&self) -> Theme {
+        let mut palette = self.theme.palette();
         palette.primary = Color::from_rgb(1.0_f32, 165.0_f32 / 255.0, 0.0_f32); // orange
         Theme::custom("mode".to_string(), palette)
     }
 
-    fn subscription(&self) -> Subscription<Self::Message> {
+    fn subscription(&self) -> Subscription<Message> {
         Subscription::batch([
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
             //            self.timeline.as_subscription::<Event>().map(Message::Tick),

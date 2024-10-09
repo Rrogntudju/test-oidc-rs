@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use iced::{subscription, Subscription};
+use iced::Subscription;
 use iced_futures::futures;
 use iced_futures::futures::StreamExt;
 use zbus::{dbus_proxy, zvariant::OwnedValue};
