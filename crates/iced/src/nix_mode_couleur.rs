@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use iced::Subscription;
 use iced_futures::futures;
-use iced_futures::futures::StreamExt;
 use zbus::{dbus_proxy, zvariant::OwnedValue};
 
 const APPEARANCE: &str = "org.freedesktop.appearance";
@@ -47,7 +46,7 @@ fn get_mode_couleur(value: &OwnedValue) -> Result<ModeCouleur, String> {
 pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> {
     struct EventModeCouleurId;
 
-    subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
+    Subscription::run_with_id(std::any::TypeId::of::<EventModeCouleurId>(), {
         futures::stream::unfold(State::Init, |state| async {
             match state {
                 State::Init => match build_portal_settings_proxy().await {
