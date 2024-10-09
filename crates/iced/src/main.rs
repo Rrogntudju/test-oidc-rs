@@ -103,8 +103,8 @@ struct App {
     en_traitement: bool,
     erreur: String,
     theme: Theme,
-//    timeline: Timeline,
-//    container: id::Container,
+    //    timeline: Timeline,
+    //    container: id::Container,
 }
 
 impl App {
@@ -118,8 +118,8 @@ impl App {
                 en_traitement: false,
                 erreur: String::new(),
                 theme: Theme::Light,
-//                timeline: Timeline::new(),
-//                container: id::Container::unique(),
+                //                timeline: Timeline::new(),
+                //                container: id::Container::unique(),
             },
             Task::none(),
         )
