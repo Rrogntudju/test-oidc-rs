@@ -4,7 +4,7 @@ use iced::advanced::renderer;
 use iced::advanced::widget::Tree;
 use iced::advanced::widget::{self, Widget};
 use iced::widget::{container, text, Column, Row};
-use iced::{advanced, mouse, Element, Length, Pixels, Rectangle, Size};
+use iced::{advanced, mouse, Element, Length, Padding, Pixels, Rectangle, Size};
 use std::cell::OnceCell;
 
 pub struct Table<'a, Message, Theme, Renderer>
@@ -95,11 +95,16 @@ where
         acc.iter()
             .zip(row.iter().enumerate())
             .map(|(max, (i, s))| {
-                let s = if i < last_col { format!("{s}  ") } else { format!("{s} ") };
-                let text: Element<Message, iced::Theme, Renderer> = match font_size {
-                    Some(size) => text(s).size(size).into(),
-                    None => text(s).into(),
+                let text = match font_size {
+                    Some(size) => text(s).size(size),
+                    None => text(s),
                 };
+                let p = if i < last_col {
+                    Padding::new(0.).right(10.)
+                } else {
+                    Padding::new(0.).right(3.)
+                };
+                let text: Element<Message, iced::Theme, Renderer> = container(text).padding(p).into();
                 let mut tree = Tree::new(text.as_widget());
                 let layout = text.as_widget().layout(&mut tree, renderer, &limits);
                 let width = layout.bounds().width;
@@ -114,7 +119,7 @@ where
 }
 
 fn create_table<'a, Message, Renderer>(
-    data: &[Vec<String>],
+    data: &'a [Vec<String>],
     font_size: Option<f32>,
     columns_max_width: &[f32],
 ) -> Element<'a, Message, iced::Theme, Renderer>
@@ -131,8 +136,8 @@ where
                 .zip(columns_max_width)
                 .map(|(i, width)| {
                     container(match font_size {
-                        Some(size) => text(i.to_owned()).size(size),
-                        None => text(i.to_owned()),
+                        Some(size) => text(i).size(size),
+                        None => text(i),
                     })
                     .width(*width)
                     .padding([5, 0])
