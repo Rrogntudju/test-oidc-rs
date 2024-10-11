@@ -9,8 +9,8 @@ use iced::{application, Color, Element, Subscription, Task, Theme};
 use iced::{window /*, Event */, Renderer};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
-use std::fmt;
-use table::{Table, TableData};
+use std::{fmt, iter};
+use table::Table;
 
 mod pkce;
 mod table;
@@ -75,7 +75,7 @@ impl Fournisseur {
 enum Message {
     FournisseurChanged(Fournisseur),
     GetInfos,
-    Infos(Result<(Option<TableData>, Option<Pkce>), String>),
+    Infos(Result<(Option<Vec<Vec<String>>>, Option<Pkce>), String>),
     ModeCouleurChanged(Result<ModeCouleur, String>),
     //    Tick(Instant),
 }
@@ -99,7 +99,7 @@ struct App {
     radio_fournisseur: Fournisseur,
     fournisseur: String,
     secret: Option<Pkce>,
-    infos: Option<TableData>,
+    infos: Option<Vec<Vec<String>>>,
     en_traitement: bool,
     erreur: String,
     theme: Theme,
@@ -256,7 +256,7 @@ impl App {
     }
 }
 
-async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<TableData>, Option<Pkce>)> {
+async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Option<Vec<Vec<String>>>, Option<Pkce>)> {
     let secret = match secret {
         Some(pkce) if pkce.is_expired() => Some(Pkce::new(&fournisseur).await?),
         Some(pkce) => Some(pkce),
@@ -271,12 +271,10 @@ async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Op
 
     match value {
         Value::Object(map) => {
-            let infos: Vec<Vec<String>> = map.iter().map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")]).collect();
-            let table = TableData {
-                rows: infos,
-                header: vec!["Propriété".to_owned(), "Valeur".to_owned()],
-            };
-            Ok((Some(table), secret))
+            let infos: Vec<Vec<String>> = iter::once(vec!["Propriété".to_owned(), "Valeur".to_owned()])
+                .chain(map.iter().map(|(k, v)| vec![k.to_owned(), v.to_string().replace('"', "")]))
+                .collect();
+            Ok((Some(infos), secret))
         }
         _ => Err(anyhow!("La valeur doit être un map")),
     }
