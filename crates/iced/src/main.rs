@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
-use iced::{application, Color, Element, Subscription, Task, Theme};
+use iced::{application, Color, Element, Padding, Subscription, Task, Theme};
 use iced::{window /*, Event */, Renderer};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
@@ -227,7 +227,7 @@ impl App {
                     Table::new(data)
                         .font_size(16)
                         .header_color(Color::from_rgb8(255, 165, 0))
-                        .col_spacing(10.)
+                        .cell_padding(Padding::from([5., 0.]).left(7.).right(3.))
                 ]
             }
             _ => column![""],

@@ -14,7 +14,7 @@ where
     data: &'a [Vec<String>],
     font_size: Option<f32>,
     header_color: Option<Color>,
-    col_spacing: Pixels,
+    cell_padding: Padding,
     inner: OnceCell<Element<'a, Message, Theme, Renderer>>,
 }
 
@@ -27,7 +27,7 @@ where
             data,
             font_size: None,
             header_color: None,
-            col_spacing: Pixels(0.),
+            cell_padding: Padding::new(0.),
             inner: OnceCell::new(),
         }
     }
@@ -42,8 +42,8 @@ where
         self
     }
 
-    pub fn col_spacing(mut self, amount: impl Into<Pixels>) -> Self {
-        self.col_spacing = amount.into();
+    pub fn cell_padding(mut self, padding: impl Into<Padding>) -> Self {
+        self.cell_padding = padding.into();
         self
     }
 }
@@ -64,8 +64,8 @@ where
         let table = self
             .inner
             .get_or_init(|| {
-                let widths = get_max_width::<Message, Renderer>(&self.data, self.font_size, self.col_spacing, renderer);
-                create_table::<Message, Renderer>(&self.data, self.font_size, self.header_color, &widths)
+                let widths = get_max_width::<Message, Renderer>(&self.data, self.font_size, self.cell_padding, renderer);
+                create_table::<Message, Renderer>(&self.data, self.font_size, self.header_color, self.cell_padding, &widths)
             })
             .as_widget();
         *tree = Tree::new(table);
@@ -98,29 +98,21 @@ where
 }
 
 // Obtenir la largeur maximale de chaque colonne de la table
-fn get_max_width<Message, Renderer>(data: &[Vec<String>], font_size: Option<f32>, col_spacing: Pixels, renderer: &Renderer) -> Vec<f32>
+fn get_max_width<Message, Renderer>(data: &[Vec<String>], font_size: Option<f32>, cell_padding: Padding, renderer: &Renderer) -> Vec<f32>
 where
     Renderer: advanced::Renderer + advanced::text::Renderer,
 {
     let limits = Limits::new(Size::ZERO, Size::INFINITY);
-    let nb_cols = data[0].len();
-    let last_col = nb_cols - 1;
-    data.iter().fold(vec![0.0; nb_cols], |acc, row| {
+    data.iter().fold(vec![0.0; data[0].len()], |acc, row| {
         acc.iter()
-            .zip(row.iter().enumerate())
-            .map(|(max, (i, s))| {
+            .zip(row.iter())
+            .map(|(max, s)| {
                 let text = match font_size {
                     Some(size) => text(s).size(size),
                     None => text(s),
                 };
 
-                let p = if i < last_col {
-                    Padding::new(0.).right(col_spacing)
-                } else {
-                    Padding::new(0.).right(col_spacing / 3.)
-                };
-
-                let text: Element<Message, iced::Theme, Renderer> = container(text).padding(p).into();
+                let text: Element<Message, iced::Theme, Renderer> = container(text).padding(cell_padding).into();
                 let mut tree = Tree::new(text.as_widget());
                 let layout = text.as_widget().layout(&mut tree, renderer, &limits);
                 let width = layout.bounds().width;
@@ -138,6 +130,7 @@ fn create_table<'a, Message, Renderer>(
     data: &'a [Vec<String>],
     font_size: Option<f32>,
     header_color: Option<Color>,
+    cell_padding: Padding,
     columns_max_width: &[f32],
 ) -> Element<'a, Message, iced::Theme, Renderer>
 where
@@ -159,7 +152,7 @@ where
                     };
 
                     let text = if i == 0 { text.color_maybe(header_color) } else { text };
-                    container(text).width(*width).padding([5, 0]).style(style(flip)).into()
+                    container(text).width(*width).padding(cell_padding).style(style(flip)).into()
                 })
                 .collect();
             flip = !flip;
