@@ -221,10 +221,15 @@ impl App {
         let infos = match &self.infos {
             Some(data) => {
                 let titre = text(format!("Userinfos {}", &self.fournisseur))
-                    .size(24)
-                    .color(Color::from_rgb8(255, 165, 0));
+                    .size(24);
 
-                column![titre, Table::new(data).size(16)]
+                column![
+                    titre,
+                    Table::new(data)
+                        .font_size(16)
+                        .header_color(Color::from_rgb8(255, 165, 0))
+                        .col_spacing(10.)
+                ]
             }
             _ => column![""],
         };
