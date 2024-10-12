@@ -220,8 +220,7 @@ impl App {
 
         let infos = match &self.infos {
             Some(data) => {
-                let titre = text(format!("Userinfos {}", &self.fournisseur))
-                    .size(24);
+                let titre = text(format!("Userinfos {}", &self.fournisseur)).size(24);
 
                 column![
                     titre,
