@@ -227,7 +227,7 @@ impl App {
                     Table::new(data)
                         .font_size(16)
                         .header_color(Color::from_rgb8(255, 165, 0))
-                        .cell_padding(Padding::from([5., 0.]).left(7.).right(3.))
+                        .cell_padding(Padding::new(5.).left(7.).right(3.))
                 ]
             }
             _ => column![""],
