@@ -151,7 +151,7 @@ where
                         None => text(s),
                     };
 
-                    let text = if i == 0 { text.color_maybe(header_color) } else { text };
+                    let text = if i != 0 { text } else { text.color_maybe(header_color) };
                     container(text).width(*width).padding(cell_padding).style(style(flip)).into()
                 })
                 .collect();
