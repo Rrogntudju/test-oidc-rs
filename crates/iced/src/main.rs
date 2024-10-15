@@ -150,10 +150,12 @@ impl App {
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-                        //   let prec = self.infos.clone();
                         (self.infos, self.secret) = infos;
-                        /* self.timeline = Timeline::new();
-                        let animation = if prec != self.infos {
+/*                         let (infos, secret) = infos;
+                        self.secret = secret;
+                        self.timeline = Timeline::new();
+                        let animation = if infos != self.infos {
+                            self.infos = infos;
                             chain![
                                 self.container,
                                 cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 200]),
