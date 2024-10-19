@@ -1,11 +1,11 @@
 #![windows_subsystem = "windows"]
 use anyhow::{anyhow, Result};
-//// use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
+use cosmic_time::{anim, chain, id, Duration, Exponential, Instant, Timeline};
 use iced::advanced::image::Handle;
 use iced::widget::{button, column, container, radio, row, text, Image};
 use iced::window::icon;
 use iced::{application, Color, Element, Padding, Subscription, Task, Theme};
-use iced::{window /*, Event */, Renderer};
+use iced::{window, Event, Renderer};
 use mode_couleur::{stream_event_mode_couleur, ModeCouleur};
 use serde_json::value::Value;
 use std::{fmt, iter};
@@ -76,13 +76,13 @@ enum Message {
     GetInfos,
     Infos(Result<(Option<Vec<Vec<String>>>, Option<Pkce>), String>),
     ModeCouleurChanged(Result<ModeCouleur, String>),
-    //    Tick(Instant),
+    Tick(Instant),
 }
 
 fn main() -> iced::Result {
     let icon = icon::from_file_data(ICON, None).unwrap();
     let window = window::Settings {
-        size: iced_core::Size { width: 880.0, height: 380.0 },
+        size: iced_core::Size { width: 900.0, height: 380.0 },
         icon: Some(icon),
         ..Default::default()
     };
@@ -102,8 +102,8 @@ struct App {
     en_traitement: bool,
     erreur: String,
     theme: Theme,
-    //    timeline: Timeline,
-    //    container: id::Container,
+    timeline: Timeline,
+    container: id::Container,
 }
 
 impl App {
@@ -117,8 +117,8 @@ impl App {
                 en_traitement: false,
                 erreur: String::new(),
                 theme: Theme::Light,
-                //                timeline: Timeline::new(),
-                //                container: id::Container::unique(),
+                timeline: Timeline::new(),
+                container: id::Container::unique(),
             },
             Task::none(),
         )
@@ -150,23 +150,22 @@ impl App {
             Message::Infos(result) => {
                 match result {
                     Ok(infos) => {
-                        (self.infos, self.secret) = infos;
-/*                         let (infos, secret) = infos;
+                        let (infos, secret) = infos;
                         self.secret = secret;
                         self.timeline = Timeline::new();
                         let animation = if infos != self.infos {
                             self.infos = infos;
                             chain![
                                 self.container,
-                                cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 200]),
-                                cosmic_time::container(Duration::from_millis(600))
-                                    .padding([15, 0, 0, 20])
+                                cosmic_time::container(Duration::ZERO).padding(from([15, 0, 200, 20])),
+                                cosmic_time::container(Duration::from_secs(1))
+                                    .padding(from([15, 0, 0, 20]))
                                     .ease(Exponential::Out),
                             ]
                         } else {
-                            chain![self.container, cosmic_time::container(Duration::ZERO).padding([15, 0, 0, 20]),]
+                            chain![self.container, cosmic_time::container(Duration::ZERO).padding(from([15, 0, 0, 20])),]
                         };
-                        self.timeline.set_chain(animation).start(); */
+                        self.timeline.set_chain(animation).start();
                     }
                     Err(e) => self.erreur = e,
                 }
@@ -182,10 +181,11 @@ impl App {
                     Err(e) => self.erreur = e,
                 }
                 Task::none()
-            } /* Message::Tick(now) => {
-                   self.timeline.now(now);
-                   Task::none()
-              } */
+            }
+            Message::Tick(now) => {
+                self.timeline.now(now);
+                Task::none()
+            }
         }
     }
 
@@ -221,15 +221,19 @@ impl App {
 
         let infos = match &self.infos {
             Some(data) => {
-                let titre = text(format!("Userinfos {}", &self.fournisseur)).size(24);
+                let fournisseur = text(format!("Userinfos {}", &self.fournisseur)).size(24);
 
-                column![
-                    titre,
-                    Table::new(data)
-                        .font_size(16)
-                        .header_color(Color::from_rgb8(255, 165, 0))
-                        .cell_padding(Padding::new(5.).left(7.).right(3.))
-                ]
+                if self.en_traitement {
+                    column![fournisseur]
+                } else {
+                    column![
+                        fournisseur,
+                        Table::new(data)
+                            .font_size(16)
+                            .header_color(Color::from_rgb8(255, 165, 0))
+                            .cell_padding(Padding::new(5.).left(7).right(3))
+                    ]
+                }
             }
             _ => column![""],
         };
@@ -239,9 +243,9 @@ impl App {
         container(
             row![
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
-                infos, // anim!(self.container, &self.timeline, infos)
+                anim!(self.container, &self.timeline, infos)
             ]
-            .spacing(30),
+            .spacing(20),
         )
         .padding(10)
         .into()
@@ -256,7 +260,7 @@ impl App {
     fn subscription(&self) -> Subscription<Message> {
         Subscription::batch([
             stream_event_mode_couleur().map(Message::ModeCouleurChanged),
-            //            self.timeline.as_subscription::<Event>().map(Message::Tick),
+            self.timeline.as_subscription::<Event>().map(Message::Tick),
         ])
     }
 }
@@ -282,5 +286,14 @@ async fn get_infos(fournisseur: Fournisseur, secret: Option<Pkce>) -> Result<(Op
             Ok((Some(infos), secret))
         }
         _ => Err(anyhow!("La valeur doit être un map")),
+    }
+}
+
+fn from(p: [u16; 4]) -> Padding {
+    Padding {
+        top: f32::from(p[0]),
+        right: f32::from(p[1]),
+        bottom: f32::from(p[2]),
+        left: f32::from(p[3]),
     }
 }
