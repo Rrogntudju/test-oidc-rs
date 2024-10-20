@@ -157,7 +157,7 @@ impl App {
                             self.infos = infos;
                             chain![
                                 self.container,
-                                cosmic_time::container(Duration::ZERO).padding(from([15, 0, 200, 20])),
+                                cosmic_time::container(Duration::ZERO).padding(from([15, 0, 400, 20])),
                                 cosmic_time::container(Duration::from_secs(1))
                                     .padding(from([15, 0, 0, 20]))
                                     .ease(Exponential::Out),
