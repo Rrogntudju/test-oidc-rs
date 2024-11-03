@@ -153,18 +153,14 @@ impl App {
                         let (infos, secret) = infos;
                         self.secret = secret;
                         self.timeline = Timeline::new();
-                        let animation = if infos != self.infos {
-                            self.infos = infos;
-                            chain![
-                                self.container,
-                                cosmic_time::container(Duration::ZERO).padding(from([15, 0, 400, 20])),
-                                cosmic_time::container(Duration::from_secs(1))
-                                    .padding(from([15, 0, 0, 20]))
-                                    .ease(Exponential::Out),
-                            ]
-                        } else {
-                            chain![self.container, cosmic_time::container(Duration::ZERO).padding(from([15, 0, 0, 20])),]
-                        };
+                        self.infos = infos;
+                        let animation = chain![
+                            self.container,
+                            cosmic_time::container(Duration::ZERO).padding(from([15, 0, 400, 20])),
+                            cosmic_time::container(Duration::from_secs(1))
+                                .padding(from([15, 0, 0, 20]))
+                                .ease(Exponential::Out),
+                        ];
                         self.timeline.set_chain(animation).start();
                     }
                     Err(e) => self.erreur = e,
