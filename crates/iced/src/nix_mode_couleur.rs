@@ -40,7 +40,7 @@ fn get_mode_couleur(value: &OwnedValue) -> Result<ModeCouleur, String> {
     match value.downcast_ref::<u32>() {
         Ok(1) => Ok(ModeCouleur::Sombre),
         Ok(0) => Ok(ModeCouleur::Clair),
-        Ok(_) => Err(format!("get_mode_couleur: 0 ou 1 attendu mais reçu {value:#?}")),
+        Ok(x) => Err(format!("get_mode_couleur: 0 ou 1 attendu mais reçu {x}")),
         Err(e) => Err(format!("get_mode_couleur: {e}")),
     }
 }
