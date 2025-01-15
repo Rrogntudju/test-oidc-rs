@@ -23,7 +23,7 @@ tokio = { version = "1", features = [ "sync" ] }
 windows = { version = "0.58", features = ["UI_ViewManagement", "Foundation"] }
 
 [target.'cfg(unix)'.dependencies]
-zbus = "3"
+zbus = "5"
 
 [build-dependencies]
 winres = "0.1"

@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
+use iced::futures::StreamExt;
 use iced::Subscription;
 use iced_futures::futures;
-use zbus::{dbus_proxy, zvariant::OwnedValue};
+use zbus::{proxy, zvariant::OwnedValue, Connection};
 
 const APPEARANCE: &str = "org.freedesktop.appearance";
 const SCHEME: &str = "color-scheme";
@@ -12,7 +13,7 @@ pub enum ModeCouleur {
     Sombre,
 }
 
-#[dbus_proxy(
+#[proxy(
     interface = "org.freedesktop.portal.Settings",
     default_service = "org.freedesktop.portal.Desktop",
     default_path = "/org/freedesktop/portal/desktop"
@@ -20,26 +21,27 @@ pub enum ModeCouleur {
 trait PortalSettings {
     fn Read(&self, namespace: &str, key: &str) -> zbus::Result<OwnedValue>;
 
-    #[dbus_proxy(signal)]
+    #[zbus(signal)]
     fn SettingChanged(&self, namespace: &str, key: &str, value: OwnedValue) -> zbus::Result<()>;
 }
 
-enum State<'a> {
+enum State {
     Init,
-    Receiving(SettingChangedStream<'a>),
+    Receiving(SettingChangedStream),
     End,
 }
 
 async fn build_portal_settings_proxy<'a>() -> Result<PortalSettingsProxy<'a>> {
-    let connection = zbus::ConnectionBuilder::session()?.build().await.context("build connection")?;
+    let connection = Connection::session().await.context("build connection")?;
     PortalSettingsProxy::new(&connection).await.context("build proxy")
 }
 
 fn get_mode_couleur(value: &OwnedValue) -> Result<ModeCouleur, String> {
     match value.downcast_ref::<u32>() {
-        Some(1) => Ok(ModeCouleur::Sombre),
-        Some(_) => Ok(ModeCouleur::Clair),
-        None => Err(format!("get_mode_couleur: u32 attendu mais reçu {value:#?}")),
+        Ok(1) => Ok(ModeCouleur::Sombre),
+        Ok(0) => Ok(ModeCouleur::Clair),
+        Ok(_) => Err(format!("get_mode_couleur: 0 ou 1 attendu mais reçu {value:#?}")),
+        Err(e) => Err(format!("get_mode_couleur: {e}")),
     }
 }
 
