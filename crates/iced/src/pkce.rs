@@ -92,27 +92,19 @@ fn start_listening(listener: TcpListener, csrf: CsrfToken) -> Result<(Receiver<A
 
                     let redirect_url = request_line.split_whitespace().nth(1).unwrap();
                     let url = Url::parse(&(format!("http://localhost{redirect_url}"))).unwrap();
-                    let code_pair = url
+                    let code = url
                         .query_pairs()
-                        .find(|pair| {
-                            let (key, _) = pair;
-                            key == "code"
-                        })
+                        .find(|(key, _)| key == "code")
+                        .map(|(_, code)| AuthorizationCode::new(code.into_owned()))
                         .expect("Le code d'autorisation doit être présent");
 
-                    let (_, value) = code_pair;
-                    let code = AuthorizationCode::new(value.into_owned());
-
-                    let state_pair = url
+                    let state = url
                         .query_pairs()
-                        .find(|pair| {
-                            let (key, _) = pair;
-                            key == "state"
-                        })
+                        .find(|(key, _)| key == "state")
+                        .map(|(_, state)| state )
                         .expect("Le jeton csrf doit être présent");
 
-                    let (_, value) = state_pair;
-                    assert_eq!(csrf.secret(), value.as_ref());
+                    assert_eq!(csrf.secret(), state.as_ref());
 
                     let message = "<p>Retournez dans l'application &#128526;</p>";
                     let response = format!("HTTP/1.1 200 OK\r\ncontent-length: {}\r\n\r\n{message}", message.len());
