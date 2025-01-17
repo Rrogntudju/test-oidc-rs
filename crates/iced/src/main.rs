@@ -143,6 +143,7 @@ impl App {
                 let fournisseur = self.radio_fournisseur;
                 let secret = self.secret.clone();
                 let task = get_infos(fournisseur, secret);
+                self.infos = None;
                 self.erreur = String::new();
                 self.en_traitement = true;
                 Task::perform(task, |i| Message::Infos(i.map_err(|e| format!("{e:#}"))))
@@ -241,7 +242,7 @@ impl App {
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
                 anim!(self.container, &self.timeline, infos)
             ]
-            .spacing(20),
+            .spacing(20)
         )
         .padding(10)
         .into()
