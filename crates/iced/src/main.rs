@@ -242,7 +242,7 @@ impl App {
                 column![image, titre, fournisseur, bouton, erreur].spacing(10),
                 anim!(self.container, &self.timeline, infos)
             ]
-            .spacing(20)
+            .spacing(20),
         )
         .padding(10)
         .into()

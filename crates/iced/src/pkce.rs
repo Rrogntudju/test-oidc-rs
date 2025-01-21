@@ -1,7 +1,6 @@
 use crate::Fournisseur;
 use anyhow::{anyhow, Context, Error};
 use oauth2::basic::BasicClient;
-use oauth2::ureq::http_client;
 use oauth2::{
     AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse,
     TokenUrl,
@@ -32,7 +31,10 @@ impl Pkce {
         let url_auth = AuthUrl::new(url_auth.to_owned())?;
         let url_token = TokenUrl::new(url_token.to_owned())?;
 
-        let client = BasicClient::new(id, Some(secret), url_auth, Some(url_token))
+        let client = BasicClient::new(id)
+            .set_client_secret(secret)
+            .set_auth_uri(url_auth)
+            .set_token_uri(url_token)
             .set_auth_type(AuthType::RequestBody)
             .set_redirect_uri(RedirectUrl::new("http://localhost:86".to_owned())?);
 
@@ -60,7 +62,7 @@ impl Pkce {
         .await??;
 
         let creation = Instant::now();
-        let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(http_client)?;
+        let token = client.exchange_code(code).set_pkce_verifier(pkce_code_verifier).request(&ureq::agent())?;
         let expired_in = token.expires_in().unwrap_or(Duration::from_secs(3600));
         let token = token.access_token().to_owned();
         Ok(Self { token, creation, expired_in })
@@ -101,7 +103,7 @@ fn start_listening(listener: TcpListener, csrf: CsrfToken) -> Result<(Receiver<A
                     let state = url
                         .query_pairs()
                         .find(|(key, _)| key == "state")
-                        .map(|(_, state)| state )
+                        .map(|(_, state)| state)
                         .expect("Le jeton csrf doit être présent");
 
                     assert_eq!(csrf.secret(), state.as_ref());
