@@ -19,10 +19,10 @@ pub enum ModeCouleur {
     default_path = "/org/freedesktop/portal/desktop"
 )]
 trait PortalSettings {
-    fn Read(&self, namespace: &str, key: &str) -> zbus::Result<OwnedValue>;
+    fn read(&self, namespace: &str, key: &str) -> zbus::Result<OwnedValue>;
 
     #[zbus(signal)]
-    fn SettingChanged(&self, namespace: &str, key: &str, value: OwnedValue) -> zbus::Result<()>;
+    fn setting_changed(&self, namespace: &str, key: &str, value: OwnedValue) -> zbus::Result<()>;
 }
 
 enum State {
@@ -52,10 +52,10 @@ pub fn stream_event_mode_couleur() -> Subscription<Result<ModeCouleur, String>> 
         futures::stream::unfold(State::Init, |state| async {
             match state {
                 State::Init => match build_portal_settings_proxy().await {
-                    Ok(proxy) => match proxy.Read(APPEARANCE, SCHEME).await {
+                    Ok(proxy) => match proxy.read(APPEARANCE, SCHEME).await {
                         Ok(value) => {
                             let mode = get_mode_couleur(&value);
-                            match proxy.receive_SettingChanged().await {
+                            match proxy.receive_setting_changed().await {
                                 Ok(setting_changed) => Some((mode.map_err(|e| format!("{e:#}")), State::Receiving(setting_changed))),
                                 Err(e) => Some((Err(format!("{e:#}")), State::End)),
                             }
