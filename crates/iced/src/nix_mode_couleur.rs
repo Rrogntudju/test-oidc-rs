@@ -19,10 +19,10 @@ pub enum ModeCouleur {
     default_path = "/org/freedesktop/portal/desktop"
 )]
 trait PortalSettings {
-    fn read(&self, namespace: &str, key: &str) -> zbus::Result<OwnedValue>;
+    async fn read(&self, namespace: &str, key: &str) -> zbus::Result<OwnedValue>;
 
     #[zbus(signal)]
-    fn setting_changed(&self, namespace: &str, key: &str, value: OwnedValue) -> zbus::Result<()>;
+    async fn setting_changed(&self, namespace: &str, key: &str, value: OwnedValue) -> zbus::Result<()>;
 }
 
 enum State {
